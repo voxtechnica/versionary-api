@@ -13,10 +13,11 @@ import (
 )
 
 var (
-	// Event Service
-	ctx     = context.Background()
-	table   = NewTable(nil, "test")
-	service = Service{EntityType: "Event", Table: NewMemTable(table)}
+	// Event EventService
+	ctx      = context.Background()
+	table    = NewEventTable(nil, "test")
+	memTable = NewEventMemTable(table)
+	service  = EventService{EntityType: "Event", Table: memTable}
 
 	// Known timestamps
 	t1 = time.Date(2022, time.April, 1, 12, 0, 0, 0, time.UTC)
@@ -82,6 +83,10 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	// Check the table/row definitions
+	if !memTable.IsValid() {
+		log.Fatal("invalid table configuration")
+	}
 	// Write known events
 	for _, e := range []Event{e1, e2, e3, e4, e5} {
 		if _, err := service.Write(ctx, e); err != nil {

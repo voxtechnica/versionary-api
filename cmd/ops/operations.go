@@ -89,7 +89,7 @@ func createTables(ctx context.Context, dbClient *dynamodb.Client, env string, en
 	for _, e := range entities {
 		switch e {
 		case "Event":
-			createTable(ctx, event.NewTable(dbClient, env))
+			createTable(ctx, event.NewEventTable(dbClient, env))
 		//case "Token":
 		//	createTable(ctx, auth.GetTokenTable(dbClient, env))
 		//case "User":

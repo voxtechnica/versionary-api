@@ -33,8 +33,8 @@ func main() {
 		log.Fatal("Failed to load AWS config: " + err.Error())
 	}
 	db := dynamodb.NewFromConfig(awsCfg)
-	eventTable := event.NewTable(db, env)
-	eventService := event.Service{
+	eventTable := event.NewEventTable(db, env)
+	eventService := event.EventService{
 		EntityType: "Event",
 		Table:      eventTable,
 	}
