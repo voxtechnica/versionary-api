@@ -29,7 +29,7 @@ Go programming language with the following technologies:
 
 ## Dependencies
 
-The following dependencies are required to build Versionary:
+The following dependencies are required to build the Versionary API:
 
 ```bash
 go get github.com/aws/aws-lambda-go/events
@@ -42,6 +42,7 @@ go get github.com/aws/aws-sdk-go-v2/service/dynamodb/types
 go get github.com/awslabs/aws-lambda-go-api-proxy
 go get github.com/gin-gonic/gin
 go get github.com/voxtechnica/tuid-go
+go get github.com/voxtechnica/user-agent
 go get github.com/voxtechnica/versionary
 go get golang.org/x/exp/slices
 ```

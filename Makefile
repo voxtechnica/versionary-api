@@ -14,6 +14,13 @@ lint: format
 	go vet ./...
 .PHONY:lint
 
+# Update Dependencies
+dependencies:
+	@echo "Updating dependencies:"
+	go get -u ./...
+	go mod tidy
+.PHONY:dependencies
+
 # Build the command-line applications
 build:
 	@echo "Building API Lambda function for local use:"
@@ -25,7 +32,7 @@ build:
 # Build and package the API Lambda function for release
 release:
 	@echo "Building API Lambda function for release:"
-	GOOS=linux GOARCH=amd64 go build -o ./cmd/api/api ./cmd/api/*.go
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./cmd/api/api ./cmd/api/*.go
 	zip ./cmd/api/lambda.zip ./cmd/api/api
 .PHONY:release
 

@@ -9,6 +9,7 @@ import (
 	"github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	"github.com/gin-gonic/gin"
 	"github.com/voxtechnica/tuid-go"
+	user_agent "github.com/voxtechnica/user-agent"
 	"log"
 	"net/http"
 	"os"
@@ -50,6 +51,7 @@ func main() {
 		gin.DisableConsoleColor()
 	}
 	g.GET("/", GetAbout)
+	g.GET("/user_agent", GetUserAgent)
 	g.POST("/v1/tuids", PostTUID)
 	g.GET("/v1/tuids", GetTUIDs)
 	g.GET("/v1/tuids/:id", GetTUID)
@@ -72,6 +74,12 @@ func main() {
 
 func GetAbout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Versionary API"})
+}
+
+func GetUserAgent(c *gin.Context) {
+	header := c.Request.Header.Get("User-Agent")
+	ua := user_agent.Parse(header)
+	c.JSON(http.StatusOK, ua)
 }
 
 func GetTUIDs(c *gin.Context) {
