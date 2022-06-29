@@ -46,9 +46,9 @@ Resources:
   VersionaryAPILambda:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: cmd/api/api
+      Handler: api
       Runtime: go1.x
-      CodeUri: ./cmd/api/lambda.zip
+      CodeUri: ./lambda.zip
       Description: !Join [ '-' , [ "versionary-api", !Ref ENV ] ]
       MemorySize: 512
       Timeout: 30
@@ -63,7 +63,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Name: !Join [ '-' , [ "versionary/api-arn", !Ref ENV ] ]
-      Description: Zicasso Service ARN
+      Description: Versionary API ARN
       Type: String
       Value: !GetAtt VersionaryAPILambda.Arn
 
@@ -73,7 +73,7 @@ Resources:
     Type: AWS::ApiGatewayV2::Api
     Properties:
       Name: !Join [ '-' , [ "versionary-api", !Ref ENV ] ]
-      Description: Traveler Service API
+      Description: Versionary API
       ProtocolType: HTTP
 
   VersionaryAPIHttpApiIntegration:

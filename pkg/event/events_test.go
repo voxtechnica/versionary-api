@@ -3,11 +3,11 @@ package event
 import (
 	"context"
 	"log"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
 )
@@ -112,8 +112,9 @@ func TestCreateReadDelete(t *testing.T) {
 	eCheck, err := service.Read(ctx, e.ID)
 	if err != nil {
 		t.Fatal(err)
-	} else if !reflect.DeepEqual(e, eCheck) {
-		t.Errorf("events are not equal")
+	}
+	if diff := cmp.Diff(e, eCheck); diff != "" {
+		t.Error(diff)
 	}
 	// Read the event as JSON
 	eCheckJSON, err := service.ReadAsJSON(ctx, e.ID)
@@ -121,7 +122,7 @@ func TestCreateReadDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !strings.Contains(string(eCheckJSON), e.ID) {
-		t.Errorf("event JSON does not contain ID")
+		t.Error("event JSON does not contain ID")
 	}
 	// Delete the event
 	if _, err = service.Delete(ctx, e.ID); err != nil {
@@ -133,7 +134,7 @@ func TestCreateReadDelete(t *testing.T) {
 	}
 }
 
-func TestService_ReadEventIDs(t *testing.T) {
+func TestReadEventIDs(t *testing.T) {
 	ids, err := service.ReadEventIDs(ctx, false, 10, tuid.MinID)
 	if err != nil {
 		t.Fatal(err)
@@ -150,7 +151,7 @@ func TestService_ReadEventIDs(t *testing.T) {
 	}
 }
 
-func TestService_ReadEvents(t *testing.T) {
+func TestReadEvents(t *testing.T) {
 	events := service.ReadEvents(ctx, false, 10, tuid.MinID)
 	if len(events) < 5 {
 		t.Errorf("expected 5 events, got %d", len(events))
@@ -164,7 +165,7 @@ func TestService_ReadEvents(t *testing.T) {
 	}
 }
 
-func TestService_ReadRecentEvents(t *testing.T) {
+func TestReadRecentEvents(t *testing.T) {
 	events, err := service.ReadRecentEvents(ctx, 10)
 	if err != nil {
 		t.Fatal(err)
@@ -178,7 +179,7 @@ func TestService_ReadRecentEvents(t *testing.T) {
 	}
 }
 
-func TestService_ReadDates(t *testing.T) {
+func TestReadDates(t *testing.T) {
 	dates, err := service.ReadDates(ctx, false, 3, "0")
 	if err != nil {
 		t.Fatal(err)
@@ -187,10 +188,10 @@ func TestService_ReadDates(t *testing.T) {
 		t.Fatalf("expected 3 dates, got %d", len(dates))
 	}
 	if dates[0] > dates[1] {
-		t.Errorf("expected dates to be sorted chronologically")
+		t.Error("expected dates to be sorted chronologically")
 	}
 	if dates[1] > dates[2] {
-		t.Errorf("expected dates to be sorted chronologically")
+		t.Error("expected dates to be sorted chronologically")
 	}
 	dates, err = service.ReadDates(ctx, true, 3, "9999-99-99")
 	if err != nil {
@@ -200,14 +201,14 @@ func TestService_ReadDates(t *testing.T) {
 		t.Fatalf("expected 3 dates, got %d", len(dates))
 	}
 	if dates[0] < dates[1] {
-		t.Errorf("expected dates to be sorted reverse-chronologically")
+		t.Error("expected dates to be sorted reverse-chronologically")
 	}
 	if dates[1] < dates[2] {
-		t.Errorf("expected dates to be sorted reverse-chronologically")
+		t.Error("expected dates to be sorted reverse-chronologically")
 	}
 }
 
-func TestService_ReadAllDates(t *testing.T) {
+func TestReadAllDates(t *testing.T) {
 	dates, err := service.ReadAllDates(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -216,14 +217,14 @@ func TestService_ReadAllDates(t *testing.T) {
 		t.Fatalf("expected 3 dates, got %d", len(dates))
 	}
 	if dates[0] > dates[1] {
-		t.Errorf("expected dates to be sorted chronologically")
+		t.Error("expected dates to be sorted chronologically")
 	}
 	if dates[1] > dates[2] {
-		t.Errorf("expected dates to be sorted chronologically")
+		t.Error("expected dates to be sorted chronologically")
 	}
 }
 
-func TestService_ReadEventsByDate(t *testing.T) {
+func TestReadEventsByDate(t *testing.T) {
 	// Read all events
 	d := t1.Format("2006-01-02")
 	events, err := service.ReadEventsByDate(ctx, d, false, 10, tuid.MinID)
@@ -282,7 +283,7 @@ func TestService_ReadEventsByDate(t *testing.T) {
 	}
 }
 
-func TestService_ReadEntityIDs(t *testing.T) {
+func TestReadEntityIDs(t *testing.T) {
 	// Read all entity IDs
 	expected := []string{id1, id2, id3, e1.UserID}
 	ids, err := service.ReadEntityIDs(ctx, false, 10, tuid.MinID)
@@ -321,7 +322,7 @@ func TestService_ReadEntityIDs(t *testing.T) {
 	}
 }
 
-func TestService_ReadEventsByEntityID(t *testing.T) {
+func TestReadEventsByEntityID(t *testing.T) {
 	// Read all events
 	events, err := service.ReadEventsByEntityID(ctx, id1, false, 10, tuid.MinID)
 	if err != nil {
@@ -371,7 +372,7 @@ func TestService_ReadEventsByEntityID(t *testing.T) {
 	}
 }
 
-func TestService_ReadLogLevels(t *testing.T) {
+func TestReadLogLevels(t *testing.T) {
 	// Read log levels
 	expected := []string{"ERROR", "INFO", "WARN"}
 	levels, err := service.ReadLogLevels(ctx, false, 10, "DEBUG")
@@ -410,7 +411,7 @@ func TestService_ReadLogLevels(t *testing.T) {
 	}
 }
 
-func TestService_ReadAllLogLevels(t *testing.T) {
+func TestReadAllLogLevels(t *testing.T) {
 	// Read all log levels
 	levels, err := service.ReadAllLogLevels(ctx)
 	if err != nil {
@@ -427,7 +428,7 @@ func TestService_ReadAllLogLevels(t *testing.T) {
 	}
 }
 
-func TestService_ReadEventsByLogLevel(t *testing.T) {
+func TestReadEventsByLogLevel(t *testing.T) {
 	// Read all events
 	events, err := service.ReadEventsByLogLevel(ctx, "INFO", false, 10, tuid.MinID)
 	if err != nil {

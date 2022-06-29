@@ -1,0 +1,54 @@
+package user
+
+import (
+	"strings"
+	"time"
+
+	"github.com/voxtechnica/tuid-go"
+	v "github.com/voxtechnica/versionary"
+)
+
+type Organization struct {
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
+	VersionID string    `json:"versionID"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	Name      string    `json:"name"`
+	Status    Status    `json:"status"`
+}
+
+// CompressedJSON returns a compressed JSON representation of the Organization.
+func (o Organization) CompressedJSON() []byte {
+	j, err := v.ToCompressedJSON(o)
+	if err != nil {
+		return nil
+	}
+	return j
+}
+
+// Validate checks whether the Organization has all required fields and whether
+// the supplied values are valid, returning a list of problems. If the list is
+// empty, then the Organization is valid.
+func (o Organization) Validate() []string {
+	problems := []string{}
+	if o.ID == "" || !tuid.IsValid(tuid.TUID(o.ID)) {
+		problems = append(problems, "ID is missing or invalid")
+	}
+	if o.CreatedAt.IsZero() {
+		problems = append(problems, "CreatedAt is missing")
+	}
+	if o.VersionID == "" || !tuid.IsValid(tuid.TUID(o.VersionID)) {
+		problems = append(problems, "VersionID is missing or invalid")
+	}
+	if o.UpdatedAt.IsZero() {
+		problems = append(problems, "UpdatedAt is missing")
+	}
+	if o.Name == "" {
+		problems = append(problems, "Name is missing")
+	}
+	if o.Status == "" || !o.Status.IsValid() {
+		expected := strings.Join(Statuses, ", ")
+		problems = append(problems, "Status is missing or invalid. Expecting: "+expected)
+	}
+	return problems
+}

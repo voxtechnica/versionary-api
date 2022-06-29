@@ -2,8 +2,8 @@
 
 **Under Construction**
 
-This project demonstrates a way to manage versioned entities in a database with a serverless architecture. It uses the
-Go programming language with the following technologies:
+This project demonstrates a way to manage versioned entities in a database with a serverless architecture. 
+It uses the Go programming language with the following technologies:
 
 * [AWS CloudFormation](https://aws.amazon.com/cloudformation/)
 * [AWS DynamoDB](https://aws.amazon.com/dynamodb/)
@@ -41,6 +41,8 @@ go get github.com/aws/aws-sdk-go-v2/service/dynamodb
 go get github.com/aws/aws-sdk-go-v2/service/dynamodb/types
 go get github.com/awslabs/aws-lambda-go-api-proxy
 go get github.com/gin-gonic/gin
+go get github.com/google/go-cmp/cmp
+go get github.com/spf13/cobra
 go get github.com/voxtechnica/tuid-go
 go get github.com/voxtechnica/user-agent
 go get github.com/voxtechnica/versionary
@@ -50,8 +52,7 @@ go get golang.org/x/exp/slices
 To update all the dependencies to their latest or minor patch releases, run the following command from the project root:
 
 ```bash
-go get -u ./...
-go mod tidy
+make dependencies
 ```
 
 Once you've done this, you can test *all* the dependencies by running the following command from the project root:
@@ -100,7 +101,7 @@ environments. Once you have code ready for release to a particular environment, 
 to deploy the code to that environment:
 
 1. Ensure that you have the desired git branch checked out locally, and that all tests pass.
-2. Run `make build` to build the operations command.
-3. Run `cmd/ops/operations -env <env> -action create-tables` to create any missing DynamoDB tables in the environment.
+2. Run `make build` to build the `./api` and `./ops` commands for local use.
+3. Run `./ops -env <env> -action create-tables` to create any missing DynamoDB tables in the environment.
 4. Run `make deploy env=[qa|staging|prod]` to build release artifacts and deploy the CloudFormation template.
 5. Test the updated code running in the specified environment.

@@ -26,3 +26,16 @@ const ERROR LogLevel = "ERROR"
 
 // FATAL events indicate very severe error events that will presumably lead the application to abort
 const FATAL LogLevel = "FATAL"
+
+// LogLevels is the complete list of valid LogLevels
+var LogLevels = []LogLevel{TRACE, DEBUG, INFO, WARN, ERROR, FATAL}
+
+// IsValid returns true if the supplied LogLevel is recognized
+func (l LogLevel) IsValid() bool {
+	for _, v := range LogLevels {
+		if l == v {
+			return true
+		}
+	}
+	return false
+}

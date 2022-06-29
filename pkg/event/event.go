@@ -3,23 +3,26 @@ package event
 import (
 	"time"
 
+	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
 )
 
 // Event is a model entity useful for understanding user and system activity, and for debugging when things go badly.
 // Events are never updated; they have no versions. We just record what happened. The list of associated entity IDs
-// should be kept short, unless they're truly meaningful (e.g. if someone gets a paginated list, don’t necessarily
-// record every item in the list; maybe just the parent call).
+// should be kept short, unless they're truly helpful. If the Event was triggered by an Error, it can contain the
+// wrapped Error.
 type Event struct {
 	ID         string    `json:"id"`
-	UserID     string    `json:"userId"`
-	EntityID   string    `json:"entityId"`
-	EntityType string    `json:"entityType"`
-	OtherIDs   []string  `json:"otherIds"`
-	LogLevel   LogLevel  `json:"logLevel"`
-	Message    string    `json:"message"`
 	CreatedAt  time.Time `json:"createdAt"`
 	ExpiresAt  time.Time `json:"expiresAt"`
+	UserID     string    `json:"userId,omitempty"`
+	EntityID   string    `json:"entityId,omitempty"`
+	EntityType string    `json:"entityType,omitempty"`
+	OtherIDs   []string  `json:"otherIds,omitempty"`
+	LogLevel   LogLevel  `json:"logLevel"`
+	Message    string    `json:"message"`
+	URI        string    `json:"uri,omitempty"`
+	Err        error     `json:"error,omitempty"`
 }
 
 // CreatedOn returns an ISO-8601 formatted string of the event's creation date.
@@ -47,11 +50,6 @@ func (e Event) IDs() []string {
 	return ids
 }
 
-// Error returns an error representation of the event.
-func (e Event) Error() string {
-	return e.Message
-}
-
 // CompressedJSON returns a compressed JSON representation of the event.
 func (e Event) CompressedJSON() []byte {
 	j, err := v.ToCompressedJSON(e)
@@ -60,4 +58,42 @@ func (e Event) CompressedJSON() []byte {
 		return nil
 	}
 	return j
+}
+
+// Error returns an error representation of the event.
+func (e Event) Error() string {
+	return "Event-" + e.ID + " " + e.Message
+}
+
+// Unwrap returns the Error that triggered the event.
+func (e Event) Unwrap() error {
+	return e.Err
+}
+
+// Validate checks whether the Event has all required fields and whether the supplied values
+// are valid, returning a list of problems. If the list is empty, then the Event is valid.
+func (e Event) Validate() []string {
+	problems := []string{}
+	if e.ID == "" || !tuid.IsValid(tuid.TUID(e.ID)) {
+		problems = append(problems, "ID is missing or invalid")
+	}
+	if e.CreatedAt.IsZero() {
+		problems = append(problems, "CreatedAt is missing")
+	}
+	if e.ExpiresAt.IsZero() {
+		problems = append(problems, "ExpiresAt is missing")
+	}
+	if e.UserID != "" && !tuid.IsValid(tuid.TUID(e.UserID)) {
+		problems = append(problems, "UserID is not a TUID")
+	}
+	if e.EntityID != "" && !tuid.IsValid(tuid.TUID(e.EntityID)) {
+		problems = append(problems, "EntityID is not a TUID")
+	}
+	if !e.LogLevel.IsValid() {
+		problems = append(problems, "LogLevel is missing or invalid")
+	}
+	if e.Message == "" {
+		problems = append(problems, "Message is missing")
+	}
+	return problems
 }

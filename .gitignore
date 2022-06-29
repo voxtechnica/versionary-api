@@ -1,9 +1,10 @@
 # IDE Settings
+.vscode
 .idea
 *.iml
 
 # Build Products
-/cmd/api/api
-/cmd/api/lambda.zip
-/cmd/ops/operations
+/api
+/lambda.zip
+/ops
 packaged-template.yml
