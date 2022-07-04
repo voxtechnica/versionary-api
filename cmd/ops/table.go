@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"versionary-api/pkg/app"
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/user"
 
@@ -13,23 +12,23 @@ import (
 	"github.com/voxtechnica/versionary"
 )
 
+// initTableCmd initializes the "table" command.
 func initTableCmd(root *cobra.Command) {
 	tableCmd := &cobra.Command{
-		Use:   "table [entityType]...",
+		Use:   "table [entityType...]",
 		Short: "Ensure that DynamoDB table(s) exist",
 		Long: `Check each specified DynamoDB table, creating them if they do not exist.
 If no entity types are specified, all tables will be checked.`,
 		RunE: checkTables,
 	}
 	tableCmd.Flags().StringP("env", "e", "", "Operating environment: dev | test | staging | prod")
-	tableCmd.MarkFlagRequired("env")
+	_ = tableCmd.MarkFlagRequired("env")
 	root.AddCommand(tableCmd)
 }
 
 // checkTables checks each table in the specified environment.
 func checkTables(cmd *cobra.Command, args []string) error {
-	var a app.Application
-	err := a.Init(cmd.Flag("env").Value.String())
+	err := ops.Init(cmd.Flag("env").Value.String())
 	if err != nil {
 		return fmt.Errorf("error initializing application: %w", err)
 	}
@@ -42,20 +41,20 @@ func checkTables(cmd *cobra.Command, args []string) error {
 		tables = args
 	} else {
 		// Otherwise, check all tables.
-		tables = a.EntityTypes
+		tables = ops.EntityTypes
 	}
-	fmt.Printf("Checking %d Table(s) in %s: %s\n", len(tables), a.Env, strings.Join(tables, ", "))
+	fmt.Printf("Checking %d Table(s) in %s: %s\n", len(tables), ops.Environment, strings.Join(tables, ", "))
 	for _, entity := range tables {
 		// TODO: add new DynamoDB tables here
 		switch entity {
 		case "Event":
-			checkTable(ctx, event.NewEventTable(a.DBClient, a.Env))
+			checkTable(ctx, event.NewEventTable(ops.DBClient, ops.Environment))
 		case "Organization":
-			checkTable(ctx, user.NewOrganizationTable(a.DBClient, a.Env))
+			checkTable(ctx, user.NewOrganizationTable(ops.DBClient, ops.Environment))
 		case "Token":
-			checkTable(ctx, user.NewTokenTable(a.DBClient, a.Env))
+			checkTable(ctx, user.NewTokenTable(ops.DBClient, ops.Environment))
 		case "User":
-			checkTable(ctx, user.NewUserTable(a.DBClient, a.Env))
+			checkTable(ctx, user.NewUserTable(ops.DBClient, ops.Environment))
 		default:
 			fmt.Println("Skipping unknown entity type:", entity)
 		}

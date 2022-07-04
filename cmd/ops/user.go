@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"versionary-api/pkg/app"
 	"versionary-api/pkg/user"
+
+	"github.com/voxtechnica/tuid-go"
 
 	"github.com/spf13/cobra"
 )
 
+// initUserCmd initializes the user commands.
 func initUserCmd(root *cobra.Command) {
 	userCmd := &cobra.Command{
 		Use:   "user",
@@ -30,10 +32,23 @@ func initUserCmd(root *cobra.Command) {
 	createCmd.Flags().StringP("password", "p", "", "Password")
 	createCmd.Flags().StringP("org", "o", "", "Organization ID")
 	createCmd.Flags().BoolP("admin", "a", false, "Admin Role?")
-	createCmd.MarkFlagRequired("env")
-	createCmd.MarkFlagRequired("email")
-	createCmd.MarkFlagRequired("password")
+	_ = createCmd.MarkFlagRequired("env")
+	_ = createCmd.MarkFlagRequired("email")
+	_ = createCmd.MarkFlagRequired("password")
 	userCmd.AddCommand(createCmd)
+
+	listCmd := &cobra.Command{
+		Use:   "list",
+		Short: "List users",
+		Long:  "List all users.",
+		RunE:  listUsers,
+	}
+	listCmd.Flags().StringP("env", "e", "", "Operating environment: dev | test | staging | prod")
+	listCmd.Flags().BoolP("reverse", "r", false, "Reverse chronological order?")
+	listCmd.Flags().IntP("limit", "n", 100, "Limit: max the number of results")
+	listCmd.Flags().StringP("offset", "i", "", "Offset: last ID received")
+	_ = listCmd.MarkFlagRequired("env")
+	userCmd.AddCommand(listCmd)
 
 	readCmd := &cobra.Command{
 		Use:   "read <userID or email>",
@@ -43,60 +58,36 @@ func initUserCmd(root *cobra.Command) {
 		RunE:  readUser,
 	}
 	readCmd.Flags().StringP("env", "e", "", "Operating environment: dev | test | staging | prod")
-	readCmd.MarkFlagRequired("env")
+	_ = readCmd.MarkFlagRequired("env")
 	userCmd.AddCommand(readCmd)
 }
 
+// createUser creates a new user.
 func createUser(cmd *cobra.Command, args []string) error {
 	// Initialize the application
-	var a app.Application
-	err := a.Init(cmd.Flag("env").Value.String())
+	err := ops.Init(cmd.Flag("env").Value.String())
 	if err != nil {
 		return fmt.Errorf("error initializing application: %w", err)
 	}
 	ctx := context.Background()
 
 	// Parse flags for user information
-	firstname, err := cmd.Flags().GetString("firstname")
-	if err != nil {
-		return err
-	}
-	lastname, err := cmd.Flags().GetString("lastname")
-	if err != nil {
-		return err
-	}
-	email, err := cmd.Flags().GetString("email")
-	if err != nil {
-		return err
-	}
-	password, err := cmd.Flags().GetString("password")
-	if err != nil {
-		return err
-	}
-	orgID, err := cmd.Flags().GetString("org")
-	if err != nil {
-		return err
-	}
-	admin, err := cmd.Flags().GetBool("admin")
-	if err != nil {
-		return err
-	}
 	u := user.User{
-		FirstName: firstname,
-		LastName:  lastname,
-		Email:     email,
-		Password:  password,
-		OrgID:     orgID,
+		FirstName: cmd.Flag("firstname").Value.String(),
+		LastName:  cmd.Flag("lastname").Value.String(),
+		Email:     cmd.Flag("email").Value.String(),
+		Password:  cmd.Flag("password").Value.String(),
+		OrgID:     cmd.Flag("org").Value.String(),
 	}
-	if admin {
+	if admin, _ := cmd.Flags().GetBool("admin"); admin {
 		u.Roles = append(u.Roles, "admin")
 	}
 
 	// Validate the Organization
-	if orgID != "" {
-		org, err := a.OrgService.Read(ctx, orgID)
+	if u.OrgID != "" {
+		org, err := ops.OrgService.Read(ctx, u.OrgID)
 		if err != nil {
-			return err
+			return fmt.Errorf("error reading Organization %s: %w", u.OrgID, err)
 		}
 		if org.Name != "" {
 			u.OrgName = org.Name
@@ -104,23 +95,52 @@ func createUser(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create the User
-	u, err = a.UserService.Create(ctx, u)
+	u, err = ops.UserService.Create(ctx, u)
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating User %s: %w", u.Email, err)
 	}
 	fmt.Printf("Created User %s %s\n", u.ID, u.Email)
 	j, err := json.MarshalIndent(u, "", "  ")
 	if err != nil {
-		return err
+		return fmt.Errorf("error marshalling JSON User %s: %w", u.ID, err)
 	}
 	fmt.Println(string(j))
 	return nil
 }
 
+// listUsers lists a batch of users.
+func listUsers(cmd *cobra.Command, args []string) error {
+	// Initialize the application
+	err := ops.Init(cmd.Flag("env").Value.String())
+	if err != nil {
+		return fmt.Errorf("error initializing application: %w", err)
+	}
+	ctx := context.Background()
+
+	// Read a batch of User account(s)
+	reverse, _ := cmd.Flags().GetBool("reverse")
+	limit, _ := cmd.Flags().GetInt("limit")
+	offset, _ := cmd.Flags().GetString("offset")
+	if offset == "" {
+		if reverse {
+			offset = tuid.MaxID
+		} else {
+			offset = tuid.MinID
+		}
+	}
+	users := ops.UserService.ReadUsers(ctx, reverse, limit, offset)
+	j, err := json.MarshalIndent(users, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshalling JSON users: %w", err)
+	}
+	fmt.Println(string(j))
+	return nil
+}
+
+// readUser reads the specified user(s).
 func readUser(cmd *cobra.Command, args []string) error {
 	// Initialize the application
-	var a app.Application
-	err := a.Init(cmd.Flag("env").Value.String())
+	err := ops.Init(cmd.Flag("env").Value.String())
 	if err != nil {
 		return fmt.Errorf("error initializing application: %w", err)
 	}
@@ -128,13 +148,13 @@ func readUser(cmd *cobra.Command, args []string) error {
 
 	// Read the specified User account(s)
 	for _, arg := range args {
-		u, err := a.UserService.Read(ctx, arg)
+		u, err := ops.UserService.Read(ctx, arg)
 		if err != nil {
-			return err
+			return fmt.Errorf("error reading User %s: %w", arg, err)
 		}
 		j, err := json.MarshalIndent(u, "", "  ")
 		if err != nil {
-			return err
+			return fmt.Errorf("error marshalling JSON User %s: %w", arg, err)
 		}
 		fmt.Println(string(j))
 	}

@@ -2,119 +2,165 @@ package main
 
 import (
 	"context"
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/awslabs/aws-lambda-go-api-proxy/gin"
-	"github.com/gin-gonic/gin"
-	"github.com/voxtechnica/tuid-go"
-	user_agent "github.com/voxtechnica/user-agent"
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
+	"strings"
 	"time"
-	"versionary-api/pkg/event"
+	"versionary-api/pkg/app"
+	"versionary-api/pkg/user"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
+	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
+	"github.com/gin-gonic/gin"
 )
 
+// gitHash provides the git hash of the compiled application.
+// It is embedded in the binary and is automatically updated by the build process.
+// go build -ldflags "-X main.gitHash=`git rev-parse HEAD`"
+var gitHash string
+
+// gitOrigin provides the git origin of the compiled application.
+// It is embedded in the binary and is automatically updated by the build process.
+// go build -ldflags "-X main.gitOrigin=`git config --get remote.origin.url`"
+var gitOrigin string
+
+// api is the application object, containing global configuration settings and initialized services.
+var api = app.Application{
+	Name:        "Versionary API",
+	Description: "Versionary API demonstrates a way to manage versioned entities in a database with a serverless architecture.",
+	GitHash:     gitHash,
+}
+
+// main is the entry point for the application.
 func main() {
 	startTime := time.Now()
-	// Identify operating environment (dev, test, staging, prod)
+
+	// Flag: application version
+	var version bool
+	flag.BoolVar(&version, "version", false, "Print version and exit")
+
+	// Flag: environment stage (default is either the STAGE_NAME environment variable or "dev")
 	env := os.Getenv("STAGE_NAME")
 	if env == "" {
 		env = "dev"
 	}
-	println("STAGE_NAME: " + env)
+	flag.StringVar(&env, "env", env, "Operating Environment <dev | qa | staging | prod>")
 
-	// Initialize required services:
-	ctx := context.Background()
-	awsCfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		log.Fatal("Failed to load AWS config: " + err.Error())
-	}
-	db := dynamodb.NewFromConfig(awsCfg)
-	eventTable := event.NewEventTable(db, env)
-	eventService := event.EventService{
-		EntityType: "Event",
-		Table:      eventTable,
-	}
-	log.Println("Initialized", eventService.EntityType, "service")
+	// Initialize the application, including required services:
+	flag.Parse()
+	api.Init(env)
 
-	// Setup Gin Routes
-	g := gin.Default()
+	// Show application version
+	if version {
+		fmt.Println(api.About())
+		os.Exit(0)
+	}
+
+	// Setup the Gin Router
+	r := gin.New()
+	r.Use(gin.Recovery())
 	if env == "dev" {
-		g.Use(gin.Logger())
-		g.Use(gin.Recovery())
+		gin.SetMode(gin.DebugMode)
+		r.Use(gin.Logger())
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 		gin.DisableConsoleColor()
 	}
-	g.GET("/", GetAbout)
-	g.GET("/user_agent", GetUserAgent)
-	g.POST("/v1/tuids", PostTUID)
-	g.GET("/v1/tuids", GetTUIDs)
-	g.GET("/v1/tuids/:id", GetTUID)
-	g.NoRoute(func(c *gin.Context) { c.JSON(404, gin.H{"message": "not found"}) })
+
+	// Add the API endpoints
+	initRoutes(r)
 
 	// Identify operating environment (AWS or on localhost)
 	_, ok := os.LookupEnv("LAMBDA_TASK_ROOT")
 	if ok {
 		// Run API as an AWS Lambda function with an API Gateway proxy
-		ginLambda := ginadapter.NewV2(g)
+		r.TrustedPlatform = "X-Forwarded-For"
+		ginLambda := ginadapter.NewV2(r)
 		lambda.Start(func(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
 			return ginLambda.ProxyWithContext(ctx, req)
 		})
 	} else {
 		// Run API on localhost for local development, debugging, etc.
-		log.Println("Initialized API in ", time.Since(startTime))
-		log.Fatal(g.Run(":8080"))
+		r.SetTrustedProxies(nil)
+		log.Println("Environment Stage:", env)
+		log.Println("Initialized in ", time.Since(startTime))
+		log.Fatal(r.Run(":8080"))
 	}
 }
 
-func GetAbout(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "Versionary API"})
+// initRoutes initializes all of the API endpoints.
+func initRoutes(r *gin.Engine) {
+	r.Use(bearerTokenHandler())
+	initTuidRoutes(r)
+	initDiagRoutes(r)
+	r.NoRoute(notFound)
 }
 
-func GetUserAgent(c *gin.Context) {
-	header := c.Request.Header.Get("User-Agent")
-	ua := user_agent.Parse(header)
-	c.JSON(http.StatusOK, ua)
+// notFound handles a request for a non-existent API endpoint.
+func notFound(c *gin.Context) {
+	c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 }
 
-func GetTUIDs(c *gin.Context) {
-	limit := c.DefaultQuery("limit", "5")
-	intLimit, err := strconv.Atoi(limit)
-	if err != nil {
-		intLimit = 5
+// bearerTokenHandler is a middleware function that reads a Bearer token, adding both the Token
+// and the associated User to the request. If an error occurs, nothing is added to the request
+// and processing continues. Authorization, if required, should be handled by a subsequent handler.
+func bearerTokenHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		h := c.GetHeader("Authorization")
+		if h != "" {
+			b, a, f := strings.Cut(strings.TrimSpace(h), " ")
+			if f && strings.ToLower(b) == "bearer" && len(a) > 0 {
+				t, u, err := api.TokenUser(c, a)
+				if err == nil {
+					c.Set("token", t)
+					c.Set("user", u)
+				}
+			}
+		}
+		c.Next()
 	}
-	ids := make([]tuid.TUIDInfo, intLimit)
-	for i := 0; i < intLimit; i++ {
-		ids[i], err = tuid.NewID().Info()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, err)
+}
+
+// roleAuthorizer is a middleware function that checks the request for a user with the specified role.
+// If the user is not present (no valid bearer token), the request is aborted with a 401 Unauthorized status.
+// If the user does not have the specified role, the request is aborted with a 403 Forbidden status.
+// If the user is an administrator or has the specified role, then processing continues.
+func roleAuthorizer(r string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		u, ok := c.Get("user")
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"code":  http.StatusUnauthorized,
+				"error": "unauthenticated",
+			})
 			return
 		}
+		if u.(user.User).HasRole("admin") || u.(user.User).HasRole(r) {
+			c.Next()
+		} else {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"code":  http.StatusForbidden,
+				"error": "unauthorized",
+			})
+		}
 	}
-	c.JSON(http.StatusOK, ids)
 }
 
-func GetTUID(c *gin.Context) {
-	id := tuid.TUID(c.Param("id"))
-	info, err := id.Info()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, err)
-		return
+// gitCommitURL returns the URL for the commit of the compiled application.
+// Example: git@github.com:voxtechnica/versionary-api.git is converted to something like:
+// https://github.com/voxtechnica/versionary-api/commit/23ff1ad8e3c6beb5332ed320f6605132a993e13b
+// Note: if you use a service other than GitHub, you may need to modify this function.
+func gitCommitURL() string {
+	if gitOrigin == "" || gitHash == "" {
+		return ""
 	}
-	c.JSON(http.StatusOK, info)
-}
-
-func PostTUID(c *gin.Context) {
-	t := tuid.NewID()
-	info, err := t.Info()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, err)
-		return
-	}
-	c.JSON(http.StatusOK, info)
+	baseURL := strings.TrimSuffix(gitOrigin, ".git")
+	baseURL = strings.ReplaceAll(baseURL, ":", "/")
+	baseURL = strings.ReplaceAll(baseURL, "///", "//")
+	baseURL = strings.Replace(baseURL, "git@", "https://", 1)
+	return baseURL + "/commit/" + gitHash
 }
