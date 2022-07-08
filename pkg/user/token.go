@@ -17,6 +17,11 @@ type Token struct {
 	Email     string    `json:"email,omitempty"`
 }
 
+// Type returns the entity type of the Token.
+func (t Token) Type() string {
+	return "Token"
+}
+
 // CompressedJSON returns a compressed JSON representation of the Token.
 func (t Token) CompressedJSON() []byte {
 	j, err := v.ToCompressedJSON(t)

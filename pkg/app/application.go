@@ -105,12 +105,12 @@ func (a *Application) Init(env string) error {
 
 	// Initialize AWS Clients
 	ctx := context.Background()
-	aws, err := config.LoadDefaultConfig(ctx)
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("error loading AWS config: %w", err)
 	}
-	a.AWSConfig = aws
-	a.DBClient = dynamodb.NewFromConfig(aws)
+	a.AWSConfig = cfg
+	a.DBClient = dynamodb.NewFromConfig(cfg)
 	if err != nil {
 		return fmt.Errorf("error creating DynamoDB client: %w", err)
 	}
@@ -183,6 +183,10 @@ func (a *Application) TokenUser(ctx context.Context, tokenID string) (user.Token
 	u, err := a.UserService.Read(ctx, t.UserID)
 	if err != nil {
 		return t, user.User{}, fmt.Errorf("error reading user %s from token: %w", t.UserID, err)
+	}
+	// Check that the user is active (not disabled)
+	if u.Status == user.DISABLED {
+		return t, u, fmt.Errorf("user %s status is %s", u.ID, u.Status)
 	}
 	return t, u, nil
 }

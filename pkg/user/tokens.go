@@ -71,8 +71,8 @@ func (s TokenService) Create(ctx context.Context, t Token) (Token, error) {
 	t.ID = id.String()
 	t.CreatedAt = at
 	t.ExpiresAt = at.AddDate(0, 0, 30)
-	if v := t.Validate(); len(v) > 0 {
-		return t, fmt.Errorf("error creating %s %s: invalid field(s): %s", s.EntityType, t.ID, strings.Join(v, ", "))
+	if problems := t.Validate(); len(problems) > 0 {
+		return t, fmt.Errorf("error creating %s %s: invalid field(s): %s", s.EntityType, t.ID, strings.Join(problems, ", "))
 	}
 	err := s.Table.WriteEntity(ctx, t)
 	if err != nil {

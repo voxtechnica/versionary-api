@@ -52,7 +52,10 @@ func main() {
 
 	// Initialize the application, including required services:
 	flag.Parse()
-	api.Init(env)
+	err := api.Init(env)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Show application version
 	if version {
@@ -85,7 +88,7 @@ func main() {
 		})
 	} else {
 		// Run API on localhost for local development, debugging, etc.
-		r.SetTrustedProxies(nil)
+		_ = r.SetTrustedProxies(nil) // disable IP allow list
 		log.Println("Environment Stage:", env)
 		log.Println("Initialized in ", time.Since(startTime))
 		log.Fatal(r.Run(":8080"))
@@ -95,6 +98,7 @@ func main() {
 // initRoutes initializes all of the API endpoints.
 func initRoutes(r *gin.Engine) {
 	r.Use(bearerTokenHandler())
+	initTokenRoutes(r)
 	initTuidRoutes(r)
 	initDiagRoutes(r)
 	r.NoRoute(notFound)
@@ -117,7 +121,7 @@ func bearerTokenHandler() gin.HandlerFunc {
 				t, u, err := api.TokenUser(c, a)
 				if err == nil {
 					c.Set("token", t)
-					c.Set("user", u)
+					c.Set("user", u.Scrub())
 				}
 			}
 		}
@@ -139,7 +143,7 @@ func roleAuthorizer(r string) gin.HandlerFunc {
 			})
 			return
 		}
-		if u.(user.User).HasRole("admin") || u.(user.User).HasRole(r) {
+		if u.(user.User).HasRole(r) {
 			c.Next()
 		} else {
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
@@ -148,6 +152,46 @@ func roleAuthorizer(r string) gin.HandlerFunc {
 			})
 		}
 	}
+}
+
+// isAnonymous returns true if the context does not have a logged-in user.
+func isAnonymous(c *gin.Context) bool {
+	_, ok := c.Get("user")
+	return !ok
+}
+
+// contextToken returns the typed Token associated with the request.
+func contextToken(c *gin.Context) (user.Token, bool) {
+	t, ok := c.Get("token")
+	if !ok {
+		return user.Token{}, false
+	}
+	return t.(user.Token), true
+}
+
+// contextUser returns the typed User associated with the request.
+func contextUser(c *gin.Context) (user.User, bool) {
+	u, ok := c.Get("user")
+	if !ok {
+		return user.User{}, false
+	}
+	return u.(user.User), true
+}
+
+// contextUserID returns the UserID associated with the request.
+// An empty string indicates that the request is anonymous.
+func contextUserID(c *gin.Context) string {
+	u, ok := c.Get("user")
+	if !ok {
+		return ""
+	}
+	return u.(user.User).ID
+}
+
+// contextUserHasRole returns true if the context user exists and has the specified role.
+func contextUserHasRole(c *gin.Context, r string) bool {
+	u, ok := c.Get("user")
+	return ok && u.(user.User).HasRole(r)
 }
 
 // gitCommitURL returns the URL for the commit of the compiled application.

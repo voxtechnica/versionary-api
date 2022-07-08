@@ -124,8 +124,8 @@ func (s UserService) Create(ctx context.Context, u User) (User, error) {
 	if u.Status == "" {
 		u.Status = PENDING
 	}
-	if v := u.Validate(); len(v) > 0 {
-		return u, fmt.Errorf("error creating %s %s: invalid field(s): %s", s.EntityType, u.ID, strings.Join(v, ", "))
+	if problems := u.Validate(); len(problems) > 0 {
+		return u, fmt.Errorf("error creating %s %s: invalid field(s): %s", s.EntityType, u.ID, strings.Join(problems, ", "))
 	}
 	// Check for duplicate email address
 	duplicates, err := s.duplicateEmail(ctx, u.Email, u.ID)
@@ -155,8 +155,8 @@ func (s UserService) Update(ctx context.Context, u User) (User, error) {
 	at, _ := t.Time()
 	u.VersionID = t.String()
 	u.UpdatedAt = at
-	if v := u.Validate(); len(v) > 0 {
-		return u, fmt.Errorf("error updating %s %s: invalid field(s): %s", s.EntityType, u.ID, strings.Join(v, ", "))
+	if problems := u.Validate(); len(problems) > 0 {
+		return u, fmt.Errorf("error updating %s %s: invalid field(s): %s", s.EntityType, u.ID, strings.Join(problems, ", "))
 	}
 	// Check for duplicate email address
 	duplicates, err := s.duplicateEmail(ctx, u.Email, u.ID)

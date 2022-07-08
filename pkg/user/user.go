@@ -30,6 +30,11 @@ type User struct {
 	Status        Status    `json:"status"`
 }
 
+// Type returns the entity type of the User.
+func (u User) Type() string {
+	return "User"
+}
+
 // CompressedJSON returns a compressed JSON representation of the User.
 func (u User) CompressedJSON() []byte {
 	j, err := v.ToCompressedJSON(u)
@@ -40,9 +45,10 @@ func (u User) CompressedJSON() []byte {
 }
 
 // HasRole returns true if the user has the specified role.
+// Administrators are like janitors... they have all the keys.
 func (u User) HasRole(role string) bool {
 	for _, r := range u.Roles {
-		if r == role {
+		if r == role || r == "admin" {
 			return true
 		}
 	}

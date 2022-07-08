@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -23,7 +24,10 @@ func createTUID(c *gin.Context) {
 	t := tuid.NewID()
 	info, err := t.Info()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":  http.StatusInternalServerError,
+			"error": fmt.Errorf("create TUID error: %w", err).Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, info)
@@ -40,7 +44,10 @@ func readTUIDs(c *gin.Context) {
 	for i := 0; i < intLimit; i++ {
 		ids[i], err = tuid.NewID().Info()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":  http.StatusInternalServerError,
+				"error": fmt.Errorf("read TUIDs error: %w", err).Error(),
+			})
 			return
 		}
 	}
@@ -53,7 +60,10 @@ func readTUID(c *gin.Context) {
 	id := tuid.TUID(c.Param("id"))
 	info, err := id.Info()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":  http.StatusBadRequest,
+			"error": fmt.Errorf("read TUID %s error: %w", id, err).Error(),
+		})
 		return
 	}
 	c.JSON(http.StatusOK, info)

@@ -32,7 +32,7 @@ build:
 # Build and package the API Lambda function for release
 release:
 	@echo "Building API Lambda function for release:"
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.gitHash=`git rev-parse HEAD`" -o ./api ./cmd/api/*.go
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.gitHash=`git rev-parse HEAD` -X main.gitOrigin=`git config --get remote.origin.url`" -o ./api ./cmd/api/*.go
 	zip ./lambda.zip ./api
 .PHONY:release
 

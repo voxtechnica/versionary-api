@@ -25,6 +25,11 @@ type Event struct {
 	Err        error     `json:"error,omitempty"`
 }
 
+// Type returns the entity type of the Event.
+func (e Event) Type() string {
+	return "Event"
+}
+
 // CreatedOn returns an ISO-8601 formatted string of the event's creation date.
 func (e Event) CreatedOn() string {
 	if e.CreatedAt.IsZero() {

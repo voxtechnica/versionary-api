@@ -28,6 +28,7 @@ func commit(c *gin.Context) {
 	url := gitCommitURL()
 	if url == "" {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"code":  http.StatusServiceUnavailable,
 			"error": "unvailable (missing git hash or origin)",
 		})
 		return
@@ -62,6 +63,7 @@ func echoRequest(c *gin.Context) {
 		n, err := buf.ReadFrom(c.Request.Body)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
+				"code":  http.StatusInternalServerError,
 				"error": fmt.Errorf("failed to read request body: %w", err),
 			})
 			return

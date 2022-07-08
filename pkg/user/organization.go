@@ -17,6 +17,11 @@ type Organization struct {
 	Status    Status    `json:"status"`
 }
 
+// Type returns the entity type of the Organization.
+func (o Organization) Type() string {
+	return "Organization"
+}
+
 // CompressedJSON returns a compressed JSON representation of the Organization.
 func (o Organization) CompressedJSON() []byte {
 	j, err := v.ToCompressedJSON(o)

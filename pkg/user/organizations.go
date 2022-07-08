@@ -63,7 +63,7 @@ type OrganizationService struct {
 //==============================================================================
 
 // Create an Organization in the Organization table.
-func (s OrganizationService) Create(ctx context.Context, o Organization) (Organization, error) {
+func (s OrganizationService) Create(ctx context.Context, o Organization) (Organization, []string, error) {
 	t := tuid.NewID()
 	at, _ := t.Time()
 	o.ID = t.String()
@@ -73,26 +73,28 @@ func (s OrganizationService) Create(ctx context.Context, o Organization) (Organi
 	if o.Status == "" {
 		o.Status = PENDING
 	}
-	if v := o.Validate(); len(v) > 0 {
-		return o, fmt.Errorf("error creating %s %s: invalid field(s): %s", s.EntityType, o.ID, strings.Join(v, ", "))
+	problems := o.Validate()
+	if len(problems) > 0 {
+		return o, problems, fmt.Errorf("error creating %s %s: invalid field(s): %s", s.EntityType, o.ID, strings.Join(problems, ", "))
 	}
 	err := s.Table.WriteEntity(ctx, o)
 	if err != nil {
-		return o, fmt.Errorf("error creating %s %s %s: %w", s.EntityType, o.ID, o.Name, err)
+		return o, problems, fmt.Errorf("error creating %s %s %s: %w", s.EntityType, o.ID, o.Name, err)
 	}
-	return o, nil
+	return o, problems, nil
 }
 
 // Update an Organization in the Organization table. If a previous version does not exist, the Organization is created.
-func (s OrganizationService) Update(ctx context.Context, o Organization) (Organization, error) {
+func (s OrganizationService) Update(ctx context.Context, o Organization) (Organization, []string, error) {
 	t := tuid.NewID()
 	at, _ := t.Time()
 	o.VersionID = t.String()
 	o.UpdatedAt = at
-	if v := o.Validate(); len(v) > 0 {
-		return o, fmt.Errorf("error updating %s %s: invalid field(s): %s", s.EntityType, o.ID, strings.Join(v, ", "))
+	problems := o.Validate()
+	if len(problems) > 0 {
+		return o, problems, fmt.Errorf("error updating %s %s: invalid field(s): %s", s.EntityType, o.ID, strings.Join(problems, ", "))
 	}
-	return o, s.Table.UpdateEntity(ctx, o)
+	return o, problems, s.Table.UpdateEntity(ctx, o)
 }
 
 // Write an Organization to the Organization table. This method assumes that the Organization has all the required fields.
