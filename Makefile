@@ -21,8 +21,15 @@ dependencies:
 	go mod tidy
 .PHONY:dependencies
 
+# Swaggo gin-swagger API Documentation
+# go install github.com/swaggo/swag/cmd/swag@latest
+docs:
+	@echo "Generating API documentation:"
+	swag init -g api.go -d cmd/api/ -o cmd/api/docs -pd
+.PHONY:docs
+
 # Build the command-line applications
-build:
+build: docs
 	@echo "Building API Lambda function for local use:"
 	go build -ldflags "-X main.gitHash=`git rev-parse HEAD` -X main.gitOrigin=`git config --get remote.origin.url`" -o ./api ./cmd/api/*.go
 	@echo "Building Operations Command for local use:"
@@ -30,7 +37,7 @@ build:
 .PHONY:build
 
 # Build and package the API Lambda function for release
-release:
+release: docs
 	@echo "Building API Lambda function for release:"
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.gitHash=`git rev-parse HEAD` -X main.gitOrigin=`git config --get remote.origin.url`" -o ./api ./cmd/api/*.go
 	zip ./lambda.zip ./api

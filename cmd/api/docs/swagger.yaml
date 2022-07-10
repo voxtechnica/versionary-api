@@ -1,0 +1,226 @@
+basePath: /
+definitions:
+  app.About:
+    properties:
+      buildTime:
+        type: string
+      description:
+        type: string
+      environment:
+        type: string
+      gitHash:
+        type: string
+      language:
+        type: string
+      name:
+        type: string
+    type: object
+  gin.H:
+    additionalProperties:
+      type: any
+    type: object
+  http.Header:
+    additionalProperties:
+      items:
+        type: string
+      type: array
+    type: object
+  main.request:
+    properties:
+      body:
+        type: string
+      contentLength:
+        type: integer
+      header:
+        $ref: '#/definitions/http.Header'
+      host:
+        type: string
+      method:
+        type: string
+      proto:
+        type: string
+      remoteAddr:
+        type: string
+      requestURI:
+        type: string
+      token:
+        $ref: '#/definitions/user.Token'
+      trailer:
+        $ref: '#/definitions/http.Header'
+      transferEncoding:
+        items:
+          type: string
+        type: array
+      url:
+        type: string
+      user:
+        $ref: '#/definitions/user.User'
+    type: object
+  user.Token:
+    properties:
+      createdAt:
+        type: string
+      email:
+        type: string
+      expiresAt:
+        type: string
+      id:
+        type: string
+      userId:
+        type: string
+    type: object
+  user.User:
+    properties:
+      createdAt:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      id:
+        type: string
+      lastName:
+        type: string
+      orgID:
+        type: string
+      orgName:
+        type: string
+      password:
+        type: string
+      passwordHash:
+        type: string
+      passwordReset:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+      status:
+        type: string
+      updatedAt:
+        type: string
+      versionID:
+        type: string
+    type: object
+  user_agent.UserAgent:
+    properties:
+      clientName:
+        description: ClientName indicates the application name (Chrome, Googlebot,
+          Edge, etc.)
+        type: string
+      clientType:
+        description: ClientType indicates the application category (App, Bot, Browser,
+          or Other)
+        type: string
+      clientVersion:
+        description: ClientVersion indicates the extractVersion of the application,
+          if provided
+        type: string
+      deviceType:
+        description: DeviceType indicates the general device category (Desktop, Mobile,
+          Tablet, Other)
+        type: string
+      fields:
+        description: Fields contains parsed/cleaned segments of the User-Agent request
+          header, used for analysis
+        items:
+          type: string
+        type: array
+      header:
+        description: Header is the provided User-Agent request header
+        type: string
+      osName:
+        description: OSName indicates the operating system running on the device (Android,
+          Linux, iOS, macOS, Windows, etc.)
+        type: string
+      osVersion:
+        description: OSVersion indicates the operating system version, if available
+        type: string
+      url:
+        description: URL indicates the URL provided, typically for information about
+          a bot/crawler.
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Versionary API demonstrates a way to manage versioned entities in a
+    database with a serverless architecture.
+  license:
+    name: MIT
+    url: https://github.com/voxtechnica/versionary-api/blob/main/LICENSE
+  title: Versionary API
+  version: "1.0"
+paths:
+  /about:
+    get:
+      consumes:
+      - application/json
+      description: Basic information about the API, including the operating environment
+        and the current git commit.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/app.About'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: Basic information about the API
+  /commit:
+    get:
+      consumes:
+      - application/json
+      description: Redirects to the current git commit on GitHub.
+      produces:
+      - application/json
+      responses:
+        "307":
+          description: Temporary Redirect
+          schema:
+            type: string
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: Redirect to the current git commit on GitHub
+  /echo:
+    get:
+      consumes:
+      - application/json
+      description: Echo the request back to the client, including a recognized Token
+        and associated User.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.request'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: Echo the request back to the client
+  /user_agent:
+    get:
+      consumes:
+      - application/json
+      description: Echo a parsed User-Agent header.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/user_agent.UserAgent'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: Echo a parsed User-Agent header
+schemes:
+- https
+swagger: "2.0"

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -17,12 +18,12 @@ import (
 
 // About provides basic information about the API.
 type About struct {
-	Name        string `json:"name"`
-	GitHash     string `json:"gitHash,omitempty"`
-	BuildTime   string `json:"buildTime"`
-	Language    string `json:"language"`
-	Environment string `json:"environment"`
-	Description string `json:"description,omitempty"`
+	Name        string    `json:"name"`
+	GitHash     string    `json:"gitHash,omitempty"`
+	BuildTime   time.Time `json:"buildTime"`
+	Language    string    `json:"language"`
+	Environment string    `json:"environment"`
+	Description string    `json:"description,omitempty"`
 }
 
 // String supports the Stringer interface.
@@ -35,7 +36,7 @@ func (a About) String() string {
 type Application struct {
 	Name         string           // Name of the application
 	GitHash      string           // Git hash of the application
-	BuildTime    string           // Executable build time
+	BuildTime    time.Time        // Executable build time
 	Language     string           // Go Compiler version (e.g. "go1.x")
 	Environment  string           // Environment name (e.g. "dev", "test", "staging", "prod")
 	Description  string           // Description of the application
@@ -65,17 +66,13 @@ func (a *Application) setDefaults() {
 	if a.Name == "" {
 		a.Name = "Versionary API"
 	}
-	if a.BuildTime == "" {
+	if a.BuildTime.IsZero() {
 		p, err := os.Executable()
 		if err == nil {
 			s, err := os.Stat(p)
 			if err == nil {
-				a.BuildTime = s.ModTime().String()
-			} else {
-				a.BuildTime = err.Error()
+				a.BuildTime = s.ModTime()
 			}
-		} else {
-			a.BuildTime = err.Error()
 		}
 	}
 	if a.Language == "" {

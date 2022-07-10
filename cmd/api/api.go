@@ -4,11 +4,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+	"versionary-api/cmd/api/docs"
 	"versionary-api/pkg/app"
 	"versionary-api/pkg/user"
 
@@ -35,7 +38,14 @@ var api = app.Application{
 	GitHash:     gitHash,
 }
 
-// main is the entry point for the application.
+// main godoc
+// @title Versionary API
+// @version 1.0
+// @description Versionary API demonstrates a way to manage versioned entities in a database with a serverless architecture.
+// @license.name MIT
+// @license.url https://github.com/voxtechnica/versionary-api/blob/main/LICENSE
+// @BasePath /
+// @schemes https
 func main() {
 	startTime := time.Now()
 
@@ -95,13 +105,23 @@ func main() {
 	}
 }
 
-// initRoutes initializes all of the API endpoints.
+// initRoutes initializes all the API endpoints.
 func initRoutes(r *gin.Engine) {
 	r.Use(bearerTokenHandler())
 	initTokenRoutes(r)
 	initTuidRoutes(r)
+	initSwagger(r)
 	initDiagRoutes(r)
 	r.NoRoute(notFound)
+}
+
+// initSwagger initializes the Swagger API documentation.
+func initSwagger(r *gin.Engine) {
+	docs.SwaggerInfo.BasePath = "/"
+	r.GET("/docs", func(c *gin.Context) {
+		c.Redirect(http.StatusFound, "/swagger/index.html")
+	})
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
 
 // notFound handles a request for a non-existent API endpoint.

@@ -18,12 +18,26 @@ func initDiagRoutes(r *gin.Engine) {
 	r.GET("/", about)
 }
 
-// about handles a request for basic information about the API.
+// about godoc
+// @Summary Basic information about the API
+// @Description Basic information about the API, including the operating environment and the current git commit.
+// @Accept json
+// @Produce json
+// @Success 200 {object} app.About
+// @Failure 500 {object} gin.H
+// @Router /about [get]
 func about(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, api.About())
 }
 
-// commit redirects to the current git commit on GitHub.
+// commit godoc
+// @Summary Redirect to the current git commit on GitHub
+// @Description Redirects to the current git commit on GitHub.
+// @Accept json
+// @Produce json
+// @Success 307 {string} string
+// @Failure 503 {object} gin.H
+// @Router /commit [get]
 func commit(c *gin.Context) {
 	url := gitCommitURL()
 	if url == "" {
@@ -36,14 +50,28 @@ func commit(c *gin.Context) {
 	c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
-// userAgent echos a parsed User-Agent header.
+// userAgent godoc
+// @Summary Echo a parsed User-Agent header
+// @Description Echo a parsed User-Agent header.
+// @Accept json
+// @Produce json
+// @Success 200 {object} user_agent.UserAgent
+// @Failure 500 {object} gin.H
+// @Router /user_agent [get]
 func userAgent(c *gin.Context) {
 	header := c.Request.Header.Get("User-Agent")
 	ua := user_agent.Parse(header)
 	c.IndentedJSON(http.StatusOK, ua)
 }
 
-// echoRequest echoes the request back to the client.
+// echoRequest godoc
+// @Summary Echo the request back to the client
+// @Description Echo the request back to the client, including a recognized Token and associated User.
+// @Accept json
+// @Produce json
+// @Success 200 {object} request
+// @Failure 500 {object} gin.H
+// @Router /echo [get]
 func echoRequest(c *gin.Context) {
 	r := request{
 		Method:           c.Request.Method,
