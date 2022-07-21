@@ -25,7 +25,7 @@ dependencies:
 # go install github.com/swaggo/swag/cmd/swag@latest
 docs:
 	@echo "Generating API documentation:"
-	swag init -g api.go -d cmd/api/ -o cmd/api/docs -pd
+	swag init -g api.go -d cmd/api/ -o cmd/api/docs -ot go,json -pd
 .PHONY:docs
 
 # Build the command-line applications

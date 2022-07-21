@@ -1,16 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 	"github.com/voxtechnica/tuid-go"
+	"net/http"
+	"strconv"
+	"time"
 )
 
-// initTuidRoutes initializes the TUID routes.
-func initTuidRoutes(r *gin.Engine) {
+// registerTuidRoutes initializes the TUID routes.
+func registerTuidRoutes(r *gin.Engine) {
 	tuids := r.Group("/v1/tuids")
 	{
 		tuids.POST("", createTUID)
@@ -19,50 +18,85 @@ func initTuidRoutes(r *gin.Engine) {
 	}
 }
 
-// createTUID creates a new TUID.
+// createTUID generates a new TUID based on the current system time.
+//
+// @Summary Generate a new TUID
+// @Description Generate a new TUID based on current system time and return the TUIDInfo.
+// @Tags TUID
+// @Produce json
+// @Success 201 {object} tuid.TUIDInfo "TUIDInfo for the generated TUID"
+// @Header 201 {string} Location "URL of the newly created TUID"
+// @Router /v1/tuids [post]
 func createTUID(c *gin.Context) {
 	t := tuid.NewID()
-	info, err := t.Info()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":  http.StatusInternalServerError,
-			"error": fmt.Errorf("create TUID error: %w", err).Error(),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, info)
+	info, _ := t.Info() // generated IDs do not have parse errors
+	c.Header("Location", c.Request.URL.String()+"/"+t.String())
+	c.JSON(http.StatusCreated, info)
 }
 
-// readTUIDs reads/creates the specified number of TUIDs.
+// readTUIDs generates the specified number of TUIDs, based on the current system time.
+//
+// @Summary Generate the specified number of TUIDs
+// @Description Generate the specified number of TUIDs, based on the current system time.
+// @Tags TUID
+// @Produce json
+// @Param limit query int false "Number of TUIDs (default: 5)"
+// @Success 200 {array} tuid.TUIDInfo "TUIDInfo for the generated TUIDs"
+// @Failure 400 {object} APIEvent "Invalid limit"
+// @Router /v1/tuids [get]
 func readTUIDs(c *gin.Context) {
 	limit := c.DefaultQuery("limit", "5")
 	intLimit, err := strconv.Atoi(limit)
-	if err != nil {
-		intLimit = 5
+	if err != nil || intLimit < 1 {
+		c.JSON(http.StatusBadRequest, APIEvent{
+			CreatedAt: time.Now(),
+			LogLevel:  "ERROR",
+			Code:      http.StatusBadRequest,
+			Message:   "invalid limit",
+			URI:       c.Request.URL.String(),
+		})
+		return
 	}
 	ids := make([]tuid.TUIDInfo, intLimit)
 	for i := 0; i < intLimit; i++ {
-		ids[i], err = tuid.NewID().Info()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"code":  http.StatusInternalServerError,
-				"error": fmt.Errorf("read TUIDs error: %w", err).Error(),
-			})
-			return
-		}
+		ids[i], _ = tuid.NewID().Info()
 	}
 	c.JSON(http.StatusOK, ids)
 }
 
 // readTUID reads TUIDInfo for the specified TUID.
 // It can be useful for extracting the timestamp from an ID.
+//
+// @Summary Read TUIDInfo for the provided TUID
+// @Description Parse the provided TUID, returning the TUIDInfo. This can be useful for extracting the timestamp from an ID.
+// @Tags TUID
+// @Produce json
+// @Param id path string true "TUID to parse (e.g. 9GEG9f25zjGI3ath)"
+// @Success 200 {object} tuid.TUIDInfo "TUIDInfo for the provided TUID"
+// @Failure 400 {object} APIEvent "Invalid TUID"
+// @Router /v1/tuids/{id} [get]
 func readTUID(c *gin.Context) {
 	id := tuid.TUID(c.Param("id"))
 	info, err := id.Info()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"code":  http.StatusBadRequest,
-			"error": fmt.Errorf("read TUID %s error: %w", id, err).Error(),
+		// Parse error
+		c.JSON(http.StatusBadRequest, APIEvent{
+			CreatedAt: time.Now(),
+			LogLevel:  "ERROR",
+			Code:      http.StatusBadRequest,
+			Message:   err.Error(),
+			URI:       c.Request.URL.String(),
+		})
+		return
+	}
+	if !tuid.IsValid(id) {
+		// Invalid timestamp
+		c.JSON(http.StatusBadRequest, APIEvent{
+			CreatedAt: time.Now(),
+			LogLevel:  "ERROR",
+			Code:      http.StatusBadRequest,
+			Message:   "invalid TUID timestamp: " + info.Timestamp.String(),
+			URI:       c.Request.URL.String(),
 		})
 		return
 	}

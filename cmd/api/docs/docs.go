@@ -11,10 +11,6 @@ const docTemplate = `{
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
         "contact": {},
-        "license": {
-            "name": "MIT",
-            "url": "https://github.com/voxtechnica/versionary-api/blob/main/LICENSE"
-        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -23,24 +19,18 @@ const docTemplate = `{
         "/about": {
             "get": {
                 "description": "Basic information about the API, including the operating environment and the current git commit.",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Diagnostic"
                 ],
                 "summary": "Basic information about the API",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Information about the running application",
                         "schema": {
                             "$ref": "#/definitions/app.About"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/gin.H"
                         }
                     }
                 }
@@ -49,50 +39,110 @@ const docTemplate = `{
         "/commit": {
             "get": {
                 "description": "Redirects to the current git commit on GitHub.",
-                "consumes": [
+                "produces": [
+                    "text/html",
                     "application/json"
                 ],
-                "produces": [
-                    "application/json"
+                "tags": [
+                    "Diagnostic"
                 ],
                 "summary": "Redirect to the current git commit on GitHub",
+                "responses": {
+                    "307": {
+                        "description": "Redirect URL",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "git commit URL"
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "git commit URL unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/docs": {
+            "get": {
+                "description": "Show Swagger API documentation, generated from annotations in the running code.",
+                "produces": [
+                    "text/html"
+                ],
+                "tags": [
+                    "Diagnostic"
+                ],
+                "summary": "Show API documentation",
                 "responses": {
                     "307": {
                         "description": "Temporary Redirect",
                         "schema": {
                             "type": "string"
                         }
-                    },
-                    "503": {
-                        "description": "Service Unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/gin.H"
-                        }
                     }
                 }
             }
         },
         "/echo": {
-            "get": {
-                "description": "Echo the request back to the client, including a recognized Token and associated User.",
+            "post": {
+                "description": "Echo the request back to the client, including the provided Token and associated User.",
                 "consumes": [
+                    "text/plain",
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Diagnostic"
+                ],
                 "summary": "Echo the request back to the client",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Request body",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Echoed request information",
                         "schema": {
                             "$ref": "#/definitions/main.request"
                         }
                     },
-                    "500": {
-                        "description": "Internal Server Error",
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
                         "schema": {
-                            "$ref": "#/definitions/gin.H"
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Error reading request body",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
                         }
                     }
                 }
@@ -101,24 +151,688 @@ const docTemplate = `{
         "/user_agent": {
             "get": {
                 "description": "Echo a parsed User-Agent header.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Diagnostic"
+                ],
+                "summary": "Echo a parsed User-Agent header",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User-Agent header",
+                        "name": "user-agent",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Parsed User-Agent header",
+                        "schema": {
+                            "$ref": "#/definitions/user_agent.UserAgent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/organization_statuses": {
+            "get": {
+                "description": "Get a list of status codes for which organizations exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organization"
+                ],
+                "summary": "Get Organization Statuses",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization Statuses",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/organizations": {
+            "get": {
+                "description": "List Organizations, paging with reverse, limit, and offset. Optionally, filter by status.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organization"
+                ],
+                "summary": "List Organizations",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "PENDING",
+                            "ENABLED",
+                            "DISABLED"
+                        ],
+                        "type": "string",
+                        "description": "Status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default: 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: MinID | MaxID)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organizations",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/user.Organization"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new Organization.",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Echo a parsed User-Agent header",
-                "responses": {
-                    "200": {
-                        "description": "OK",
+                "tags": [
+                    "Organization"
+                ],
+                "summary": "Create a new Organization",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Organization",
+                        "name": "organization",
+                        "in": "body",
+                        "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user_agent.UserAgent"
+                            "$ref": "#/definitions/user.Organization"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Newly-created Organization",
+                        "schema": {
+                            "$ref": "#/definitions/user.Organization"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "URL of the newly created Organization"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid JSON)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "422": {
+                        "description": "Organization validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/gin.H"
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/organizations/{id}": {
+            "get": {
+                "description": "Update the provided, complete Organization.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organization"
+                ],
+                "summary": "Update Organization",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Organization",
+                        "name": "organization",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.Organization"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization",
+                        "schema": {
+                            "$ref": "#/definitions/user.Organization"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid JSON or parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "422": {
+                        "description": "Organization validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete and return the specified Organization.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organization"
+                ],
+                "summary": "Delete Organization",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization",
+                        "schema": {
+                            "$ref": "#/definitions/user.Organization"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "head": {
+                "description": "Check if the specified Organization exists.",
+                "tags": [
+                    "Organization"
+                ],
+                "summary": "Organization Exists",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Organization Exists"
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/organizations/{id}/versions": {
+            "get": {
+                "description": "Get Organization Versions by ID, paging with reverse, limit, and offset.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organization"
+                ],
+                "summary": "Get Organization Versions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default: 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: MinID | MaxID)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization Versions",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/user.Organization"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/organizations/{id}/versions/{versionid}": {
+            "get": {
+                "description": "Get Organization Version by ID and VersionID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organization"
+                ],
+                "summary": "Get Organization Version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Organization VersionID",
+                        "name": "versionid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization Version",
+                        "schema": {
+                            "$ref": "#/definitions/user.Organization"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "head": {
+                "description": "Check if the specified Organization version exists.",
+                "tags": [
+                    "Organization"
+                ],
+                "summary": "Organization Version Exists",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Organization VersionID",
+                        "name": "versionid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Organization Version Exists"
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tuids": {
+            "get": {
+                "description": "Generate the specified number of TUIDs, based on the current system time.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TUID"
+                ],
+                "summary": "Generate the specified number of TUIDs",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Number of TUIDs (default: 5)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "TUIDInfo for the generated TUIDs",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/tuid.TUIDInfo"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid limit",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Generate a new TUID based on current system time and return the TUIDInfo.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TUID"
+                ],
+                "summary": "Generate a new TUID",
+                "responses": {
+                    "201": {
+                        "description": "TUIDInfo for the generated TUID",
+                        "schema": {
+                            "$ref": "#/definitions/tuid.TUIDInfo"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "URL of the newly created TUID"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tuids/{id}": {
+            "get": {
+                "description": "Parse the provided TUID, returning the TUIDInfo. This can be useful for extracting the timestamp from an ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TUID"
+                ],
+                "summary": "Read TUIDInfo for the provided TUID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "TUID to parse (e.g. 9GEG9f25zjGI3ath)",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "TUIDInfo for the provided TUID",
+                        "schema": {
+                            "$ref": "#/definitions/tuid.TUIDInfo"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid TUID",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
                         }
                     }
                 }
@@ -149,17 +863,25 @@ const docTemplate = `{
                 }
             }
         },
-        "gin.H": {
+        "main.APIEvent": {
             "type": "object",
-            "additionalProperties": {
-                "type": "any"
-            }
-        },
-        "http.Header": {
-            "type": "object",
-            "additionalProperties": {
-                "type": "array",
-                "items": {
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "eventID": {
+                    "type": "string"
+                },
+                "logLevel": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "uri": {
                     "type": "string"
                 }
             }
@@ -174,7 +896,13 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "header": {
-                    "$ref": "#/definitions/http.Header"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
                 },
                 "host": {
                     "type": "string"
@@ -195,7 +923,13 @@ const docTemplate = `{
                     "$ref": "#/definitions/user.Token"
                 },
                 "trailer": {
-                    "$ref": "#/definitions/http.Header"
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
                 },
                 "transferEncoding": {
                     "type": "array",
@@ -208,6 +942,43 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/user.User"
+                }
+            }
+        },
+        "tuid.TUIDInfo": {
+            "type": "object",
+            "properties": {
+                "entropy": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.Organization": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "versionID": {
+                    "type": "string"
                 }
             }
         },
@@ -330,12 +1101,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "",
 	Host:             "",
-	BasePath:         "/",
-	Schemes:          []string{"https"},
-	Title:            "Versionary API",
-	Description:      "Versionary API demonstrates a way to manage versioned entities in a database with a serverless architecture.",
+	BasePath:         "",
+	Schemes:          []string{},
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 }

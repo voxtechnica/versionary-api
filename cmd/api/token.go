@@ -11,8 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// initTokenRoutes initializes the Token routes.
-func initTokenRoutes(r *gin.Engine) {
+// registerTokenRoutes initializes the Token routes.
+func registerTokenRoutes(r *gin.Engine) {
 	r.POST("/v1/tokens", createToken)
 	r.GET("/v1/tokens", readTokens)
 	r.GET("/v1/tokens/:id", readToken)

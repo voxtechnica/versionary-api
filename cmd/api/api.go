@@ -13,6 +13,7 @@ import (
 	"time"
 	"versionary-api/cmd/api/docs"
 	"versionary-api/pkg/app"
+	"versionary-api/pkg/event"
 	"versionary-api/pkg/user"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -38,14 +39,8 @@ var api = app.Application{
 	GitHash:     gitHash,
 }
 
-// main godoc
-// @title Versionary API
-// @version 1.0
-// @description Versionary API demonstrates a way to manage versioned entities in a database with a serverless architecture.
-// @license.name MIT
-// @license.url https://github.com/voxtechnica/versionary-api/blob/main/LICENSE
-// @BasePath /
-// @schemes https
+// main is the entry point for the application. It can run as either as an AWS Lambda function with an API Gateway
+// proxy, or as a command-line application, serving requests on localhost for local development, debugging, etc.
 func main() {
 	startTime := time.Now()
 
@@ -85,7 +80,7 @@ func main() {
 	}
 
 	// Add the API endpoints
-	initRoutes(r)
+	registerRoutes(r)
 
 	// Identify operating environment (AWS or on localhost)
 	_, ok := os.LookupEnv("LAMBDA_TASK_ROOT")
@@ -105,18 +100,29 @@ func main() {
 	}
 }
 
-// initRoutes initializes all the API endpoints.
-func initRoutes(r *gin.Engine) {
+// registerRoutes initializes all the API endpoints.
+func registerRoutes(r *gin.Engine) {
 	r.Use(bearerTokenHandler())
-	initTokenRoutes(r)
-	initTuidRoutes(r)
-	initSwagger(r)
-	initDiagRoutes(r)
 	r.NoRoute(notFound)
+	registerOrganizationRoutes(r)
+	registerTokenRoutes(r)
+	registerTuidRoutes(r)
+	registerDiagRoutes(r)
+	initSwagger(r)
 }
 
 // initSwagger initializes the Swagger API documentation.
+//
+// @Summary Show API documentation
+// @Description Show Swagger API documentation, generated from annotations in the running code.
+// @Tags Diagnostic
+// @Produce html
+// @Success 307 {string} string
+// @Router /docs [get]
 func initSwagger(r *gin.Engine) {
+	docs.SwaggerInfo.Title = "Versionary API"
+	docs.SwaggerInfo.Description = "Versionary API demonstrates a way to manage versioned entities in a database with a serverless architecture."
+	docs.SwaggerInfo.Version = gitHash
 	docs.SwaggerInfo.BasePath = "/"
 	r.GET("/docs", func(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/swagger/index.html")
@@ -126,7 +132,13 @@ func initSwagger(r *gin.Engine) {
 
 // notFound handles a request for a non-existent API endpoint.
 func notFound(c *gin.Context) {
-	c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+	c.JSON(http.StatusNotFound, APIEvent{
+		CreatedAt: time.Now(),
+		LogLevel:  "ERROR",
+		Code:      http.StatusNotFound,
+		Message:   "not found",
+		URI:       c.Request.URL.String(),
+	})
 }
 
 // bearerTokenHandler is a middleware function that reads a Bearer token, adding both the Token
@@ -157,18 +169,24 @@ func roleAuthorizer(r string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		u, ok := c.Get("user")
 		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"code":  http.StatusUnauthorized,
-				"error": "unauthenticated",
+			c.AbortWithStatusJSON(http.StatusUnauthorized, APIEvent{
+				CreatedAt: time.Now(),
+				LogLevel:  "ERROR",
+				Code:      http.StatusUnauthorized,
+				Message:   "unauthenticated",
+				URI:       c.Request.URL.String(),
 			})
 			return
 		}
 		if u.(user.User).HasRole(r) {
 			c.Next()
 		} else {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"code":  http.StatusForbidden,
-				"error": "unauthorized",
+			c.AbortWithStatusJSON(http.StatusForbidden, APIEvent{
+				CreatedAt: time.Now(),
+				LogLevel:  "ERROR",
+				Code:      http.StatusForbidden,
+				Message:   "unauthorized",
+				URI:       c.Request.URL.String(),
 			})
 		}
 	}
@@ -227,4 +245,38 @@ func gitCommitURL() string {
 	baseURL = strings.ReplaceAll(baseURL, "///", "//")
 	baseURL = strings.Replace(baseURL, "git@", "https://", 1)
 	return baseURL + "/commit/" + gitHash
+}
+
+// APIEvent is a summary of an event.Event, used for API error responses.
+type APIEvent struct {
+	EventID   string    `json:"eventID,omitempty"`
+	CreatedAt time.Time `json:"createdAt,omitempty"`
+	LogLevel  string    `json:"logLevel"`
+	Code      int       `json:"code"`
+	Message   string    `json:"message"`
+	URI       string    `json:"uri,omitempty"`
+}
+
+// String returns a string representation of the APIEvent.
+func (e APIEvent) String() string {
+	if e.Code != 0 {
+		return fmt.Sprintf("%s %d %s", e.LogLevel, e.Code, e.Message)
+	}
+	return e.Message
+}
+
+// Error returns a string representation of the APIEvent, supporting the error interface.
+func (e APIEvent) Error() string {
+	return e.String()
+}
+
+func NewAPIEvent(e event.Event, code int) APIEvent {
+	return APIEvent{
+		EventID:   e.ID,
+		CreatedAt: e.CreatedAt,
+		LogLevel:  string(e.LogLevel),
+		Code:      code,
+		Message:   e.Message,
+		URI:       e.URI,
+	}
 }

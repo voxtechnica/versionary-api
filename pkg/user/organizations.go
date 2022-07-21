@@ -108,6 +108,11 @@ func (s OrganizationService) Delete(ctx context.Context, id string) (Organizatio
 	return s.Table.DeleteEntityWithID(ctx, id)
 }
 
+// Exists checks if an Organization exists in the Organization table.
+func (s OrganizationService) Exists(ctx context.Context, id string) bool {
+	return s.Table.EntityExists(ctx, id)
+}
+
 // Read a specified Organization from the Organization table.
 func (s OrganizationService) Read(ctx context.Context, id string) (Organization, error) {
 	return s.Table.ReadEntity(ctx, id)
@@ -116,6 +121,11 @@ func (s OrganizationService) Read(ctx context.Context, id string) (Organization,
 // ReadAsJSON gets a specified Organization from the Organization table, serialized as JSON.
 func (s OrganizationService) ReadAsJSON(ctx context.Context, id string) ([]byte, error) {
 	return s.Table.ReadEntityAsJSON(ctx, id)
+}
+
+// VersionExists checks if a specified Organization version exists in the Organization table.
+func (s OrganizationService) VersionExists(ctx context.Context, id, versionID string) bool {
+	return s.Table.EntityVersionExists(ctx, id, versionID)
 }
 
 // ReadVersion gets a specified Organization version from the Organization table.
