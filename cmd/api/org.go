@@ -6,9 +6,7 @@ import (
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
 	"net/http"
-	"strconv"
 	"strings"
-	"time"
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/user"
 
@@ -21,9 +19,9 @@ func registerOrganizationRoutes(r *gin.Engine) {
 	r.GET("/v1/organizations", roleAuthorizer("admin"), readOrganizations)
 	r.GET("/v1/organizations/:id", readOrganization)
 	r.HEAD("/v1/organizations/:id", existsOrganization)
-	r.GET("/v1/organizations/{id}/versions", roleAuthorizer("admin"), readOrganizationVersions)
-	r.GET("/v1/organizations/{id}/versions/{versionid}", readOrganizationVersion)
-	r.HEAD("/v1/organizations/{id}/versions/{versionid}", existsOrganizationVersion)
+	r.GET("/v1/organizations/:id/versions", roleAuthorizer("admin"), readOrganizationVersions)
+	r.GET("/v1/organizations/:id/versions/:versionid", readOrganizationVersion)
+	r.HEAD("/v1/organizations/:id/versions/:versionid", existsOrganizationVersion)
 	r.PUT("/v1/organizations/:id", roleAuthorizer("admin"), updateOrganization)
 	r.DELETE("/v1/organizations/:id", roleAuthorizer("admin"), deleteOrganization)
 	r.GET("/v1/organization_statuses", roleAuthorizer("admin"), readOrganizationStatuses)
@@ -39,7 +37,7 @@ func registerOrganizationRoutes(r *gin.Engine) {
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
 // @Param organization body user.Organization true "Organization"
 // @Success 201 {object} user.Organization "Newly-created Organization"
-// @Failure 400 {object} APIEvent "Bad Request (invalid JSON)"
+// @Failure 400 {object} APIEvent "Bad Request (invalid JSON body)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
 // @Failure 422 {object} APIEvent "Organization validation errors"
@@ -50,30 +48,16 @@ func createOrganization(c *gin.Context) {
 	// Parse the request body as an Organization
 	var org user.Organization
 	if err := c.ShouldBindJSON(&org); err != nil {
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   fmt.Errorf("create organization: invalid JSON: %w", err).Error(),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid JSON body: %w", err))
 		return
 	}
 	// Create a new Organization
 	o, problems, err := api.OrgService.Create(c, org)
 	if len(problems) > 0 && err != nil {
-		// Validation errors
-		c.JSON(http.StatusUnprocessableEntity, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusUnprocessableEntity,
-			Message:   err.Error(),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusUnprocessableEntity, fmt.Errorf("unprocessable entity: %w", err))
 		return
 	}
 	if err != nil {
-		// Log and return other errors
 		e, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   o.ID,
@@ -83,7 +67,7 @@ func createOrganization(c *gin.Context) {
 			URI:        c.Request.URL.String(),
 			Err:        err,
 		})
-		c.JSON(http.StatusInternalServerError, NewAPIEvent(e, http.StatusInternalServerError))
+		abortWithError(c, http.StatusInternalServerError, e)
 		return
 	}
 	// Log the creation
@@ -100,7 +84,7 @@ func createOrganization(c *gin.Context) {
 	c.JSON(http.StatusCreated, o)
 }
 
-// readOrganizations returns a paginated list of Organizations for the specified User.
+// readOrganizations returns a paginated list of Organizations.
 //
 // @Summary List Organizations
 // @Description List Organizations, paging with reverse, limit, and offset. Optionally, filter by status.
@@ -110,7 +94,7 @@ func createOrganization(c *gin.Context) {
 // @Param status query string false "Status" Enums(PENDING, ENABLED, DISABLED)
 // @Param reverse query bool false "Reverse Order (default: false)"
 // @Param limit query int false "Limit (default: 100)"
-// @Param offset query string false "Offset (default: MinID | MaxID)"
+// @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
 // @Success 200 {array} user.Organization "Organizations"
 // @Failure 400 {object} APIEvent "Bad Request (invalid parameter)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
@@ -119,43 +103,18 @@ func createOrganization(c *gin.Context) {
 // @Router /v1/organizations [get]
 func readOrganizations(c *gin.Context) {
 	// Parse query parameters, with defaults
-	reverse, err := strconv.ParseBool(c.DefaultQuery("reverse", "false"))
+	reverse, limit, offset, err := paginationParams(c, false, 100)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   fmt.Errorf("read organizations: invalid reverse: %w", err).Error(),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusBadRequest, err)
 		return
-	}
-	limit, err := strconv.Atoi(c.DefaultQuery("limit", "100"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   fmt.Errorf("read organizations: invalid limit: %w", err).Error(),
-			URI:       c.Request.URL.String(),
-		})
-		return
-	}
-	offset := c.Query("offset")
-	if offset == "" {
-		if reverse {
-			offset = tuid.MaxID
-		} else {
-			offset = tuid.MinID
-		}
 	}
 	status := strings.ToUpper(c.Query("status"))
-	// Read paginated Organizations
-	var orgs []user.Organization
+	// Read and return paginated Organizations
 	if status == "" {
-		orgs = api.OrgService.ReadOrganizations(c, reverse, limit, offset)
+		orgs := api.OrgService.ReadOrganizations(c, reverse, limit, offset)
+		c.JSON(http.StatusOK, orgs)
 	} else {
-		orgs, err = api.OrgService.ReadOrganizationsByStatus(c, status, reverse, limit, offset)
+		orgs, err := api.OrgService.ReadOrganizationsByStatusAsJSON(c, status, reverse, limit, offset)
 		if err != nil {
 			e, _ := api.EventService.Create(c, event.Event{
 				UserID:     contextUserID(c),
@@ -165,12 +124,11 @@ func readOrganizations(c *gin.Context) {
 				URI:        c.Request.URL.String(),
 				Err:        err,
 			})
-			c.JSON(http.StatusInternalServerError, NewAPIEvent(e, http.StatusInternalServerError))
+			abortWithError(c, http.StatusInternalServerError, e)
 			return
 		}
+		c.Data(http.StatusOK, "application/json;charset=UTF-8", orgs)
 	}
-	// Return the organizations
-	c.JSON(http.StatusOK, orgs)
 }
 
 // readOrganization returns the current version of the specified Organization.
@@ -189,30 +147,16 @@ func readOrganization(c *gin.Context) {
 	// Validate the path parameter ID
 	id := c.Param("id")
 	if !tuid.IsValid(tuid.TUID(id)) {
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   fmt.Sprintf("read organization: invalid ID: %s", id),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %s", id))
 		return
 	}
-	// Read the specified Organization
+	// Read and return the specified Organization
 	o, err := api.OrgService.ReadAsJSON(c, id)
 	if err != nil && errors.Is(err, v.ErrNotFound) {
-		// Not found error does not need to be logged
-		c.JSON(http.StatusNotFound, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusNotFound,
-			Message:   fmt.Sprintf("read organization %s: not found", id),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusNotFound, fmt.Errorf("not found: organization %s", id))
 		return
 	}
 	if err != nil {
-		// Log and return other errors
 		e, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
@@ -222,10 +166,9 @@ func readOrganization(c *gin.Context) {
 			URI:        c.Request.URL.String(),
 			Err:        err,
 		})
-		c.JSON(http.StatusInternalServerError, NewAPIEvent(e, http.StatusInternalServerError))
+		abortWithError(c, http.StatusInternalServerError, e)
 		return
 	}
-	// Return the organization
 	c.Data(http.StatusOK, "application/json;charset=UTF-8", o)
 }
 
@@ -242,13 +185,10 @@ func readOrganization(c *gin.Context) {
 func existsOrganization(c *gin.Context) {
 	id := c.Param("id")
 	if !tuid.IsValid(tuid.TUID(id)) {
-		// Validate the path parameter ID
 		c.Status(http.StatusBadRequest)
 	} else if !api.OrgService.Exists(c, id) {
-		// Check if the specified Organization exists
 		c.Status(http.StatusNotFound)
 	} else {
-		// Return an empty response
 		c.Status(http.StatusNoContent)
 	}
 }
@@ -263,7 +203,7 @@ func existsOrganization(c *gin.Context) {
 // @Param id path string true "Organization ID"
 // @Param reverse query bool false "Reverse Order (default: false)"
 // @Param limit query int false "Limit (default: 100)"
-// @Param offset query string false "Offset (default: MinID | MaxID)"
+// @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
 // @Success 200 {array} user.Organization "Organization Versions"
 // @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
@@ -272,64 +212,25 @@ func existsOrganization(c *gin.Context) {
 // @Failure 500 {object} APIEvent "Internal Server Error"
 // @Router /v1/organizations/{id}/versions [get]
 func readOrganizationVersions(c *gin.Context) {
-	// Validate the path parameter ID
+	// Validate parameters
 	id := c.Param("id")
 	if !tuid.IsValid(tuid.TUID(id)) {
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   fmt.Sprintf("read organization versions: invalid ID: %s", id),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %s", id))
 		return
 	}
-	// Validate the query parameters
-	reverse, err := strconv.ParseBool(c.DefaultQuery("reverse", "false"))
+	reverse, limit, offset, err := paginationParams(c, false, 100)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   fmt.Errorf("read organization versions: invalid reverse: %w", err).Error(),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusBadRequest, err)
 		return
-	}
-	limit, err := strconv.Atoi(c.DefaultQuery("limit", "100"))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   fmt.Errorf("read organization versions: invalid limit: %w", err).Error(),
-			URI:       c.Request.URL.String(),
-		})
-		return
-	}
-	offset := c.Query("offset")
-	if offset == "" {
-		if reverse {
-			offset = tuid.MaxID
-		} else {
-			offset = tuid.MinID
-		}
 	}
 	// Verify that the Organization exists
 	if !api.OrgService.Exists(c, id) {
-		c.JSON(http.StatusNotFound, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusNotFound,
-			Message:   fmt.Sprintf("read organization versions: organization %s not found", id),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusNotFound, fmt.Errorf("not found: organization %s", id))
 		return
 	}
-	// Read the specified Organization Versions
+	// Read and return the specified Organization Versions
 	versions, err := api.OrgService.ReadVersionsAsJSON(c, id, reverse, limit, offset)
 	if err != nil {
-		// Log and return other errors
 		e, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
@@ -339,10 +240,9 @@ func readOrganizationVersions(c *gin.Context) {
 			URI:        c.Request.URL.String(),
 			Err:        err,
 		})
-		c.JSON(http.StatusInternalServerError, NewAPIEvent(e, http.StatusInternalServerError))
+		abortWithError(c, http.StatusInternalServerError, e)
 		return
 	}
-	// Return the organization versions
 	c.Data(http.StatusOK, "application/json;charset=UTF-8", versions)
 }
 
@@ -363,41 +263,21 @@ func readOrganizationVersion(c *gin.Context) {
 	// Validate the path parameters
 	id := c.Param("id")
 	if !tuid.IsValid(tuid.TUID(id)) {
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   fmt.Sprintf("read organization version: invalid ID: %s", id),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %s", id))
 		return
 	}
 	versionid := c.Param("versionid")
 	if !tuid.IsValid(tuid.TUID(versionid)) {
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   fmt.Sprintf("read organization version: invalid VersionID: %s", versionid),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter VersionID: %s", versionid))
 		return
 	}
-	// Read the Organization Version
+	// Read and return the Organization Version
 	version, err := api.OrgService.ReadVersionAsJSON(c, id, versionid)
 	if err != nil && errors.Is(err, v.ErrNotFound) {
-		// Not found error does not need to be logged
-		c.JSON(http.StatusNotFound, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusNotFound,
-			Message:   fmt.Sprintf("read organization %s version %s: not found", id, versionid),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusNotFound, fmt.Errorf("not found: organization %s version %s", id, versionid))
 		return
 	}
 	if err != nil {
-		// Log and return other errors
 		e, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
@@ -407,10 +287,9 @@ func readOrganizationVersion(c *gin.Context) {
 			URI:        c.Request.URL.String(),
 			Err:        err,
 		})
-		c.JSON(http.StatusInternalServerError, NewAPIEvent(e, http.StatusInternalServerError))
+		abortWithError(c, http.StatusInternalServerError, e)
 		return
 	}
-	// Return the Organization Version
 	c.Data(http.StatusOK, "application/json;charset=UTF-8", version)
 }
 
@@ -429,13 +308,10 @@ func existsOrganizationVersion(c *gin.Context) {
 	id := c.Param("id")
 	versionid := c.Param("versionid")
 	if !tuid.IsValid(tuid.TUID(id)) || !tuid.IsValid(tuid.TUID(versionid)) {
-		// Validate the path parameters
 		c.Status(http.StatusBadRequest)
 	} else if !api.OrgService.VersionExists(c, id, versionid) {
-		// Check if the specified Organization version exists
 		c.Status(http.StatusNotFound)
 	} else {
-		// Return an empty response
 		c.Status(http.StatusNoContent)
 	}
 }
@@ -457,58 +333,32 @@ func existsOrganizationVersion(c *gin.Context) {
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
 // @Failure 422 {object} APIEvent "Organization validation errors"
 // @Failure 500 {object} APIEvent "Internal Server Error"
-// @Router /v1/organizations/{id} [get]
+// @Router /v1/organizations/{id} [put]
 func updateOrganization(c *gin.Context) {
 	// Parse the request body as an Organization
 	var org user.Organization
 	if err := c.ShouldBindJSON(&org); err != nil {
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   fmt.Errorf("update organization: invalid JSON: %w", err).Error(),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid JSON body: %w", err))
 		return
 	}
 	// Validate the path parameter ID
 	id := c.Param("id")
 	if !tuid.IsValid(tuid.TUID(id)) {
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   fmt.Sprintf("update organization: invalid ID: %s", id),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %s", id))
 		return
 	}
 	// The path parameter ID must match the Organization ID
 	if org.ID != id {
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   fmt.Sprintf("update organization: ID mismatch: %s != %s", org.ID, id),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: path parameter ID %s does not match Organization ID %s", id, org.ID))
 		return
 	}
 	// Update the specified Organization
 	o, problems, err := api.OrgService.Update(c, org)
 	if len(problems) > 0 && err != nil {
-		// Validation errors
-		c.JSON(http.StatusUnprocessableEntity, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusUnprocessableEntity,
-			Message:   err.Error(),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusUnprocessableEntity, fmt.Errorf("unprocessable entity: %w", err))
 		return
 	}
 	if err != nil {
-		// Log and return other errors
 		e, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   o.ID,
@@ -518,7 +368,7 @@ func updateOrganization(c *gin.Context) {
 			URI:        c.Request.URL.String(),
 			Err:        err,
 		})
-		c.JSON(http.StatusInternalServerError, NewAPIEvent(e, http.StatusInternalServerError))
+		abortWithError(c, http.StatusInternalServerError, e)
 		return
 	}
 	// Log the update
@@ -542,7 +392,7 @@ func updateOrganization(c *gin.Context) {
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
 // @Param id path string true "Organization ID"
-// @Success 200 {object} user.Organization "Organization"
+// @Success 200 {object} user.Organization "Organization that was deleted"
 // @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
@@ -553,29 +403,16 @@ func deleteOrganization(c *gin.Context) {
 	// Validate the path parameter ID
 	id := c.Param("id")
 	if !tuid.IsValid(tuid.TUID(id)) {
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   fmt.Sprintf("delete organization: invalid ID: %s", id),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %s", id))
 		return
 	}
+	// Delete the specified Organization
 	o, err := api.OrgService.Delete(c, id)
 	if err != nil && errors.Is(err, v.ErrNotFound) {
-		// Not found error does not need to be logged
-		c.JSON(http.StatusNotFound, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusNotFound,
-			Message:   fmt.Sprintf("delete organization %s: not found", id),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusNotFound, fmt.Errorf("not found: organization %s", id))
 		return
 	}
 	if err != nil {
-		// Log and return other errors
 		e, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
@@ -585,7 +422,7 @@ func deleteOrganization(c *gin.Context) {
 			URI:        c.Request.URL.String(),
 			Err:        err,
 		})
-		c.JSON(http.StatusInternalServerError, NewAPIEvent(e, http.StatusInternalServerError))
+		abortWithError(c, http.StatusInternalServerError, e)
 		return
 	}
 	// Log the deletion
@@ -625,7 +462,7 @@ func readOrganizationStatuses(c *gin.Context) {
 			URI:        c.Request.URL.String(),
 			Err:        err,
 		})
-		c.JSON(http.StatusInternalServerError, NewAPIEvent(e, http.StatusInternalServerError))
+		abortWithError(c, http.StatusInternalServerError, e)
 		return
 	}
 	c.JSON(http.StatusOK, statuses)

@@ -135,6 +135,11 @@ func (s TokenService) ReadAllUserIDs(ctx context.Context) ([]string, error) {
 	return s.Table.ReadAllPartKeyValues(ctx, rowTokensUser)
 }
 
+// ReadAllTokenIDsByUserID returns a complete list of Token IDs for a specified User ID in the Token table.
+func (s TokenService) ReadAllTokenIDsByUserID(ctx context.Context, userID string) ([]string, error) {
+	return s.Table.ReadAllSortKeyValues(ctx, rowTokensUser, userID)
+}
+
 // ReadTokensByUserID returns paginated Tokens by User ID. Sorting is chronological (or reverse).
 // The offset is the ID of the last Token returned in a previous request.
 func (s TokenService) ReadTokensByUserID(ctx context.Context, userID string, reverse bool, limit int, offset string) ([]Token, error) {
@@ -155,4 +160,19 @@ func (s TokenService) ReadAllTokensByUserID(ctx context.Context, userID string) 
 // ReadAllTokensByUserIDAsJSON returns the complete list of Tokens, serialized as JSON.
 func (s TokenService) ReadAllTokensByUserIDAsJSON(ctx context.Context, userID string) ([]byte, error) {
 	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowTokensUser, userID)
+}
+
+// DeleteAllTokensByUserID deletes all Tokens for a specified User ID from the Token table.
+func (s TokenService) DeleteAllTokensByUserID(ctx context.Context, userID string) error {
+	ids, err := s.ReadAllTokenIDsByUserID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("error deleting all Tokens for User-%s: %w", userID, err)
+	}
+	for _, id := range ids {
+		_, err := s.Delete(ctx, id)
+		if err != nil {
+			return fmt.Errorf("error deleting Token-%s for User-%s: %w", id, userID, err)
+		}
+	}
+	return nil
 }

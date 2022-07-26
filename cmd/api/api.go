@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	swaggerFiles "github.com/swaggo/files"
@@ -9,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"versionary-api/cmd/api/docs"
@@ -107,6 +109,7 @@ func registerRoutes(r *gin.Engine) {
 	registerOrganizationRoutes(r)
 	registerTokenRoutes(r)
 	registerTuidRoutes(r)
+	registerUserRoutes(r)
 	registerDiagRoutes(r)
 	initSwagger(r)
 }
@@ -136,9 +139,32 @@ func notFound(c *gin.Context) {
 		CreatedAt: time.Now(),
 		LogLevel:  "ERROR",
 		Code:      http.StatusNotFound,
-		Message:   "not found",
+		Message:   "not found: API endpoint",
 		URI:       c.Request.URL.String(),
 	})
+}
+
+// abortWithError aborts the request with the specified error.
+func abortWithError(c *gin.Context, code int, err error) {
+	var e event.Event
+	if errors.As(err, &e) {
+		c.AbortWithStatusJSON(code, APIEvent{
+			EventID:   e.ID,
+			CreatedAt: e.CreatedAt,
+			LogLevel:  string(e.LogLevel),
+			Code:      code,
+			Message:   e.Message,
+			URI:       e.URI,
+		})
+	} else {
+		c.AbortWithStatusJSON(code, APIEvent{
+			CreatedAt: time.Now(),
+			LogLevel:  "ERROR",
+			Code:      code,
+			Message:   err.Error(),
+			URI:       c.Request.URL.String(),
+		})
+	}
 }
 
 // bearerTokenHandler is a middleware function that reads a Bearer token, adding both the Token
@@ -232,6 +258,37 @@ func contextUserHasRole(c *gin.Context, r string) bool {
 	return ok && u.(user.User).HasRole(r)
 }
 
+// paginationParams parses pagination query parameters (reverse, limit, offset), with supplied defaults.
+func paginationParams(c *gin.Context, reverse bool, limit int) (bool, int, string, error) {
+	var err error
+	// Reverse
+	r := c.Query("reverse")
+	if r != "" {
+		reverse, err = strconv.ParseBool(r)
+		if err != nil {
+			return reverse, limit, "", fmt.Errorf("bad request: invalid parameter, reverse: %w", err)
+		}
+	}
+	// Limit
+	l := c.Query("limit")
+	if l != "" {
+		limit, err = strconv.Atoi(l)
+		if err != nil || limit < 1 {
+			return reverse, limit, "", fmt.Errorf("bad request: invalid parameter, limit: %s", l)
+		}
+	}
+	// Offset
+	offset := c.Query("offset")
+	if offset == "" {
+		if reverse {
+			offset = "|" // after letters
+		} else {
+			offset = "-" // before numbers
+		}
+	}
+	return reverse, limit, offset, err
+}
+
 // gitCommitURL returns the URL for the commit of the compiled application.
 // Example: git@github.com:voxtechnica/versionary-api.git is converted to something like:
 // https://github.com/voxtechnica/versionary-api/commit/23ff1ad8e3c6beb5332ed320f6605132a993e13b
@@ -268,15 +325,4 @@ func (e APIEvent) String() string {
 // Error returns a string representation of the APIEvent, supporting the error interface.
 func (e APIEvent) Error() string {
 	return e.String()
-}
-
-func NewAPIEvent(e event.Event, code int) APIEvent {
-	return APIEvent{
-		EventID:   e.ID,
-		CreatedAt: e.CreatedAt,
-		LogLevel:  string(e.LogLevel),
-		Code:      code,
-		Message:   e.Message,
-		URI:       e.URI,
-	}
 }

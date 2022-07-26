@@ -148,6 +148,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/logout": {
+            "get": {
+                "description": "Delete the OAuth Bearer Token provided in the Authorization header (e.g. to log out).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Token"
+                ],
+                "summary": "Logout",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (any role)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token that was deleted",
+                        "schema": {
+                            "$ref": "#/definitions/user.Token"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
         "/user_agent": {
             "get": {
                 "description": "Echo a parsed User-Agent header.",
@@ -269,7 +310,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Offset (default: MinID | MaxID)",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
                         "name": "offset",
                         "in": "query"
                     }
@@ -354,7 +395,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Bad Request (invalid JSON)",
+                        "description": "Bad Request (invalid JSON body)",
                         "schema": {
                             "$ref": "#/definitions/main.APIEvent"
                         }
@@ -388,6 +429,51 @@ const docTemplate = `{
         },
         "/v1/organizations/{id}": {
             "get": {
+                "description": "Get Organization by ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organization"
+                ],
+                "summary": "Get Organization",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization",
+                        "schema": {
+                            "$ref": "#/definitions/user.Organization"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "put": {
                 "description": "Update the provided, complete Organization.",
                 "consumes": [
                     "application/json"
@@ -490,7 +576,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Organization",
+                        "description": "Organization that was deleted",
                         "schema": {
                             "$ref": "#/definitions/user.Organization"
                         }
@@ -600,7 +686,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Offset (default: MinID | MaxID)",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
                         "name": "offset",
                         "in": "query"
                     }
@@ -742,6 +828,328 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/token_user_ids": {
+            "get": {
+                "description": "List User IDs for which tokens exist. This is useful for paging through tokens by user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Token"
+                ],
+                "summary": "List User IDs for which tokens exist",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default: 1000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paginated User IDs",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid query parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tokens": {
+            "get": {
+                "description": "List OAuth Bearer Tokens by User ID (defaults to the Context User).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Token"
+                ],
+                "summary": "List Tokens",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (any role)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID or Email (defaults to the Context User)",
+                        "name": "user",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tokens",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/user.Token"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid User ID or Email)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (only administrators may read any user's tokens)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new OAuth Bearer Token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Token"
+                ],
+                "summary": "Create a new Token",
+                "parameters": [
+                    {
+                        "description": "Token Request",
+                        "name": "TokenRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.TokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Token Response",
+                        "schema": {
+                            "$ref": "#/definitions/user.TokenResponse"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "URL of the newly created Token"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid JSON body)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized (invalid username or password)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/tokens/{id}": {
+            "get": {
+                "description": "Read OAuth Bearer Token by ID (e.g. to verify a token has not expired).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Token"
+                ],
+                "summary": "Read Token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (any role)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Token ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token",
+                        "schema": {
+                            "$ref": "#/definitions/user.Token"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (only administrators may read any user's tokens)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found (Token not found)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete OAuth Bearer Token by ID (e.g. to log out).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Token"
+                ],
+                "summary": "Delete Token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (any role)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Token ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token that was deleted",
+                        "schema": {
+                            "$ref": "#/definitions/user.Token"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (only administrators may delete any user's tokens)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found (Token not found)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/tuids": {
             "get": {
                 "description": "Generate the specified number of TUIDs, based on the current system time.",
@@ -831,6 +1239,841 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid TUID",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user_emails": {
+            "get": {
+                "description": "Get a paginated list of email addresses for which users exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "List User Email Addresses",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default: 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email Addresses",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user_org_ids": {
+            "get": {
+                "description": "Get a list of Organization IDs for which users exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "List User Organization IDs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization IDs",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user_roles": {
+            "get": {
+                "description": "Get a list of roles for which users exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "List User Roles",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User Roles",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user_statuses": {
+            "get": {
+                "description": "Get a list of status codes for which users exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "List User Statuses",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User Statuses",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/users": {
+            "get": {
+                "description": "List Users, paging with reverse, limit, and offset.\nOptionally, filter by email, organization, role, or status.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "List Users",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email Address",
+                        "name": "email",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "org",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Role (e.g. admin)",
+                        "name": "role",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "PENDING",
+                            "ENABLED",
+                            "DISABLED"
+                        ],
+                        "type": "string",
+                        "description": "Status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default: 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Users",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/user.User"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new User.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Create a new User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "User",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.User"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Newly-created User",
+                        "schema": {
+                            "$ref": "#/definitions/user.User"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "URL of the newly created User"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid JSON body)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "422": {
+                        "description": "User validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/users/{id}": {
+            "get": {
+                "description": "Get User by ID or email, scrubbing sensitive information if the requester is not an administrator.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID or Email Address",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User",
+                        "schema": {
+                            "$ref": "#/definitions/user.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden (only administrators may read any user)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update the provided complete User, ensuring that sensitive information is retained.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Update User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "User",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/user.User"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User",
+                        "schema": {
+                            "$ref": "#/definitions/user.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid JSON or parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "422": {
+                        "description": "User validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete and return the specified User. Attempt to delete their associated Tokens as well, logging errors.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Delete User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User that was deleted",
+                        "schema": {
+                            "$ref": "#/definitions/user.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "head": {
+                "description": "Check if the specified User exists.",
+                "tags": [
+                    "User"
+                ],
+                "summary": "User Exists",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "User Exists"
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/users/{id}/versions": {
+            "get": {
+                "description": "Get User Versions by User ID, paging with reverse, limit, and offset.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "List User Versions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default: 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User Versions",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/user.User"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/users/{id}/versions/{versionid}": {
+            "get": {
+                "description": "Get User Version by ID and VersionID, scrubbing sensitive information if the requester is not an administrator.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get User Version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User VersionID",
+                        "name": "versionid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User Version",
+                        "schema": {
+                            "$ref": "#/definitions/user.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "head": {
+                "description": "Check if the specified User version exists.",
+                "tags": [
+                    "User"
+                ],
+                "summary": "User Version Exists",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User VersionID",
+                        "name": "versionid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "User Version Exists"
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/main.APIEvent"
                         }
@@ -998,6 +2241,40 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "userId": {
+                    "type": "string"
+                }
+            }
+        },
+        "user.TokenRequest": {
+            "type": "object",
+            "properties": {
+                "grantType": {
+                    "description": "usually \"password\"",
+                    "type": "string"
+                },
+                "password": {
+                    "description": "plaintext password",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "email or User ID",
+                    "type": "string"
+                }
+            }
+        },
+        "user.TokenResponse": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "description": "Token ID (a tuid.TUID)",
+                    "type": "string"
+                },
+                "expiresAt": {
+                    "description": "when the token expires (DynamoDB TTL)",
+                    "type": "string"
+                },
+                "tokenType": {
+                    "description": "usually \"Bearer\"",
                     "type": "string"
                 }
             }

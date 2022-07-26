@@ -1,11 +1,12 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/voxtechnica/tuid-go"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 // registerTuidRoutes initializes the TUID routes.
@@ -45,20 +46,15 @@ func createTUID(c *gin.Context) {
 // @Failure 400 {object} APIEvent "Invalid limit"
 // @Router /v1/tuids [get]
 func readTUIDs(c *gin.Context) {
-	limit := c.DefaultQuery("limit", "5")
-	intLimit, err := strconv.Atoi(limit)
-	if err != nil || intLimit < 1 {
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   "invalid limit",
-			URI:       c.Request.URL.String(),
-		})
+	// Validate query parameters
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "5"))
+	if err != nil || limit < 1 {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid limit parameter: %s", c.Query("limit")))
 		return
 	}
-	ids := make([]tuid.TUIDInfo, intLimit)
-	for i := 0; i < intLimit; i++ {
+	// Generate and return TUIDs
+	ids := make([]tuid.TUIDInfo, limit)
+	for i := 0; i < limit; i++ {
 		ids[i], _ = tuid.NewID().Info()
 	}
 	c.JSON(http.StatusOK, ids)
@@ -79,25 +75,11 @@ func readTUID(c *gin.Context) {
 	id := tuid.TUID(c.Param("id"))
 	info, err := id.Info()
 	if err != nil {
-		// Parse error
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   err.Error(),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusBadRequest, err) // Parse error
 		return
 	}
 	if !tuid.IsValid(id) {
-		// Invalid timestamp
-		c.JSON(http.StatusBadRequest, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusBadRequest,
-			Message:   "invalid TUID timestamp: " + info.Timestamp.String(),
-			URI:       c.Request.URL.String(),
-		})
+		abortWithError(c, http.StatusBadRequest, errors.New("invalid TUID timestamp: "+info.Timestamp.String()))
 		return
 	}
 	c.JSON(http.StatusOK, info)

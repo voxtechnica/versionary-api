@@ -25,7 +25,7 @@ var rowUsers = v.TableRow[User]{
 var rowUsersEmail = v.TableRow[User]{
 	RowName:      "users_email",
 	PartKeyName:  "email",
-	PartKeyValue: func(u User) string { return standardizeEmail(u.Email) },
+	PartKeyValue: func(u User) string { return StandardizeEmail(u.Email) },
 	SortKeyName:  "id",
 	SortKeyValue: func(u User) string { return u.ID },
 	JsonValue:    func(u User) []byte { return u.CompressedJSON() },
@@ -113,7 +113,7 @@ func (s UserService) duplicateEmail(ctx context.Context, email, id string) ([]st
 //==============================================================================
 
 // Create a User in the User table.
-func (s UserService) Create(ctx context.Context, u User) (User, error) {
+func (s UserService) Create(ctx context.Context, u User) (User, []string, error) {
 	// Validate User fields
 	t := tuid.NewID()
 	at, _ := t.Time()
@@ -124,16 +124,17 @@ func (s UserService) Create(ctx context.Context, u User) (User, error) {
 	if u.Status == "" {
 		u.Status = PENDING
 	}
-	if problems := u.Validate(); len(problems) > 0 {
-		return u, fmt.Errorf("error creating %s %s: invalid field(s): %s", s.EntityType, u.ID, strings.Join(problems, ", "))
+	problems := u.Validate()
+	if len(problems) > 0 {
+		return u, problems, fmt.Errorf("error creating %s %s: invalid field(s): %s", s.EntityType, u.ID, strings.Join(problems, ", "))
 	}
 	// Check for duplicate email address
 	duplicates, err := s.duplicateEmail(ctx, u.Email, u.ID)
 	if err != nil {
-		return u, fmt.Errorf("error checking email duplicates for %s: %w", u.Email, err)
+		return u, problems, fmt.Errorf("error checking email duplicates for %s: %w", u.Email, err)
 	}
 	if len(duplicates) > 0 {
-		return u, fmt.Errorf("error creating %s %s: email address %s is already in use by %s", s.EntityType, u.ID, u.Email, strings.Join(duplicates, ", "))
+		return u, problems, fmt.Errorf("error creating %s %s: email address %s is already in use by %s", s.EntityType, u.ID, u.Email, strings.Join(duplicates, ", "))
 	}
 	// Hash password
 	if u.Password != "" {
@@ -143,28 +144,29 @@ func (s UserService) Create(ctx context.Context, u User) (User, error) {
 	// Create User
 	err = s.Table.WriteEntity(ctx, u)
 	if err != nil {
-		return u, fmt.Errorf("error creating %s %s %s: %w", s.EntityType, u.ID, u.Email, err)
+		return u, problems, fmt.Errorf("error creating %s %s %s: %w", s.EntityType, u.ID, u.Email, err)
 	}
-	return u, nil
+	return u, problems, nil
 }
 
 // Update a User in the User table. If a previous version does not exist, the User is created.
-func (s UserService) Update(ctx context.Context, u User) (User, error) {
+func (s UserService) Update(ctx context.Context, u User) (User, []string, error) {
 	// Validate User fields
 	t := tuid.NewID()
 	at, _ := t.Time()
 	u.VersionID = t.String()
 	u.UpdatedAt = at
-	if problems := u.Validate(); len(problems) > 0 {
-		return u, fmt.Errorf("error updating %s %s: invalid field(s): %s", s.EntityType, u.ID, strings.Join(problems, ", "))
+	problems := u.Validate()
+	if len(problems) > 0 {
+		return u, problems, fmt.Errorf("error updating %s %s: invalid field(s): %s", s.EntityType, u.ID, strings.Join(problems, ", "))
 	}
 	// Check for duplicate email address
 	duplicates, err := s.duplicateEmail(ctx, u.Email, u.ID)
 	if err != nil {
-		return u, fmt.Errorf("error checking email duplicates for %s: %w", u.Email, err)
+		return u, problems, fmt.Errorf("error checking email duplicates for %s: %w", u.Email, err)
 	}
 	if len(duplicates) > 0 {
-		return u, fmt.Errorf("error creating %s %s: email address %s is already in use by %s", s.EntityType, u.ID, u.Email, strings.Join(duplicates, ", "))
+		return u, problems, fmt.Errorf("error creating %s %s: email address %s is already in use by %s", s.EntityType, u.ID, u.Email, strings.Join(duplicates, ", "))
 	}
 	// Hash password
 	if u.Password != "" {
@@ -172,7 +174,7 @@ func (s UserService) Update(ctx context.Context, u User) (User, error) {
 		u.Password = ""
 	}
 	// Update User
-	return u, s.Table.UpdateEntity(ctx, u)
+	return u, problems, s.Table.UpdateEntity(ctx, u)
 }
 
 // Write a User to the User table. This method assumes that the User has all the required fields.
@@ -186,6 +188,11 @@ func (s UserService) Delete(ctx context.Context, id string) (User, error) {
 	return s.Table.DeleteEntityWithID(ctx, id)
 }
 
+// Exists checks if a User exists in the User table.
+func (s UserService) Exists(ctx context.Context, id string) bool {
+	return s.Table.EntityExists(ctx, id)
+}
+
 // Read a specified User from the User table.
 func (s UserService) Read(ctx context.Context, id string) (User, error) {
 	if strings.Contains(id, "@") {
@@ -197,6 +204,11 @@ func (s UserService) Read(ctx context.Context, id string) (User, error) {
 // ReadAsJSON gets a specified User from the User table, serialized as JSON.
 func (s UserService) ReadAsJSON(ctx context.Context, id string) ([]byte, error) {
 	return s.Table.ReadEntityAsJSON(ctx, id)
+}
+
+// VersionExists checks if a specified User version exists in the User table.
+func (s UserService) VersionExists(ctx context.Context, id, versionID string) bool {
+	return s.Table.EntityVersionExists(ctx, id, versionID)
 }
 
 // ReadVersion gets a specified User version from the User table.
@@ -270,7 +282,7 @@ func (s UserService) ReadAllEmailAddresses(ctx context.Context) ([]string, error
 // ReadUserByEmail returns the first (chronological) User with the provided email address.
 // There should only be one User in the User table with that address.
 func (s UserService) ReadUserByEmail(ctx context.Context, email string) (User, error) {
-	users, err := s.Table.ReadAllEntitiesFromRow(ctx, rowUsersEmail, standardizeEmail(email))
+	users, err := s.Table.ReadAllEntitiesFromRow(ctx, rowUsersEmail, StandardizeEmail(email))
 	if err != nil {
 		return User{}, err
 	}
@@ -284,13 +296,13 @@ func (s UserService) ReadUserByEmail(ctx context.Context, email string) (User, e
 // There should only be one User in the User table with that address, but strange things can happen.
 // This method can be used to identify any duplicates for the provided email address.
 func (s UserService) ReadAllUsersByEmail(ctx context.Context, email string) ([]User, error) {
-	return s.Table.ReadAllEntitiesFromRow(ctx, rowUsersEmail, standardizeEmail(email))
+	return s.Table.ReadAllEntitiesFromRow(ctx, rowUsersEmail, StandardizeEmail(email))
 }
 
 // ReadUserIDsByEmail returns a complete list of User IDs corresponding to the provided email address.
 // The primary use of this method is to check to see if a given email address is already in use.
 func (s UserService) ReadUserIDsByEmail(ctx context.Context, email string) ([]string, error) {
-	return s.Table.ReadAllSortKeyValues(ctx, rowUsersEmail, standardizeEmail(email))
+	return s.Table.ReadAllSortKeyValues(ctx, rowUsersEmail, StandardizeEmail(email))
 }
 
 //==============================================================================

@@ -63,6 +63,14 @@ func (u User) Scrub() User {
 	return u
 }
 
+// RestoreScrubbed restores the User's sensitive information from the supplied User version.
+// Note that Password is never stored in the database, and does not need to be restored.
+func (u User) RestoreScrubbed(user User) User {
+	u.PasswordHash = user.PasswordHash
+	u.PasswordReset = user.PasswordReset
+	return u
+}
+
 // String returns a minimal string representation of the User (an RFC 5322 email address).
 func (u User) String() string {
 	if u.FirstName == "" && u.LastName == "" {
@@ -124,8 +132,8 @@ func hashPassword(id, password string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-// standardizeEmail returns the User's email address in a standard format.
+// StandardizeEmail returns the User's email address in a standard format.
 // This method is used primarily to standardize email addresses for indexing.
-func standardizeEmail(email string) string {
+func StandardizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }

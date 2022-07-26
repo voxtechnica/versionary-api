@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"versionary-api/pkg/event"
 	"versionary-api/pkg/user"
 
 	"github.com/voxtechnica/tuid-go"
@@ -95,9 +96,19 @@ func createUser(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create the User
-	u, err = ops.UserService.Create(ctx, u)
+	u, problems, err := ops.UserService.Create(ctx, u)
+	if len(problems) > 0 && err != nil {
+		return fmt.Errorf("unprocessable entity: %w", err)
+	}
 	if err != nil {
-		return fmt.Errorf("error creating User %s: %w", u.Email, err)
+		e, _ := ops.EventService.Create(ctx, event.Event{
+			EntityID:   u.ID,
+			EntityType: u.Type(),
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("create user %s %s: %w", u.ID, u.Email, err).Error(),
+			Err:        err,
+		})
+		return e
 	}
 	fmt.Printf("Created User %s %s\n", u.ID, u.Email)
 	j, err := json.MarshalIndent(u, "", "  ")

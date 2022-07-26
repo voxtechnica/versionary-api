@@ -2,9 +2,9 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/http"
-	"time"
 	"versionary-api/pkg/user"
 
 	"github.com/gin-gonic/gin"
@@ -45,16 +45,10 @@ func about(c *gin.Context) {
 func commit(c *gin.Context) {
 	url := gitCommitURL()
 	if url == "" {
-		c.JSON(http.StatusServiceUnavailable, APIEvent{
-			CreatedAt: time.Now(),
-			LogLevel:  "ERROR",
-			Code:      http.StatusServiceUnavailable,
-			Message:   "git commit URL not available",
-			URI:       c.Request.URL.String(),
-		})
-		return
+		abortWithError(c, http.StatusServiceUnavailable, errors.New("git commit URL unavailable"))
+	} else {
+		c.Redirect(http.StatusTemporaryRedirect, url)
 	}
-	c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
 // userAgent echoes a parsed client User-Agent header.
@@ -104,13 +98,7 @@ func echoRequest(c *gin.Context) {
 		buf := new(bytes.Buffer)
 		n, err := buf.ReadFrom(c.Request.Body)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, APIEvent{
-				CreatedAt: time.Now(),
-				LogLevel:  "ERROR",
-				Code:      http.StatusInternalServerError,
-				Message:   fmt.Sprintf("error reading request body: %s", err),
-				URI:       c.Request.URL.String(),
-			})
+			abortWithError(c, http.StatusInternalServerError, fmt.Errorf("error reading request body: %w", err))
 			return
 		}
 		r.ContentLength = n
