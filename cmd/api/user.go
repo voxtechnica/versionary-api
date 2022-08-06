@@ -61,7 +61,7 @@ func createUser(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   u.ID,
 			EntityType: u.Type(),
@@ -74,7 +74,7 @@ func createUser(c *gin.Context) {
 		return
 	}
 	// Log the creation
-	_, _ = api.EventService.Create(c, event.Event{
+	_, _, _ = api.EventService.Create(c, event.Event{
 		UserID:     contextUserID(c),
 		EntityID:   u.ID,
 		EntityType: u.Type(),
@@ -128,7 +128,7 @@ func readUsers(c *gin.Context) {
 		// Filter by email address (there should be only one user with this email address)
 		u, err := api.UserService.ReadAllUsersByEmail(c, email)
 		if err != nil {
-			e, _ := api.EventService.Create(c, event.Event{
+			e, _, _ := api.EventService.Create(c, event.Event{
 				UserID:     contextUserID(c),
 				EntityType: "User",
 				LogLevel:   event.ERROR,
@@ -144,7 +144,7 @@ func readUsers(c *gin.Context) {
 		// Filter by Organization ID
 		u, err := api.UserService.ReadUsersByOrgIDAsJSON(c, orgID, reverse, limit, offset)
 		if err != nil {
-			e, _ := api.EventService.Create(c, event.Event{
+			e, _, _ := api.EventService.Create(c, event.Event{
 				UserID:     contextUserID(c),
 				EntityType: "User",
 				LogLevel:   event.ERROR,
@@ -160,7 +160,7 @@ func readUsers(c *gin.Context) {
 		// Filter by role (e.g. "admin")
 		u, err := api.UserService.ReadUsersByRoleAsJSON(c, role, reverse, limit, offset)
 		if err != nil {
-			e, _ := api.EventService.Create(c, event.Event{
+			e, _, _ := api.EventService.Create(c, event.Event{
 				UserID:     contextUserID(c),
 				EntityType: "User",
 				LogLevel:   event.ERROR,
@@ -176,7 +176,7 @@ func readUsers(c *gin.Context) {
 		// Filter by status (e.g. "ENABLED")
 		u, err := api.UserService.ReadUsersByStatusAsJSON(c, status, reverse, limit, offset)
 		if err != nil {
-			e, _ := api.EventService.Create(c, event.Event{
+			e, _, _ := api.EventService.Create(c, event.Event{
 				UserID:     contextUserID(c),
 				EntityType: "User",
 				LogLevel:   event.ERROR,
@@ -242,7 +242,7 @@ func readUser(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     cUser.ID,
 			EntityID:   id,
 			EntityType: "User",
@@ -326,7 +326,7 @@ func readUserVersions(c *gin.Context) {
 	// Read and return the specified User Versions
 	versions, err := api.UserService.ReadVersionsAsJSON(c, id, reverse, limit, offset)
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
 			EntityType: "User",
@@ -382,7 +382,7 @@ func readUserVersion(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     cUser.ID,
 			EntityID:   id,
 			EntityType: "User",
@@ -486,7 +486,7 @@ func updateUser(c *gin.Context) {
 			return
 		}
 		if err != nil {
-			e, _ := api.EventService.Create(c, event.Event{
+			e, _, _ := api.EventService.Create(c, event.Event{
 				UserID:     cUser.ID,
 				EntityID:   id,
 				EntityType: "User",
@@ -510,7 +510,7 @@ func updateUser(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     cUser.ID,
 			EntityID:   u.ID,
 			EntityType: u.Type(),
@@ -523,7 +523,7 @@ func updateUser(c *gin.Context) {
 		return
 	}
 	// Log the update
-	_, _ = api.EventService.Create(c, event.Event{
+	_, _, _ = api.EventService.Create(c, event.Event{
 		UserID:     cUser.ID,
 		EntityID:   u.ID,
 		EntityType: u.Type(),
@@ -579,7 +579,7 @@ func deleteUser(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     cUser.ID,
 			EntityID:   id,
 			EntityType: "User",
@@ -592,7 +592,7 @@ func deleteUser(c *gin.Context) {
 		return
 	}
 	// Log the deletion
-	_, _ = api.EventService.Create(c, event.Event{
+	_, _, _ = api.EventService.Create(c, event.Event{
 		UserID:     cUser.ID,
 		EntityID:   u.ID,
 		EntityType: u.Type(),
@@ -603,7 +603,7 @@ func deleteUser(c *gin.Context) {
 	// Delete the user's tokens (make an attempt; they'll expire eventually)
 	err = api.TokenService.DeleteAllTokensByUserID(c, id)
 	if err != nil {
-		_, _ = api.EventService.Create(c, event.Event{
+		_, _, _ = api.EventService.Create(c, event.Event{
 			UserID:     cUser.ID,
 			EntityID:   id,
 			EntityType: "User",
@@ -642,7 +642,7 @@ func readUserEmails(c *gin.Context) {
 	// Read and return email addresses
 	emails, err := api.UserService.ReadEmailAddresses(c, reverse, limit, offset)
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityType: "User",
 			LogLevel:   event.ERROR,
@@ -672,7 +672,7 @@ func readUserEmails(c *gin.Context) {
 func readUserOrgIDs(c *gin.Context) {
 	ids, err := api.UserService.ReadAllOrgIDs(c)
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityType: "User",
 			LogLevel:   event.ERROR,
@@ -702,7 +702,7 @@ func readUserOrgIDs(c *gin.Context) {
 func readUserRoles(c *gin.Context) {
 	roles, err := api.UserService.ReadAllRoles(c)
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityType: "User",
 			LogLevel:   event.ERROR,
@@ -732,7 +732,7 @@ func readUserRoles(c *gin.Context) {
 func readUserStatuses(c *gin.Context) {
 	statuses, err := api.UserService.ReadAllStatuses(c)
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityType: "User",
 			LogLevel:   event.ERROR,

@@ -52,6 +52,20 @@ var rowEventsEntity = v.TableRow[Event]{
 	TimeToLive:    func(e Event) int64 { return e.ExpiresAt.Unix() },
 }
 
+// rowEventsEntity is a TableRow definition for Events by Entity ID.
+var rowEventsEntityType = v.TableRow[Event]{
+	RowName:       "events_entity_type",
+	PartKeyName:   "entity_id",
+	PartKeyValue:  func(e Event) string { return e.EntityType },
+	PartKeyValues: nil,
+	SortKeyName:   "id",
+	SortKeyValue:  func(e Event) string { return e.ID },
+	JsonValue:     func(e Event) []byte { return e.CompressedJSON() },
+	TextValue:     nil,
+	NumericValue:  nil,
+	TimeToLive:    func(e Event) int64 { return e.ExpiresAt.Unix() },
+}
+
 // rowEventsLogLevel is a TableRow definition for Events by LogLevel.
 var rowEventsLogLevel = v.TableRow[Event]{
 	RowName:       "events_log_level",
@@ -78,9 +92,10 @@ func NewEventTable(dbClient *dynamodb.Client, env string) v.Table[Event] {
 		TTL:        true,
 		EntityRow:  rowEvents,
 		IndexRows: map[string]v.TableRow[Event]{
-			rowEventsDate.RowName:     rowEventsDate,
-			rowEventsEntity.RowName:   rowEventsEntity,
-			rowEventsLogLevel.RowName: rowEventsLogLevel,
+			rowEventsDate.RowName:       rowEventsDate,
+			rowEventsEntity.RowName:     rowEventsEntity,
+			rowEventsEntityType.RowName: rowEventsEntityType,
+			rowEventsLogLevel.RowName:   rowEventsLogLevel,
 		},
 	}
 }
@@ -97,7 +112,7 @@ type EventService struct {
 }
 
 // Create an Event in the Event log.
-func (s EventService) Create(ctx context.Context, e Event) (Event, error) {
+func (s EventService) Create(ctx context.Context, e Event) (Event, []string, error) {
 	t := tuid.NewID()
 	at, _ := t.Time()
 	e.ID = t.String()
@@ -106,10 +121,11 @@ func (s EventService) Create(ctx context.Context, e Event) (Event, error) {
 	if e.LogLevel == "" {
 		e.LogLevel = INFO
 	}
-	if v := e.Validate(); len(v) > 0 {
-		return e, fmt.Errorf("error creating %s %s: invalid field(s): %s", s.EntityType, e.ID, strings.Join(v, ", "))
+	problems := e.Validate()
+	if len(problems) > 0 {
+		return e, problems, fmt.Errorf("error creating %s %s: invalid field(s): %s", s.EntityType, e.ID, strings.Join(problems, ", "))
 	}
-	return e, s.Table.WriteEntity(ctx, e)
+	return e, problems, s.Table.WriteEntity(ctx, e)
 }
 
 // Write an Event to the Event log. This method assumes that the Event has all the required fields.
@@ -126,6 +142,11 @@ func (s EventService) Delete(ctx context.Context, id string) (Event, error) {
 // Read a specified Event from the Event log.
 func (s EventService) Read(ctx context.Context, id string) (Event, error) {
 	return s.Table.ReadEntity(ctx, id)
+}
+
+// Exists checks if an Event exists in the Event table.
+func (s EventService) Exists(ctx context.Context, id string) bool {
+	return s.Table.EntityExists(ctx, id)
 }
 
 // ReadAsJSON gets a specified Event from the Event log, serialized as JSON.
@@ -211,6 +232,23 @@ func (s EventService) ReadEventsByEntityID(ctx context.Context, entityID string,
 // Sorting is chronological (or reverse). The offset is the ID of the last Event returned in a previous request.
 func (s EventService) ReadEventsByEntityIDAsJSON(ctx context.Context, entityID string, reverse bool, limit int, offset string) ([]byte, error) {
 	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowEventsEntity, entityID, reverse, limit, offset)
+}
+
+// ReadAllEntityTypes returns a complete, alphabetical list of entity types for which there are Events in the Event log.
+func (s EventService) ReadAllEntityTypes(ctx context.Context) ([]string, error) {
+	return s.Table.ReadAllPartKeyValues(ctx, rowEventsEntityType)
+}
+
+// ReadEventsByEntityType returns paginated Events by entity type.
+// Sorting is chronological (or reverse). The offset is the ID of the last Event returned in a previous request.
+func (s EventService) ReadEventsByEntityType(ctx context.Context, entityType string, reverse bool, limit int, offset string) ([]Event, error) {
+	return s.Table.ReadEntitiesFromRow(ctx, rowEventsEntityType, entityType, reverse, limit, offset)
+}
+
+// ReadEventsByEntityTypeAsJSON returns paginated Events by entity type.
+// Sorting is chronological (or reverse). The offset is the ID of the last Event returned in a previous request.
+func (s EventService) ReadEventsByEntityTypeAsJSON(ctx context.Context, entityType string, reverse bool, limit int, offset string) ([]byte, error) {
+	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowEventsEntityType, entityType, reverse, limit, offset)
 }
 
 // ReadLogLevels returns a paginated list of log levels for which there are Events in the Event log.

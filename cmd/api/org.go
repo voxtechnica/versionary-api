@@ -3,14 +3,13 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
 	"net/http"
 	"strings"
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/user"
-
-	"github.com/gin-gonic/gin"
 )
 
 // registerOrganizationRoutes initializes the Organization routes.
@@ -58,7 +57,7 @@ func createOrganization(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   o.ID,
 			EntityType: o.Type(),
@@ -71,7 +70,7 @@ func createOrganization(c *gin.Context) {
 		return
 	}
 	// Log the creation
-	_, _ = api.EventService.Create(c, event.Event{
+	_, _, _ = api.EventService.Create(c, event.Event{
 		UserID:     contextUserID(c),
 		EntityID:   o.ID,
 		EntityType: o.Type(),
@@ -110,13 +109,10 @@ func readOrganizations(c *gin.Context) {
 	}
 	status := strings.ToUpper(c.Query("status"))
 	// Read and return paginated Organizations
-	if status == "" {
-		orgs := api.OrgService.ReadOrganizations(c, reverse, limit, offset)
-		c.JSON(http.StatusOK, orgs)
-	} else {
+	if status != "" {
 		orgs, err := api.OrgService.ReadOrganizationsByStatusAsJSON(c, status, reverse, limit, offset)
 		if err != nil {
-			e, _ := api.EventService.Create(c, event.Event{
+			e, _, _ := api.EventService.Create(c, event.Event{
 				UserID:     contextUserID(c),
 				EntityType: "Organization",
 				LogLevel:   event.ERROR,
@@ -128,6 +124,9 @@ func readOrganizations(c *gin.Context) {
 			return
 		}
 		c.Data(http.StatusOK, "application/json;charset=UTF-8", orgs)
+	} else {
+		orgs := api.OrgService.ReadOrganizations(c, reverse, limit, offset)
+		c.JSON(http.StatusOK, orgs)
 	}
 }
 
@@ -157,7 +156,7 @@ func readOrganization(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
 			EntityType: "Organization",
@@ -231,7 +230,7 @@ func readOrganizationVersions(c *gin.Context) {
 	// Read and return the specified Organization Versions
 	versions, err := api.OrgService.ReadVersionsAsJSON(c, id, reverse, limit, offset)
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
 			EntityType: "Organization",
@@ -278,7 +277,7 @@ func readOrganizationVersion(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
 			EntityType: "Organization",
@@ -359,7 +358,7 @@ func updateOrganization(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   o.ID,
 			EntityType: o.Type(),
@@ -372,7 +371,7 @@ func updateOrganization(c *gin.Context) {
 		return
 	}
 	// Log the update
-	_, _ = api.EventService.Create(c, event.Event{
+	_, _, _ = api.EventService.Create(c, event.Event{
 		UserID:     contextUserID(c),
 		EntityID:   o.ID,
 		EntityType: o.Type(),
@@ -413,7 +412,7 @@ func deleteOrganization(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
 			EntityType: "Organization",
@@ -426,7 +425,7 @@ func deleteOrganization(c *gin.Context) {
 		return
 	}
 	// Log the deletion
-	_, _ = api.EventService.Create(c, event.Event{
+	_, _, _ = api.EventService.Create(c, event.Event{
 		UserID:     contextUserID(c),
 		EntityID:   o.ID,
 		EntityType: o.Type(),
@@ -454,7 +453,7 @@ func deleteOrganization(c *gin.Context) {
 func readOrganizationStatuses(c *gin.Context) {
 	statuses, err := api.OrgService.ReadAllStatuses(c)
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityType: "Organization",
 			LogLevel:   event.ERROR,

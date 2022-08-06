@@ -106,6 +106,7 @@ func main() {
 func registerRoutes(r *gin.Engine) {
 	r.Use(bearerTokenHandler())
 	r.NoRoute(notFound)
+	registerEventRoutes(r)
 	registerOrganizationRoutes(r)
 	registerTokenRoutes(r)
 	registerTuidRoutes(r)
@@ -177,7 +178,10 @@ func bearerTokenHandler() gin.HandlerFunc {
 			b, a, f := strings.Cut(strings.TrimSpace(h), " ")
 			if f && strings.ToLower(b) == "bearer" && len(a) > 0 {
 				t, u, err := api.TokenUser(c, a)
-				if err == nil {
+				if err != nil {
+					abortWithError(c, http.StatusUnauthorized, err)
+					return
+				} else {
 					c.Set("token", t)
 					c.Set("user", u.Scrub())
 				}

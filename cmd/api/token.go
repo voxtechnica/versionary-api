@@ -3,13 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
 	"net/http"
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/user"
-
-	"github.com/gin-gonic/gin"
 )
 
 // registerTokenRoutes initializes the Token routes.
@@ -51,7 +50,7 @@ func createToken(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityType: "Token",
 			LogLevel:   event.ERROR,
@@ -73,7 +72,7 @@ func createToken(c *gin.Context) {
 		Email:  u.Email,
 	})
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     u.ID,
 			EntityID:   t.ID,
 			EntityType: "Token",
@@ -86,7 +85,7 @@ func createToken(c *gin.Context) {
 		return
 	}
 	// Log the token creation
-	_, _ = api.EventService.Create(c, event.Event{
+	_, _, _ = api.EventService.Create(c, event.Event{
 		UserID:     t.UserID,
 		EntityID:   t.ID,
 		EntityType: t.Type(),
@@ -139,7 +138,7 @@ func readTokens(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityType: "Token",
 			LogLevel:   event.ERROR,
@@ -153,7 +152,7 @@ func readTokens(c *gin.Context) {
 	// Read the User's tokens
 	tokens, err := api.TokenService.ReadAllTokensByUserIDAsJSON(c, u.ID)
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityType: "Token",
 			LogLevel:   event.ERROR,
@@ -205,7 +204,7 @@ func readToken(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
 			EntityType: "Token",
@@ -263,7 +262,7 @@ func deleteToken(c *gin.Context) {
 		return
 	}
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     cUser.ID,
 			EntityID:   id,
 			EntityType: "Token",
@@ -283,7 +282,7 @@ func deleteToken(c *gin.Context) {
 	// Delete the token
 	t, err = api.TokenService.Delete(c, t.ID)
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     cUser.ID,
 			EntityID:   t.ID,
 			EntityType: t.Type(),
@@ -296,7 +295,7 @@ func deleteToken(c *gin.Context) {
 		return
 	}
 	// Log the token deletion (best effort)
-	_, _ = api.EventService.Create(c, event.Event{
+	_, _, _ = api.EventService.Create(c, event.Event{
 		UserID:     cUser.ID,
 		EntityID:   t.ID,
 		EntityType: t.Type(),
@@ -328,7 +327,7 @@ func logout(c *gin.Context) {
 	// Delete the token
 	t, err := api.TokenService.Delete(c, cToken.ID)
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     cToken.UserID,
 			EntityID:   cToken.ID,
 			EntityType: t.Type(),
@@ -341,7 +340,7 @@ func logout(c *gin.Context) {
 		return
 	}
 	// Log the token deletion (best effort)
-	_, _ = api.EventService.Create(c, event.Event{
+	_, _, _ = api.EventService.Create(c, event.Event{
 		UserID:     t.UserID,
 		EntityID:   t.ID,
 		EntityType: t.Type(),
@@ -380,7 +379,7 @@ func readTokenUserIDs(c *gin.Context) {
 	// Read paginated User IDs for which Tokens exist
 	ids, err := api.TokenService.ReadUserIDs(c, reverse, limit, offset)
 	if err != nil {
-		e, _ := api.EventService.Create(c, event.Event{
+		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityType: "Token",
 			LogLevel:   event.ERROR,

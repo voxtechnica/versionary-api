@@ -101,7 +101,7 @@ func createUser(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("unprocessable entity: %w", err)
 	}
 	if err != nil {
-		e, _ := ops.EventService.Create(ctx, event.Event{
+		e, _, _ := ops.EventService.Create(ctx, event.Event{
 			EntityID:   u.ID,
 			EntityType: u.Type(),
 			LogLevel:   event.ERROR,
