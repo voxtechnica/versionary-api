@@ -1,8 +1,8 @@
 # Versionary API
 
-**Under Construction**
+This project is **Under Construction**.
 
-This project demonstrates a way to manage versioned entities in a database with a serverless architecture. 
+This project demonstrates a way to manage versioned entities in a database with a serverless architecture.
 It uses the Go programming language with the following technologies:
 
 * [AWS CloudFormation](https://aws.amazon.com/cloudformation/)
@@ -41,8 +41,8 @@ go get github.com/aws/aws-sdk-go-v2/service/dynamodb
 go get github.com/aws/aws-sdk-go-v2/service/dynamodb/types
 go get github.com/awslabs/aws-lambda-go-api-proxy
 go get github.com/gin-gonic/gin
-go get github.com/google/go-cmp/cmp
 go get github.com/spf13/cobra
+go get github.com/stretchr/testify
 go get github.com/voxtechnica/tuid-go
 go get github.com/voxtechnica/user-agent
 go get github.com/voxtechnica/versionary

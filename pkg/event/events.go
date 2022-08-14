@@ -52,10 +52,10 @@ var rowEventsEntity = v.TableRow[Event]{
 	TimeToLive:    func(e Event) int64 { return e.ExpiresAt.Unix() },
 }
 
-// rowEventsEntity is a TableRow definition for Events by Entity ID.
+// rowEventsEntityType is a TableRow definition for Events by Entity Type.
 var rowEventsEntityType = v.TableRow[Event]{
 	RowName:       "events_entity_type",
-	PartKeyName:   "entity_id",
+	PartKeyName:   "entity_type",
 	PartKeyValue:  func(e Event) string { return e.EntityType },
 	PartKeyValues: nil,
 	SortKeyName:   "id",
