@@ -127,6 +127,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/main.request"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request (invalid parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
                     "401": {
                         "description": "Unauthenticated (missing or invalid Authorization header)",
                         "schema": {
@@ -2648,6 +2654,20 @@ const docTemplate = `{
                 }
             }
         },
+        "main.params": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "string"
+                },
+                "reverse": {
+                    "type": "boolean"
+                }
+            }
+        },
         "main.request": {
             "type": "object",
             "properties": {
@@ -2671,6 +2691,9 @@ const docTemplate = `{
                 },
                 "method": {
                     "type": "string"
+                },
+                "params": {
+                    "$ref": "#/definitions/main.params"
                 },
                 "proto": {
                     "type": "string"

@@ -76,11 +76,17 @@ func userAgent(c *gin.Context) {
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
 // @Param body body string false "Request body"
 // @Success 200 {object} request "Echoed request information"
+// @Failure 400 {object} APIEvent "Bad Request (invalid parameter)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
 // @Failure 500 {object} APIEvent "Error reading request body"
 // @Router /echo [post]
 func echoRequest(c *gin.Context) {
+	reverse, limit, offset, err := paginationParams(c, false, 100)
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, err)
+		return
+	}
 	r := request{
 		Method:           c.Request.Method,
 		URL:              c.Request.URL.String(),
@@ -92,6 +98,7 @@ func echoRequest(c *gin.Context) {
 		Host:             c.Request.Host,
 		RemoteAddr:       c.Request.RemoteAddr,
 		RequestURI:       c.Request.RequestURI,
+		Params:           params{Reverse: reverse, Limit: limit, Offset: offset},
 	}
 	if c.Request.Body != nil {
 		defer c.Request.Body.Close()
@@ -127,7 +134,15 @@ type request struct {
 	Host             string              `json:"host,omitempty"`
 	RemoteAddr       string              `json:"remoteAddr,omitempty"`
 	RequestURI       string              `json:"requestURI,omitempty"`
+	Params           params              `json:"params,omitempty"`
 	Body             string              `json:"body,omitempty"`
 	Token            user.Token          `json:"token,omitempty"`
 	User             user.User           `json:"user,omitempty"`
+}
+
+// params represents pagination parameters, specified as query parameters.
+type params struct {
+	Reverse bool   `json:"reverse"`
+	Limit   int    `json:"limit"`
+	Offset  string `json:"offset"`
 }
