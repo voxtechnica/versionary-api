@@ -3,12 +3,13 @@ package main
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"versionary-api/pkg/event"
+	"versionary-api/pkg/token"
+
 	"github.com/gin-gonic/gin"
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
-	"net/http"
-	"versionary-api/pkg/event"
-	"versionary-api/pkg/user"
 )
 
 // registerTokenRoutes initializes the Token routes.
@@ -29,8 +30,8 @@ func registerTokenRoutes(r *gin.Engine) {
 // @Tags Token
 // @Accept json
 // @Produce json
-// @Param TokenRequest body user.TokenRequest true "Token Request"
-// @Success 201 {object} user.TokenResponse "Token Response"
+// @Param TokenRequest body token.TokenRequest true "Token Request"
+// @Success 201 {object} token.TokenResponse "Token Response"
 // @Failure 400 {object} APIEvent "Bad Request (invalid JSON body)"
 // @Failure 401 {object} APIEvent "Unauthorized (invalid username or password)"
 // @Failure 500 {object} APIEvent "Internal Server Error"
@@ -38,7 +39,7 @@ func registerTokenRoutes(r *gin.Engine) {
 // @Router /v1/tokens [post]
 func createToken(c *gin.Context) {
 	// Parse the request body as an OAuth TokenRequest
-	var req user.TokenRequest
+	var req token.TokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid JSON body: %w", err))
 		return
@@ -67,7 +68,7 @@ func createToken(c *gin.Context) {
 		return
 	}
 	// Create a new token for the User
-	t, err := api.TokenService.Create(c, user.Token{
+	t, err := api.TokenService.Create(c, token.Token{
 		UserID: u.ID,
 		Email:  u.Email,
 	})
@@ -95,7 +96,7 @@ func createToken(c *gin.Context) {
 	})
 	// Return an OAuth TokenResponse
 	c.Header("Location", c.Request.URL.String()+"/"+t.ID)
-	c.JSON(http.StatusCreated, user.TokenResponse{
+	c.JSON(http.StatusCreated, token.TokenResponse{
 		AccessToken: t.ID,
 		TokenType:   "Bearer",
 		ExpiresAt:   t.ExpiresAt,
@@ -112,7 +113,7 @@ func createToken(c *gin.Context) {
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (any role)"
 // @Param user query string false "User ID or Email (defaults to the Context User)"
-// @Success 200 {array} user.Token "Tokens"
+// @Success 200 {array} token.Token "Tokens"
 // @Failure 400 {object} APIEvent "Bad Request (invalid User ID or Email)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Forbidden (only administrators may read any user's tokens)"
@@ -177,7 +178,7 @@ func readTokens(c *gin.Context) {
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (any role)"
 // @Param id path string true "Token ID"
-// @Success 200 {object} user.Token "Token"
+// @Success 200 {object} token.Token "Token"
 // @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Forbidden (only administrators may read any user's tokens)"
@@ -235,7 +236,7 @@ func readToken(c *gin.Context) {
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (any role)"
 // @Param id path string true "Token ID"
-// @Success 200 {object} user.Token "Token that was deleted"
+// @Success 200 {object} token.Token "Token that was deleted"
 // @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Forbidden (only administrators may delete any user's tokens)"
@@ -314,7 +315,7 @@ func deleteToken(c *gin.Context) {
 // @Tags Token
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (any role)"
-// @Success 200 {object} user.Token "Token that was deleted"
+// @Success 200 {object} token.Token "Token that was deleted"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 500 {object} APIEvent "Internal Server Error"
 // @Router /logout [get]

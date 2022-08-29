@@ -177,7 +177,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Token that was deleted",
                         "schema": {
-                            "$ref": "#/definitions/user.Token"
+                            "$ref": "#/definitions/token.Token"
                         }
                     },
                     "401": {
@@ -846,7 +846,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/user.Organization"
+                                "$ref": "#/definitions/org.Organization"
                             }
                         }
                     },
@@ -902,7 +902,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.Organization"
+                            "$ref": "#/definitions/org.Organization"
                         }
                     }
                 ],
@@ -910,7 +910,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Newly-created Organization",
                         "schema": {
-                            "$ref": "#/definitions/user.Organization"
+                            "$ref": "#/definitions/org.Organization"
                         },
                         "headers": {
                             "Location": {
@@ -975,7 +975,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Organization",
                         "schema": {
-                            "$ref": "#/definitions/user.Organization"
+                            "$ref": "#/definitions/org.Organization"
                         }
                     },
                     "400": {
@@ -1024,7 +1024,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.Organization"
+                            "$ref": "#/definitions/org.Organization"
                         }
                     },
                     {
@@ -1039,7 +1039,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Organization",
                         "schema": {
-                            "$ref": "#/definitions/user.Organization"
+                            "$ref": "#/definitions/org.Organization"
                         }
                     },
                     "400": {
@@ -1103,7 +1103,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Organization that was deleted",
                         "schema": {
-                            "$ref": "#/definitions/user.Organization"
+                            "$ref": "#/definitions/org.Organization"
                         }
                     },
                     "400": {
@@ -1222,7 +1222,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/user.Organization"
+                                "$ref": "#/definitions/org.Organization"
                             }
                         }
                     },
@@ -1289,7 +1289,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Organization Version",
                         "schema": {
-                            "$ref": "#/definitions/user.Organization"
+                            "$ref": "#/definitions/org.Organization"
                         }
                     },
                     "400": {
@@ -1458,7 +1458,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/user.Token"
+                                "$ref": "#/definitions/token.Token"
                             }
                         }
                     },
@@ -1507,7 +1507,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.TokenRequest"
+                            "$ref": "#/definitions/token.TokenRequest"
                         }
                     }
                 ],
@@ -1515,7 +1515,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Token Response",
                         "schema": {
-                            "$ref": "#/definitions/user.TokenResponse"
+                            "$ref": "#/definitions/token.TokenResponse"
                         },
                         "headers": {
                             "Location": {
@@ -1575,7 +1575,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Token",
                         "schema": {
-                            "$ref": "#/definitions/user.Token"
+                            "$ref": "#/definitions/token.Token"
                         }
                     },
                     "400": {
@@ -1639,7 +1639,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Token that was deleted",
                         "schema": {
-                            "$ref": "#/definitions/user.Token"
+                            "$ref": "#/definitions/token.Token"
                         }
                     },
                     "400": {
@@ -2705,7 +2705,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "token": {
-                    "$ref": "#/definitions/user.Token"
+                    "$ref": "#/definitions/token.Token"
                 },
                 "trailer": {
                     "type": "object",
@@ -2730,21 +2730,7 @@ const docTemplate = `{
                 }
             }
         },
-        "tuid.TUIDInfo": {
-            "type": "object",
-            "properties": {
-                "entropy": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "timestamp": {
-                    "type": "string"
-                }
-            }
-        },
-        "user.Organization": {
+        "org.Organization": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -2767,7 +2753,7 @@ const docTemplate = `{
                 }
             }
         },
-        "user.Token": {
+        "token.Token": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -2787,7 +2773,7 @@ const docTemplate = `{
                 }
             }
         },
-        "user.TokenRequest": {
+        "token.TokenRequest": {
             "type": "object",
             "properties": {
                 "grantType": {
@@ -2804,7 +2790,7 @@ const docTemplate = `{
                 }
             }
         },
-        "user.TokenResponse": {
+        "token.TokenResponse": {
             "type": "object",
             "properties": {
                 "accessToken": {
@@ -2817,6 +2803,20 @@ const docTemplate = `{
                 },
                 "tokenType": {
                     "description": "usually \"Bearer\"",
+                    "type": "string"
+                }
+            }
+        },
+        "tuid.TUIDInfo": {
+            "type": "object",
+            "properties": {
+                "entropy": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "timestamp": {
                     "type": "string"
                 }
             }

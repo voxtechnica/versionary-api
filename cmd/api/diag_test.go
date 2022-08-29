@@ -15,6 +15,7 @@ func TestAbout(t *testing.T) {
 	expect := assert.New(t)
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", "/about", nil)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
@@ -127,6 +128,7 @@ func TestUserAgent(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", "/user_agent", nil)
 	req.Header.Set("User-Agent", h)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")

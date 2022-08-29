@@ -5,8 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 	"log"
 	"net/http"
 	"os"
@@ -16,7 +14,11 @@ import (
 	"versionary-api/cmd/api/docs"
 	"versionary-api/pkg/app"
 	"versionary-api/pkg/event"
+	"versionary-api/pkg/token"
 	"versionary-api/pkg/user"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -96,8 +98,9 @@ func main() {
 	} else {
 		// Run API on localhost for local development, debugging, etc.
 		_ = r.SetTrustedProxies(nil) // disable IP allow list
+		log.Println("AWS Region:", api.AWSConfig.Region)
 		log.Println("Environment Stage:", env)
-		log.Println("Initialized in ", time.Since(startTime))
+		log.Println("Initialized in", time.Since(startTime))
 		log.Fatal(r.Run(":8080"))
 	}
 }
@@ -222,19 +225,13 @@ func roleAuthorizer(r string) gin.HandlerFunc {
 	}
 }
 
-// isAnonymous returns true if the context does not have a logged-in user.
-func isAnonymous(c *gin.Context) bool {
-	_, ok := c.Get("user")
-	return !ok
-}
-
 // contextToken returns the typed Token associated with the request.
-func contextToken(c *gin.Context) (user.Token, bool) {
+func contextToken(c *gin.Context) (token.Token, bool) {
 	t, ok := c.Get("token")
 	if !ok {
-		return user.Token{}, false
+		return token.Token{}, false
 	}
-	return t.(user.Token), true
+	return t.(token.Token), true
 }
 
 // contextUser returns the typed User associated with the request.
@@ -254,12 +251,6 @@ func contextUserID(c *gin.Context) string {
 		return ""
 	}
 	return u.(user.User).ID
-}
-
-// contextUserHasRole returns true if the context user exists and has the specified role.
-func contextUserHasRole(c *gin.Context, r string) bool {
-	u, ok := c.Get("user")
-	return ok && u.(user.User).HasRole(r)
 }
 
 // paginationParams parses pagination query parameters (reverse, limit, offset), with supplied defaults.

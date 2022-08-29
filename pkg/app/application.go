@@ -13,6 +13,8 @@ import (
 	"github.com/voxtechnica/tuid-go"
 
 	"versionary-api/pkg/event"
+	"versionary-api/pkg/org"
+	"versionary-api/pkg/token"
 	"versionary-api/pkg/user"
 )
 
@@ -44,8 +46,8 @@ type Application struct {
 	DBClient     *dynamodb.Client // DynamoDB client
 	EntityTypes  []string         // Valid entity type names (e.g. "Event", "User", etc.)
 	EventService event.EventService
-	OrgService   user.OrganizationService
-	TokenService user.TokenService
+	OrgService   org.OrganizationService
+	TokenService token.TokenService
 	UserService  user.UserService
 }
 
@@ -117,13 +119,13 @@ func (a *Application) Init(env string) error {
 		EntityType: "Event",
 		Table:      event.NewEventTable(a.DBClient, a.Environment),
 	}
-	a.OrgService = user.OrganizationService{
+	a.OrgService = org.OrganizationService{
 		EntityType: "Organization",
-		Table:      user.NewOrganizationTable(a.DBClient, a.Environment),
+		Table:      org.NewOrganizationTable(a.DBClient, a.Environment),
 	}
-	a.TokenService = user.TokenService{
+	a.TokenService = token.TokenService{
 		EntityType: "Token",
-		Table:      user.NewTokenTable(a.DBClient, a.Environment),
+		Table:      token.NewTokenTable(a.DBClient, a.Environment),
 	}
 	a.UserService = user.UserService{
 		EntityType: "User",
@@ -145,13 +147,13 @@ func (a *Application) InitMock(env string) error {
 		EntityType: "Event",
 		Table:      event.NewEventMemTable(event.NewEventTable(a.DBClient, a.Environment)),
 	}
-	a.OrgService = user.OrganizationService{
+	a.OrgService = org.OrganizationService{
 		EntityType: "Organization",
-		Table:      user.NewOrganizationMemTable(user.NewOrganizationTable(a.DBClient, a.Environment)),
+		Table:      org.NewOrganizationMemTable(org.NewOrganizationTable(a.DBClient, a.Environment)),
 	}
-	a.TokenService = user.TokenService{
+	a.TokenService = token.TokenService{
 		EntityType: "Token",
-		Table:      user.NewTokenMemTable(user.NewTokenTable(a.DBClient, a.Environment)),
+		Table:      token.NewTokenMemTable(token.NewTokenTable(a.DBClient, a.Environment)),
 	}
 	a.UserService = user.UserService{
 		EntityType: "User",
@@ -161,20 +163,20 @@ func (a *Application) InitMock(env string) error {
 }
 
 // TokenUser reads a specified Token and its associated User.
-func (a *Application) TokenUser(ctx context.Context, tokenID string) (user.Token, user.User, error) {
+func (a *Application) TokenUser(ctx context.Context, tokenID string) (token.Token, user.User, error) {
 	// Validate the Application
 	if a.TokenService.Table == nil || a.UserService.Table == nil {
-		return user.Token{}, user.User{}, fmt.Errorf("application not initialized")
+		return token.Token{}, user.User{}, fmt.Errorf("application not initialized")
 	}
 	// Validate the bearer token
 	if tokenID == "" || !tuid.IsValid(tuid.TUID(tokenID)) {
-		return user.Token{}, user.User{}, fmt.Errorf("invalid bearer token")
+		return token.Token{}, user.User{}, fmt.Errorf("invalid bearer token")
 	}
 	// Read the specified token
 	t, err := a.TokenService.Read(ctx, tokenID)
 	if err != nil {
 		// tokens expire, so this will be a common response
-		return user.Token{}, user.User{}, fmt.Errorf("error reading token: %w", err)
+		return token.Token{}, user.User{}, fmt.Errorf("error reading token: %w", err)
 	}
 	// Read the associated user
 	u, err := a.UserService.Read(ctx, t.UserID)

@@ -6,6 +6,8 @@ import (
 	"log"
 	"strings"
 	"versionary-api/pkg/event"
+	"versionary-api/pkg/org"
+	"versionary-api/pkg/token"
 	"versionary-api/pkg/user"
 
 	"github.com/spf13/cobra"
@@ -50,9 +52,9 @@ func checkTables(cmd *cobra.Command, args []string) error {
 		case "Event":
 			checkTable(ctx, event.NewEventTable(ops.DBClient, ops.Environment))
 		case "Organization":
-			checkTable(ctx, user.NewOrganizationTable(ops.DBClient, ops.Environment))
+			checkTable(ctx, org.NewOrganizationTable(ops.DBClient, ops.Environment))
 		case "Token":
-			checkTable(ctx, user.NewTokenTable(ops.DBClient, ops.Environment))
+			checkTable(ctx, token.NewTokenTable(ops.DBClient, ops.Environment))
 		case "User":
 			checkTable(ctx, user.NewUserTable(ops.DBClient, ops.Environment))
 		default:

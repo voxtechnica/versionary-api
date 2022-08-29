@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"versionary-api/pkg/user"
+	"versionary-api/pkg/token"
 
 	"github.com/spf13/cobra"
 )
@@ -67,7 +67,7 @@ func createToken(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create the Token
-	t, err := ops.TokenService.Create(ctx, user.Token{
+	t, err := ops.TokenService.Create(ctx, token.Token{
 		UserID: u.ID,
 		Email:  u.Email,
 	})

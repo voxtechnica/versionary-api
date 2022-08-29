@@ -165,7 +165,7 @@
                     "200": {
                         "description": "Token that was deleted",
                         "schema": {
-                            "$ref": "#/definitions/user.Token"
+                            "$ref": "#/definitions/token.Token"
                         }
                     },
                     "401": {
@@ -834,7 +834,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/user.Organization"
+                                "$ref": "#/definitions/org.Organization"
                             }
                         }
                     },
@@ -890,7 +890,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.Organization"
+                            "$ref": "#/definitions/org.Organization"
                         }
                     }
                 ],
@@ -898,7 +898,7 @@
                     "201": {
                         "description": "Newly-created Organization",
                         "schema": {
-                            "$ref": "#/definitions/user.Organization"
+                            "$ref": "#/definitions/org.Organization"
                         },
                         "headers": {
                             "Location": {
@@ -963,7 +963,7 @@
                     "200": {
                         "description": "Organization",
                         "schema": {
-                            "$ref": "#/definitions/user.Organization"
+                            "$ref": "#/definitions/org.Organization"
                         }
                     },
                     "400": {
@@ -1012,7 +1012,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.Organization"
+                            "$ref": "#/definitions/org.Organization"
                         }
                     },
                     {
@@ -1027,7 +1027,7 @@
                     "200": {
                         "description": "Organization",
                         "schema": {
-                            "$ref": "#/definitions/user.Organization"
+                            "$ref": "#/definitions/org.Organization"
                         }
                     },
                     "400": {
@@ -1091,7 +1091,7 @@
                     "200": {
                         "description": "Organization that was deleted",
                         "schema": {
-                            "$ref": "#/definitions/user.Organization"
+                            "$ref": "#/definitions/org.Organization"
                         }
                     },
                     "400": {
@@ -1210,7 +1210,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/user.Organization"
+                                "$ref": "#/definitions/org.Organization"
                             }
                         }
                     },
@@ -1277,7 +1277,7 @@
                     "200": {
                         "description": "Organization Version",
                         "schema": {
-                            "$ref": "#/definitions/user.Organization"
+                            "$ref": "#/definitions/org.Organization"
                         }
                     },
                     "400": {
@@ -1446,7 +1446,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/user.Token"
+                                "$ref": "#/definitions/token.Token"
                             }
                         }
                     },
@@ -1495,7 +1495,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.TokenRequest"
+                            "$ref": "#/definitions/token.TokenRequest"
                         }
                     }
                 ],
@@ -1503,7 +1503,7 @@
                     "201": {
                         "description": "Token Response",
                         "schema": {
-                            "$ref": "#/definitions/user.TokenResponse"
+                            "$ref": "#/definitions/token.TokenResponse"
                         },
                         "headers": {
                             "Location": {
@@ -1563,7 +1563,7 @@
                     "200": {
                         "description": "Token",
                         "schema": {
-                            "$ref": "#/definitions/user.Token"
+                            "$ref": "#/definitions/token.Token"
                         }
                     },
                     "400": {
@@ -1627,7 +1627,7 @@
                     "200": {
                         "description": "Token that was deleted",
                         "schema": {
-                            "$ref": "#/definitions/user.Token"
+                            "$ref": "#/definitions/token.Token"
                         }
                     },
                     "400": {
@@ -2693,7 +2693,7 @@
                     "type": "string"
                 },
                 "token": {
-                    "$ref": "#/definitions/user.Token"
+                    "$ref": "#/definitions/token.Token"
                 },
                 "trailer": {
                     "type": "object",
@@ -2718,21 +2718,7 @@
                 }
             }
         },
-        "tuid.TUIDInfo": {
-            "type": "object",
-            "properties": {
-                "entropy": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "timestamp": {
-                    "type": "string"
-                }
-            }
-        },
-        "user.Organization": {
+        "org.Organization": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -2755,7 +2741,7 @@
                 }
             }
         },
-        "user.Token": {
+        "token.Token": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -2775,7 +2761,7 @@
                 }
             }
         },
-        "user.TokenRequest": {
+        "token.TokenRequest": {
             "type": "object",
             "properties": {
                 "grantType": {
@@ -2792,7 +2778,7 @@
                 }
             }
         },
-        "user.TokenResponse": {
+        "token.TokenResponse": {
             "type": "object",
             "properties": {
                 "accessToken": {
@@ -2805,6 +2791,20 @@
                 },
                 "tokenType": {
                     "description": "usually \"Bearer\"",
+                    "type": "string"
+                }
+            }
+        },
+        "tuid.TUIDInfo": {
+            "type": "object",
+            "properties": {
+                "entropy": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "timestamp": {
                     "type": "string"
                 }
             }

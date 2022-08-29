@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"versionary-api/pkg/token"
 	"versionary-api/pkg/user"
 
 	"github.com/gin-gonic/gin"
@@ -117,7 +118,7 @@ func echoRequest(c *gin.Context) {
 	}
 	t, ok := c.Get("token")
 	if ok {
-		r.Token = t.(user.Token)
+		r.Token = t.(token.Token)
 	}
 	c.JSON(http.StatusOK, r)
 }
@@ -136,7 +137,7 @@ type request struct {
 	RequestURI       string              `json:"requestURI,omitempty"`
 	Params           params              `json:"params,omitempty"`
 	Body             string              `json:"body,omitempty"`
-	Token            user.Token          `json:"token,omitempty"`
+	Token            token.Token         `json:"token,omitempty"`
 	User             user.User           `json:"user,omitempty"`
 }
 
