@@ -75,7 +75,7 @@ func TestReadTUID(t *testing.T) {
 			expect.Equal(expected, info, "TUID")
 		}
 	}
-	// Test invalid TUID (invalid TUID)
+	// Test invalid TUID (invalid characters)
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest("GET", "/v1/tuids/bad_tuid", nil)
 	req.Header.Set("Accept", "application/json;charset=UTF-8")

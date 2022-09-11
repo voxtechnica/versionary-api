@@ -86,9 +86,9 @@ func createUser(cmd *cobra.Command, args []string) error {
 
 	// Validate the Organization
 	if u.OrgID != "" {
-		org, err := ops.OrgService.Read(ctx, u.OrgID)
-		if err != nil {
-			return fmt.Errorf("error reading Organization %s: %w", u.OrgID, err)
+		org, readErr := ops.OrgService.Read(ctx, u.OrgID)
+		if readErr != nil {
+			return fmt.Errorf("error reading Organization %s: %w", u.OrgID, readErr)
 		}
 		if org.Name != "" {
 			u.OrgName = org.Name

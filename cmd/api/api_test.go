@@ -4,11 +4,12 @@ import (
 	"context"
 	"log"
 	"testing"
+
+	"github.com/gin-gonic/gin"
+
 	"versionary-api/pkg/org"
 	"versionary-api/pkg/token"
 	"versionary-api/pkg/user"
-
-	"github.com/gin-gonic/gin"
 )
 
 var r = gin.New()

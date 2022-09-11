@@ -225,7 +225,7 @@ const docTemplate = `{
         },
         "/v1/event_dates": {
             "get": {
-                "description": "Get a list of ISO dates (e.g. yyyy-mm-dd) for which events exist.",
+                "description": "Get a paginated list of ISO dates (e.g. yyyy-mm-dd) for which events exist.",
                 "produces": [
                     "application/json"
                 ],
@@ -270,6 +270,12 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "400": {
+                        "description": "Bad Request (invalid pagination parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
                     "401": {
                         "description": "Unauthenticated (missing or invalid Authorization header)",
                         "schema": {
@@ -293,7 +299,7 @@ const docTemplate = `{
         },
         "/v1/event_entity_ids": {
             "get": {
-                "description": "Get a list of entity IDs for which events exist.",
+                "description": "Get a paginated list of entity IDs for which events exist.",
                 "produces": [
                     "application/json"
                 ],
@@ -338,6 +344,12 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "400": {
+                        "description": "Bad Request (invalid pagination parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
                     "401": {
                         "description": "Unauthenticated (missing or invalid Authorization header)",
                         "schema": {
@@ -361,7 +373,7 @@ const docTemplate = `{
         },
         "/v1/event_entity_types": {
             "get": {
-                "description": "Get a list of entity types for which events exist.",
+                "description": "Get a complete, sorted list of entity types for which events exist.",
                 "produces": [
                     "application/json"
                 ],
@@ -411,7 +423,7 @@ const docTemplate = `{
         },
         "/v1/event_log_levels": {
             "get": {
-                "description": "Get a list of log levels for which events exist.",
+                "description": "Get a complete, sorted list of log levels for which events exist.",
                 "produces": [
                     "application/json"
                 ],

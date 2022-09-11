@@ -3,12 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/voxtechnica/tuid-go"
-	v "github.com/voxtechnica/versionary"
 	"net/http"
 	"net/mail"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/voxtechnica/tuid-go"
+	v "github.com/voxtechnica/versionary"
+
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/user"
 )

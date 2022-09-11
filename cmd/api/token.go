@@ -4,12 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"versionary-api/pkg/event"
-	"versionary-api/pkg/token"
 
 	"github.com/gin-gonic/gin"
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
+
+	"versionary-api/pkg/event"
+	"versionary-api/pkg/token"
 )
 
 // registerTokenRoutes initializes the Token routes.

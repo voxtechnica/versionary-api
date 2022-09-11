@@ -7,12 +7,13 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"versionary-api/pkg/org"
-	"versionary-api/pkg/user"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/voxtechnica/tuid-go"
 	"github.com/voxtechnica/versionary"
+
+	"versionary-api/pkg/org"
+	"versionary-api/pkg/user"
 )
 
 func TestOrganizationCRUD(t *testing.T) {

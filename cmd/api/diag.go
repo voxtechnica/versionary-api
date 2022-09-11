@@ -5,11 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"versionary-api/pkg/token"
-	"versionary-api/pkg/user"
 
 	"github.com/gin-gonic/gin"
 	user_agent "github.com/voxtechnica/user-agent"
+
+	"versionary-api/pkg/token"
+	"versionary-api/pkg/user"
 )
 
 // registerDiagRoutes initializes the diagnostic routes.

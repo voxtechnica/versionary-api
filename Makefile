@@ -8,11 +8,19 @@ format:
 
 # Check Code Style
 # go install honnef.co/go/tools/cmd/staticcheck@latest
+# go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest
 lint: format
 	@echo "Linting code:"
 	staticcheck ./...
+	shadow ./...
 	go vet ./...
 .PHONY:lint
+
+# Test Code
+test: lint
+	@echo "Testing code:"
+	go test ./...
+.PHONY:test
 
 # Update Dependencies
 dependencies:
@@ -22,6 +30,8 @@ dependencies:
 .PHONY:dependencies
 
 # Swaggo gin-swagger API Documentation
+# Note: swag v1.8.5 explodes with a panic (SIGSEGV)
+# go install github.com/swaggo/swag/cmd/swag@v1.8.4
 # go install github.com/swaggo/swag/cmd/swag@latest
 docs:
 	@echo "Generating API documentation:"

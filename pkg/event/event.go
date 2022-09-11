@@ -22,7 +22,7 @@ type Event struct {
 	LogLevel   LogLevel  `json:"logLevel"`
 	Message    string    `json:"message"`
 	URI        string    `json:"uri,omitempty"`
-	Err        error     `json:"error,omitempty"`
+	Err        error     `json:"-"`
 }
 
 // Type returns the entity type of the Event.

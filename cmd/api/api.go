@@ -11,19 +11,19 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
+	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
+	gin "github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
 	"versionary-api/cmd/api/docs"
 	"versionary-api/pkg/app"
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/token"
 	"versionary-api/pkg/user"
-
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
-
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
-	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
-	"github.com/gin-gonic/gin"
 )
 
 // gitHash provides the git hash of the compiled application.
@@ -73,35 +73,35 @@ func main() {
 	}
 
 	// Setup the Gin Router
-	r := gin.New()
-	r.Use(gin.Recovery())
+	router := gin.New()
+	router.Use(gin.Recovery())
 	if env == "dev" {
 		gin.SetMode(gin.DebugMode)
-		r.Use(gin.Logger())
+		router.Use(gin.Logger())
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 		gin.DisableConsoleColor()
 	}
 
 	// Add the API endpoints
-	registerRoutes(r)
+	registerRoutes(router)
 
 	// Identify operating environment (AWS or on localhost)
 	_, ok := os.LookupEnv("LAMBDA_TASK_ROOT")
 	if ok {
 		// Run API as an AWS Lambda function with an API Gateway proxy
-		r.TrustedPlatform = "X-Forwarded-For"
-		ginLambda := ginadapter.NewV2(r)
+		router.TrustedPlatform = "X-Forwarded-For"
+		ginLambda := ginadapter.NewV2(router)
 		lambda.Start(func(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
 			return ginLambda.ProxyWithContext(ctx, req)
 		})
 	} else {
 		// Run API on localhost for local development, debugging, etc.
-		_ = r.SetTrustedProxies(nil) // disable IP allow list
+		_ = router.SetTrustedProxies(nil) // disable IP allow list
 		log.Println("AWS Region:", api.AWSConfig.Region)
 		log.Println("Environment Stage:", env)
 		log.Println("Initialized in", time.Since(startTime))
-		log.Fatal(r.Run(":8080"))
+		log.Fatal(router.Run(":8080"))
 	}
 }
 

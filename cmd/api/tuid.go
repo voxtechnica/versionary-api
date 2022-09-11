@@ -3,10 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/voxtechnica/tuid-go"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/voxtechnica/tuid-go"
 )
 
 // registerTuidRoutes initializes the TUID routes.

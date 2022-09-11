@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"versionary-api/pkg/app"
 
 	"github.com/stretchr/testify/assert"
 	user_agent "github.com/voxtechnica/user-agent"
+
+	"versionary-api/pkg/app"
 )
 
 func TestAbout(t *testing.T) {

@@ -3,12 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/voxtechnica/tuid-go"
-	v "github.com/voxtechnica/versionary"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/voxtechnica/tuid-go"
+	v "github.com/voxtechnica/versionary"
+
 	"versionary-api/pkg/event"
 )
 
@@ -284,7 +286,7 @@ func deleteEvent(c *gin.Context) {
 // It's useful for paging through events by entity ID.
 //
 // @Summary List Event Entity IDs
-// @Description Get a list of entity IDs for which events exist.
+// @Description Get a paginated list of entity IDs for which events exist.
 // @Tags Event
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
@@ -292,6 +294,7 @@ func deleteEvent(c *gin.Context) {
 // @Param limit query int false "Limit (default: 100)"
 // @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
 // @Success 200 {array} string "Entity IDs"
+// @Failure 400 {object} APIEvent "Bad Request (invalid pagination parameter)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
 // @Failure 500 {object} APIEvent "Internal Server Error"
@@ -324,7 +327,7 @@ func readEventEntityIDs(c *gin.Context) {
 // It's useful for paging through events by entity type.
 //
 // @Summary List Event Entity Types
-// @Description Get a list of entity types for which events exist.
+// @Description Get a complete, sorted list of entity types for which events exist.
 // @Tags Event
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
@@ -355,7 +358,7 @@ func readEventEntityTypes(c *gin.Context) {
 // It's useful for paging through events by log level.
 //
 // @Summary List Event Log Levels
-// @Description Get a list of log levels for which events exist.
+// @Description Get a complete, sorted list of log levels for which events exist.
 // @Tags Event
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
@@ -386,7 +389,7 @@ func readEventLogLevels(c *gin.Context) {
 // It's useful for paging through events by date.
 //
 // @Summary List Event Dates
-// @Description Get a list of ISO dates (e.g. yyyy-mm-dd) for which events exist.
+// @Description Get a paginated list of ISO dates (e.g. yyyy-mm-dd) for which events exist.
 // @Tags Event
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
@@ -394,6 +397,7 @@ func readEventLogLevels(c *gin.Context) {
 // @Param limit query int false "Limit (default: 100)"
 // @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
 // @Success 200 {array} string "Dates"
+// @Failure 400 {object} APIEvent "Bad Request (invalid pagination parameter)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
 // @Failure 500 {object} APIEvent "Internal Server Error"

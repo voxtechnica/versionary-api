@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"versionary-api/pkg/event"
-	"versionary-api/pkg/org"
-	"versionary-api/pkg/user"
 
 	"github.com/gin-gonic/gin"
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
+
+	"versionary-api/pkg/event"
+	"versionary-api/pkg/org"
+	"versionary-api/pkg/user"
 )
 
 // registerOrganizationRoutes initializes the Organization routes.
