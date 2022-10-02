@@ -39,6 +39,7 @@ var gitOrigin string
 // api is the application object, containing global configuration settings and initialized services.
 var api = app.Application{
 	Name:        "Versionary API",
+	BaseDomain:  "versionary.net",
 	Description: "Versionary API demonstrates a way to manage versioned entities in a database with a serverless architecture.",
 	GitHash:     gitHash,
 }
@@ -109,11 +110,13 @@ func main() {
 func registerRoutes(r *gin.Engine) {
 	r.Use(bearerTokenHandler())
 	r.NoRoute(notFound)
+	registerDeviceRoutes(r)
 	registerEventRoutes(r)
 	registerOrganizationRoutes(r)
 	registerTokenRoutes(r)
 	registerTuidRoutes(r)
 	registerUserRoutes(r)
+	registerViewRoutes(r)
 	registerDiagRoutes(r)
 	initSwagger(r)
 }

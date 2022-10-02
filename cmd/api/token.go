@@ -18,6 +18,7 @@ func registerTokenRoutes(r *gin.Engine) {
 	r.POST("/v1/tokens", createToken)
 	r.GET("/v1/tokens", readTokens)
 	r.GET("/v1/tokens/:id", readToken)
+	r.HEAD("/v1/tokens/:id", existsToken)
 	r.DELETE("/v1/tokens/:id", deleteToken)
 	r.GET("/logout", logout)
 	r.GET("/v1/token_user_ids", roleAuthorizer("admin"), readTokenUserIDs)
@@ -225,6 +226,27 @@ func readToken(c *gin.Context) {
 	}
 	// Return the token
 	c.JSON(http.StatusOK, t)
+}
+
+// existsToken checks if the specified Token exists.
+//
+// @Summary Token Exists
+// @Description Check if the specified OAuth Bearer Token exists.
+// @Tags Token
+// @Param id path string true "Token ID"
+// @Success 204 "Token Exists"
+// @Failure 400 "Bad Request (invalid path parameter ID)"
+// @Failure 404 "Not Found"
+// @Router /v1/tokens/{id} [head]
+func existsToken(c *gin.Context) {
+	id := c.Param("id")
+	if !tuid.IsValid(tuid.TUID(id)) {
+		c.Status(http.StatusBadRequest)
+	} else if !api.TokenService.Exists(c, id) {
+		c.Status(http.StatusNotFound)
+	} else {
+		c.Status(http.StatusNoContent)
+	}
 }
 
 // deleteToken deletes the specified Token.

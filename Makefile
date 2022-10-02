@@ -30,8 +30,6 @@ dependencies:
 .PHONY:dependencies
 
 # Swaggo gin-swagger API Documentation
-# Note: swag v1.8.5 explodes with a panic (SIGSEGV)
-# go install github.com/swaggo/swag/cmd/swag@v1.8.4
 # go install github.com/swaggo/swag/cmd/swag@latest
 docs:
 	@echo "Generating API documentation:"

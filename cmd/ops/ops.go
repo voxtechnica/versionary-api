@@ -15,7 +15,8 @@ var gitHash string
 
 // ops is the application object, containing global configuration settings and initialized services.
 var ops = app.Application{
-	Name: "Versionary CLI",
+	Name:       "Versionary CLI",
+	BaseDomain: "versionary.net",
 	Description: "Versionary API demonstrates a way to manage versioned entities in a database with a serverless architecture.\n\t" +
 		"Ops provides commands for performing various operational tasks, such as initializing the database tables.",
 	GitHash: gitHash,

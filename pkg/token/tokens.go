@@ -92,6 +92,11 @@ func (s TokenService) Delete(ctx context.Context, id string) (Token, error) {
 	return s.Table.DeleteEntityWithID(ctx, id)
 }
 
+// Exists checks if a Token exists in the Token table.
+func (s TokenService) Exists(ctx context.Context, id string) bool {
+	return s.Table.EntityExists(ctx, id)
+}
+
 // Read a specified Token from the Token table.
 func (s TokenService) Read(ctx context.Context, id string) (Token, error) {
 	return s.Table.ReadEntity(ctx, id)

@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"versionary-api/pkg/device"
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/org"
 	"versionary-api/pkg/token"
 	"versionary-api/pkg/user"
+	"versionary-api/pkg/view"
 
 	"github.com/spf13/cobra"
 	"github.com/voxtechnica/versionary"
@@ -49,6 +51,10 @@ func checkTables(cmd *cobra.Command, args []string) error {
 	for _, entity := range tables {
 		// TODO: add new DynamoDB tables here
 		switch entity {
+		case "Device":
+			checkTable(ctx, device.NewDeviceTable(ops.DBClient, ops.Environment))
+		case "DeviceCount":
+			checkTable(ctx, device.NewDeviceCountTable(ops.DBClient, ops.Environment))
 		case "Event":
 			checkTable(ctx, event.NewEventTable(ops.DBClient, ops.Environment))
 		case "Organization":
@@ -57,6 +63,10 @@ func checkTables(cmd *cobra.Command, args []string) error {
 			checkTable(ctx, token.NewTokenTable(ops.DBClient, ops.Environment))
 		case "User":
 			checkTable(ctx, user.NewUserTable(ops.DBClient, ops.Environment))
+		case "View":
+			checkTable(ctx, view.NewViewTable(ops.DBClient, ops.Environment))
+		case "ViewCount":
+			checkTable(ctx, view.NewViewCountTable(ops.DBClient, ops.Environment))
 		default:
 			fmt.Println("Skipping unknown entity type:", entity)
 		}

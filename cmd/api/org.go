@@ -185,8 +185,8 @@ func readOrganization(c *gin.Context) {
 // @Tags Organization
 // @Param id path string true "Organization ID"
 // @Success 204 "Organization Exists"
-// @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
-// @Failure 404 {object} APIEvent "Not Found"
+// @Failure 400 "Bad Request (invalid path parameter ID)"
+// @Failure 404 "Not Found"
 // @Router /v1/organizations/{id} [head]
 func existsOrganization(c *gin.Context) {
 	id := c.Param("id")
@@ -211,7 +211,7 @@ func existsOrganization(c *gin.Context) {
 // @Param limit query int false "Limit (default: 100)"
 // @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
 // @Success 200 {array} org.Organization "Organization Versions"
-// @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
+// @Failure 400 {object} APIEvent "Bad Request (invalid parameter)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
 // @Failure 404 {object} APIEvent "Not Found"
@@ -307,8 +307,8 @@ func readOrganizationVersion(c *gin.Context) {
 // @Param id path string true "Organization ID"
 // @Param versionid path string true "Organization VersionID"
 // @Success 204 "Organization Version Exists"
-// @Failure 400 {object} APIEvent "Bad Request (invalid path parameter)"
-// @Failure 404 {object} APIEvent "Not Found"
+// @Failure 400 "Bad Request (invalid path parameter)"
+// @Failure 404 "Not Found"
 // @Router /v1/organizations/{id}/versions/{versionid} [head]
 func existsOrganizationVersion(c *gin.Context) {
 	id := c.Param("id")

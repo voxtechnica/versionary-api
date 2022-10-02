@@ -35,6 +35,7 @@ func registerEventRoutes(r *gin.Engine) {
 // @Accept json
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
+// @Success 201 {object} event.Event "Newly-created Event"
 // @Failure 400 {object} APIEvent "Bad Request (invalid JSON body)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
@@ -80,6 +81,7 @@ func createEvent(c *gin.Context) {
 // @Param reverse query bool false "Reverse Order (default: false)"
 // @Param limit query int false "Limit (default: 100)"
 // @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
+// @Success 200 {array} event.Event "Events"
 // @Failure 400 {object} APIEvent "Bad Request (invalid parameter)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
@@ -202,6 +204,7 @@ func readEvents(c *gin.Context) {
 // @Tags Event
 // @Produce json
 // @Param id path string true "Event ID"
+// @Success 200 {object} event.Event "Event"
 // @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
 // @Failure 404 {object} APIEvent "Not Found"
 // @Failure 500 {object} APIEvent "Internal Server Error"
@@ -233,8 +236,8 @@ func readEvent(c *gin.Context) {
 // @Tags Event
 // @Param id path string true "Event ID"
 // @Success 204 "Event Exists"
-// @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
-// @Failure 404 {object} APIEvent "Not Found"
+// @Failure 400 "Bad Request (invalid path parameter ID)"
+// @Failure 404 "Not Found"
 // @Router /v1/events/{id} [head]
 func existsEvent(c *gin.Context) {
 	id := c.Param("id")
@@ -255,6 +258,7 @@ func existsEvent(c *gin.Context) {
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
 // @Param id path string true "Event ID"
+// @Success 200 {object} event.Event "Deleted Event"
 // @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
