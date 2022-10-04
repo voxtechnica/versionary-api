@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"time"
+	"versionary-api/pkg/client"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -39,19 +40,20 @@ func (a About) String() string {
 
 // Application is the main application object, which contains configuration settings, keys, and initialized services.
 type Application struct {
-	Name               string           // Name of the application
-	GitHash            string           // Git hash of the application
-	BuildTime          time.Time        // Executable build time
-	Language           string           // Go Compiler version (e.g. "go1.x")
-	Environment        string           // Environment name (e.g. "dev", "test", "staging", "prod")
-	BaseDomain         string           // Base domain for the application (e.g. "versionary.net")
-	AdminURL           string           // Admin App URL (e.g. "https://admin.versionary.net")
-	APIURL             string           // API URL (e.g. "https://api.versionary.net")
-	WebURL             string           // Web URL (e.g. "https://www.versionary.net")
-	Description        string           // Description of the application
-	AWSConfig          aws.Config       // AWS Configuration
-	DBClient           *dynamodb.Client // DynamoDB client
-	EntityTypes        []string         // Valid entity type names (e.g. "Event", "User", etc.)
+	Name               string                // Name of the application
+	GitHash            string                // Git hash of the application
+	BuildTime          time.Time             // Executable build time
+	Language           string                // Go Compiler version (e.g. "go1.x")
+	Environment        string                // Environment name (e.g. "dev", "test", "staging", "prod")
+	BaseDomain         string                // Base domain for the application (e.g. "versionary.net")
+	AdminURL           string                // Admin App URL (e.g. "https://admin.versionary.net")
+	APIURL             string                // API URL (e.g. "https://api.versionary.net")
+	WebURL             string                // Web URL (e.g. "https://www.versionary.net")
+	Description        string                // Description of the application
+	EntityTypes        []string              // Valid entity type names (e.g. "Event", "User", etc.)
+	AWSConfig          aws.Config            // AWS Configuration
+	DBClient           *dynamodb.Client      // DynamoDB client
+	ParameterStore     client.ParameterStore // AWS SSM Parameter Store client
 	DeviceService      device.DeviceService
 	DeviceCountService device.CountService
 	EventService       event.EventService
@@ -150,9 +152,7 @@ func (a *Application) Init(env string) error {
 	}
 	a.AWSConfig = cfg
 	a.DBClient = dynamodb.NewFromConfig(cfg)
-	if err != nil {
-		return fmt.Errorf("error creating DynamoDB client: %w", err)
-	}
+	a.ParameterStore = client.NewParameterStore(cfg)
 
 	// Initialize Services
 	a.DeviceService = device.DeviceService{
@@ -197,6 +197,9 @@ func (a *Application) InitMock(env string) error {
 	// Set default values for the application
 	a.Environment = env
 	a.setDefaults()
+
+	// Initialize Mock Clients
+	a.ParameterStore = client.NewParameterStoreMock()
 
 	// Initialize Services
 	a.DeviceService = device.DeviceService{

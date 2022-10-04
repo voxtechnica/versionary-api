@@ -73,7 +73,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Setup the Gin Router
+	// Set up the Gin Router
 	router := gin.New()
 	router.Use(gin.Recovery())
 	if env == "dev" {
