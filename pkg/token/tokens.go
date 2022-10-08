@@ -32,8 +32,8 @@ var rowTokensUser = v.TableRow[Token]{
 	TimeToLive:   func(t Token) int64 { return t.ExpiresAt.Unix() },
 }
 
-// NewTokenTable instantiates a new DynamoDB table for OAuth Bearer Tokens.
-func NewTokenTable(dbClient *dynamodb.Client, env string) v.Table[Token] {
+// NewTable instantiates a new DynamoDB table for OAuth Bearer Tokens.
+func NewTable(dbClient *dynamodb.Client, env string) v.Table[Token] {
 	if env == "" {
 		env = "dev"
 	}
@@ -49,13 +49,13 @@ func NewTokenTable(dbClient *dynamodb.Client, env string) v.Table[Token] {
 	}
 }
 
-// NewTokenMemTable creates an in-memory Token table for testing purposes.
-func NewTokenMemTable(table v.Table[Token]) v.MemTable[Token] {
+// NewMemTable creates an in-memory Token table for testing purposes.
+func NewMemTable(table v.Table[Token]) v.MemTable[Token] {
 	return v.NewMemTable(table)
 }
 
-// TokenService is used to manage Tokens in a DynamoDB table.
-type TokenService struct {
+// Service is used to manage Tokens in a DynamoDB table.
+type Service struct {
 	EntityType string
 	Table      v.TableReadWriter[Token]
 }
@@ -65,7 +65,7 @@ type TokenService struct {
 //==============================================================================
 
 // Create a Token in the Token table.
-func (s TokenService) Create(ctx context.Context, t Token) (Token, error) {
+func (s Service) Create(ctx context.Context, t Token) (Token, error) {
 	id := tuid.NewID()
 	at, _ := id.Time()
 	t.ID = id.String()
@@ -83,33 +83,33 @@ func (s TokenService) Create(ctx context.Context, t Token) (Token, error) {
 
 // Write a Token to the Token table. This method assumes that the Token has all the required fields.
 // It would most likely be used for "refreshing" the index rows in the Token table.
-func (s TokenService) Write(ctx context.Context, t Token) (Token, error) {
+func (s Service) Write(ctx context.Context, t Token) (Token, error) {
 	return t, s.Table.WriteEntity(ctx, t)
 }
 
 // Delete a Token from the Token table. The deleted Token is returned.
-func (s TokenService) Delete(ctx context.Context, id string) (Token, error) {
+func (s Service) Delete(ctx context.Context, id string) (Token, error) {
 	return s.Table.DeleteEntityWithID(ctx, id)
 }
 
 // Exists checks if a Token exists in the Token table.
-func (s TokenService) Exists(ctx context.Context, id string) bool {
+func (s Service) Exists(ctx context.Context, id string) bool {
 	return s.Table.EntityExists(ctx, id)
 }
 
 // Read a specified Token from the Token table.
-func (s TokenService) Read(ctx context.Context, id string) (Token, error) {
+func (s Service) Read(ctx context.Context, id string) (Token, error) {
 	return s.Table.ReadEntity(ctx, id)
 }
 
 // ReadAsJSON gets a specified Token from the Token table, serialized as JSON.
-func (s TokenService) ReadAsJSON(ctx context.Context, id string) ([]byte, error) {
+func (s Service) ReadAsJSON(ctx context.Context, id string) ([]byte, error) {
 	return s.Table.ReadEntityAsJSON(ctx, id)
 }
 
 // ReadTokenIDs returns a paginated list of Token IDs in the Token table.
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
-func (s TokenService) ReadTokenIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
+func (s Service) ReadTokenIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
 	return s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
 }
 
@@ -117,7 +117,7 @@ func (s TokenService) ReadTokenIDs(ctx context.Context, reverse bool, limit int,
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
 // Note that this is a best-effort attempt to return the requested Tokens, retrieved individually, in parallel.
 // It is probably not the best way to page through a large Token table.
-func (s TokenService) ReadTokens(ctx context.Context, reverse bool, limit int, offset string) []Token {
+func (s Service) ReadTokens(ctx context.Context, reverse bool, limit int, offset string) []Token {
 	ids, err := s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
 	if err != nil {
 		return []Token{}
@@ -131,44 +131,44 @@ func (s TokenService) ReadTokens(ctx context.Context, reverse bool, limit int, o
 
 // ReadUserIDs returns a paginated list of User IDs for which there are Tokens in the Token table.
 // Sorting is alphabetical (or reverse). The offset is the last User returned in a previous request.
-func (s TokenService) ReadUserIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
+func (s Service) ReadUserIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
 	return s.Table.ReadPartKeyValues(ctx, rowTokensUser, reverse, limit, offset)
 }
 
 // ReadAllUserIDs returns a complete, alphabetical list of User IDs for which there are Tokens in the Token table.
-func (s TokenService) ReadAllUserIDs(ctx context.Context) ([]string, error) {
+func (s Service) ReadAllUserIDs(ctx context.Context) ([]string, error) {
 	return s.Table.ReadAllPartKeyValues(ctx, rowTokensUser)
 }
 
 // ReadAllTokenIDsByUserID returns a complete list of Token IDs for a specified User ID in the Token table.
-func (s TokenService) ReadAllTokenIDsByUserID(ctx context.Context, userID string) ([]string, error) {
+func (s Service) ReadAllTokenIDsByUserID(ctx context.Context, userID string) ([]string, error) {
 	return s.Table.ReadAllSortKeyValues(ctx, rowTokensUser, userID)
 }
 
 // ReadTokensByUserID returns paginated Tokens by User ID. Sorting is chronological (or reverse).
 // The offset is the ID of the last Token returned in a previous request.
-func (s TokenService) ReadTokensByUserID(ctx context.Context, userID string, reverse bool, limit int, offset string) ([]Token, error) {
+func (s Service) ReadTokensByUserID(ctx context.Context, userID string, reverse bool, limit int, offset string) ([]Token, error) {
 	return s.Table.ReadEntitiesFromRow(ctx, rowTokensUser, userID, reverse, limit, offset)
 }
 
 // ReadTokensByUserIDAsJSON returns paginated JSON Tokens by User ID. Sorting is chronological (or reverse).
 // The offset is the ID of the last Token returned in a previous request.
-func (s TokenService) ReadTokensByUserIDAsJSON(ctx context.Context, userID string, reverse bool, limit int, offset string) ([]byte, error) {
+func (s Service) ReadTokensByUserIDAsJSON(ctx context.Context, userID string, reverse bool, limit int, offset string) ([]byte, error) {
 	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowTokensUser, userID, reverse, limit, offset)
 }
 
 // ReadAllTokensByUserID returns the complete list of Tokens, sorted chronologically by CreatedAt timestamp.
-func (s TokenService) ReadAllTokensByUserID(ctx context.Context, userID string) ([]Token, error) {
+func (s Service) ReadAllTokensByUserID(ctx context.Context, userID string) ([]Token, error) {
 	return s.Table.ReadAllEntitiesFromRow(ctx, rowTokensUser, userID)
 }
 
 // ReadAllTokensByUserIDAsJSON returns the complete list of Tokens, serialized as JSON.
-func (s TokenService) ReadAllTokensByUserIDAsJSON(ctx context.Context, userID string) ([]byte, error) {
+func (s Service) ReadAllTokensByUserIDAsJSON(ctx context.Context, userID string) ([]byte, error) {
 	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowTokensUser, userID)
 }
 
 // DeleteAllTokensByUserID deletes all Tokens for a specified User ID from the Token table.
-func (s TokenService) DeleteAllTokensByUserID(ctx context.Context, userID string) error {
+func (s Service) DeleteAllTokensByUserID(ctx context.Context, userID string) error {
 	ids, err := s.ReadAllTokenIDsByUserID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("error deleting all Tokens for User-%s: %w", userID, err)

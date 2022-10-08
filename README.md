@@ -36,9 +36,10 @@ go get github.com/aws/aws-lambda-go/events
 go get github.com/aws/aws-lambda-go/lambda
 go get github.com/aws/aws-sdk-go-v2
 go get github.com/aws/aws-sdk-go-v2/config
-go get github.com/aws/aws-sdk-go-v2/service/ssm
 go get github.com/aws/aws-sdk-go-v2/service/dynamodb
 go get github.com/aws/aws-sdk-go-v2/service/dynamodb/types
+go get github.com/aws/aws-sdk-go-v2/service/ses
+go get github.com/aws/aws-sdk-go-v2/service/ssm
 go get github.com/awslabs/aws-lambda-go-api-proxy
 go get github.com/gin-gonic/gin
 go get github.com/spf13/cobra
@@ -64,7 +65,7 @@ go test all
 That can take a while. If you prefer, you can test just this project:
 
 ```bash
-go test ./...
+make test
 ```
 
 ## Developer Workstation Setup

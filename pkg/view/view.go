@@ -134,7 +134,7 @@ func (v View) CompressedJSON() []byte {
 // Validate checks whether the View has all required fields and whether the supplied values
 // are valid, returning a list of problems. If the list is empty, then the View is valid.
 func (v View) Validate() []string {
-	problems := []string{}
+	var problems []string
 	if v.ID == "" || !tuid.IsValid(tuid.TUID(v.ID)) {
 		problems = append(problems, "ID is missing or invalid")
 	}

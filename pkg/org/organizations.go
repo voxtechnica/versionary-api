@@ -30,8 +30,8 @@ var rowOrganizationsStatus = v.TableRow[Organization]{
 	JsonValue:    func(o Organization) []byte { return o.CompressedJSON() },
 }
 
-// NewOrganizationTable instantiates a new DynamoDB table for organizations.
-func NewOrganizationTable(dbClient *dynamodb.Client, env string) v.Table[Organization] {
+// NewTable instantiates a new DynamoDB table for organizations.
+func NewTable(dbClient *dynamodb.Client, env string) v.Table[Organization] {
 	if env == "" {
 		env = "dev"
 	}
@@ -47,13 +47,13 @@ func NewOrganizationTable(dbClient *dynamodb.Client, env string) v.Table[Organiz
 	}
 }
 
-// NewOrganizationMemTable creates an in-memory Organization table for testing purposes.
-func NewOrganizationMemTable(table v.Table[Organization]) v.MemTable[Organization] {
+// NewMemTable creates an in-memory Organization table for testing purposes.
+func NewMemTable(table v.Table[Organization]) v.MemTable[Organization] {
 	return v.NewMemTable(table)
 }
 
-// OrganizationService is used to manage Organizations in a DynamoDB table.
-type OrganizationService struct {
+// Service is used to manage Organizations in a DynamoDB table.
+type Service struct {
 	EntityType string
 	Table      v.TableReadWriter[Organization]
 }
@@ -63,7 +63,7 @@ type OrganizationService struct {
 //==============================================================================
 
 // Create an Organization in the Organization table.
-func (s OrganizationService) Create(ctx context.Context, o Organization) (Organization, []string, error) {
+func (s Service) Create(ctx context.Context, o Organization) (Organization, []string, error) {
 	t := tuid.NewID()
 	at, _ := t.Time()
 	o.ID = t.String()
@@ -85,7 +85,7 @@ func (s OrganizationService) Create(ctx context.Context, o Organization) (Organi
 }
 
 // Update an Organization in the Organization table. If a previous version does not exist, the Organization is created.
-func (s OrganizationService) Update(ctx context.Context, o Organization) (Organization, []string, error) {
+func (s Service) Update(ctx context.Context, o Organization) (Organization, []string, error) {
 	t := tuid.NewID()
 	at, _ := t.Time()
 	o.VersionID = t.String()
@@ -99,72 +99,72 @@ func (s OrganizationService) Update(ctx context.Context, o Organization) (Organi
 
 // Write an Organization to the Organization table. This method assumes that the Organization has all the required fields.
 // It would most likely be used for "refreshing" the index rows in the Organization table.
-func (s OrganizationService) Write(ctx context.Context, o Organization) (Organization, error) {
+func (s Service) Write(ctx context.Context, o Organization) (Organization, error) {
 	return o, s.Table.WriteEntity(ctx, o)
 }
 
 // Delete an Organization from the Organization table. The deleted Organization is returned.
-func (s OrganizationService) Delete(ctx context.Context, id string) (Organization, error) {
+func (s Service) Delete(ctx context.Context, id string) (Organization, error) {
 	return s.Table.DeleteEntityWithID(ctx, id)
 }
 
 // Exists checks if an Organization exists in the Organization table.
-func (s OrganizationService) Exists(ctx context.Context, id string) bool {
+func (s Service) Exists(ctx context.Context, id string) bool {
 	return s.Table.EntityExists(ctx, id)
 }
 
 // Read a specified Organization from the Organization table.
-func (s OrganizationService) Read(ctx context.Context, id string) (Organization, error) {
+func (s Service) Read(ctx context.Context, id string) (Organization, error) {
 	return s.Table.ReadEntity(ctx, id)
 }
 
 // ReadAsJSON gets a specified Organization from the Organization table, serialized as JSON.
-func (s OrganizationService) ReadAsJSON(ctx context.Context, id string) ([]byte, error) {
+func (s Service) ReadAsJSON(ctx context.Context, id string) ([]byte, error) {
 	return s.Table.ReadEntityAsJSON(ctx, id)
 }
 
 // VersionExists checks if a specified Organization version exists in the Organization table.
-func (s OrganizationService) VersionExists(ctx context.Context, id, versionID string) bool {
+func (s Service) VersionExists(ctx context.Context, id, versionID string) bool {
 	return s.Table.EntityVersionExists(ctx, id, versionID)
 }
 
 // ReadVersion gets a specified Organization version from the Organization table.
-func (s OrganizationService) ReadVersion(ctx context.Context, id, versionID string) (Organization, error) {
+func (s Service) ReadVersion(ctx context.Context, id, versionID string) (Organization, error) {
 	return s.Table.ReadEntityVersion(ctx, id, versionID)
 }
 
 // ReadVersionAsJSON gets a specified Organization version from the Organization table, serialized as JSON.
-func (s OrganizationService) ReadVersionAsJSON(ctx context.Context, id, versionID string) ([]byte, error) {
+func (s Service) ReadVersionAsJSON(ctx context.Context, id, versionID string) ([]byte, error) {
 	return s.Table.ReadEntityVersionAsJSON(ctx, id, versionID)
 }
 
 // ReadVersions returns paginated versions of the specified Organization.
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
-func (s OrganizationService) ReadVersions(ctx context.Context, id string, reverse bool, limit int, offset string) ([]Organization, error) {
+func (s Service) ReadVersions(ctx context.Context, id string, reverse bool, limit int, offset string) ([]Organization, error) {
 	return s.Table.ReadEntityVersions(ctx, id, reverse, limit, offset)
 }
 
 // ReadVersionsAsJSON returns paginated versions of the specified Organization, serialized as JSON.
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
-func (s OrganizationService) ReadVersionsAsJSON(ctx context.Context, id string, reverse bool, limit int, offset string) ([]byte, error) {
+func (s Service) ReadVersionsAsJSON(ctx context.Context, id string, reverse bool, limit int, offset string) ([]byte, error) {
 	return s.Table.ReadEntityVersionsAsJSON(ctx, id, reverse, limit, offset)
 }
 
 // ReadAllVersions returns all versions of the specified Organization in chronological order.
 // Caution: this may be a LOT of data!
-func (s OrganizationService) ReadAllVersions(ctx context.Context, id string) ([]Organization, error) {
+func (s Service) ReadAllVersions(ctx context.Context, id string) ([]Organization, error) {
 	return s.Table.ReadAllEntityVersions(ctx, id)
 }
 
 // ReadAllVersionsAsJSON returns all versions of the specified Organization, serialized as JSON.
 // Caution: this may be a LOT of data!
-func (s OrganizationService) ReadAllVersionsAsJSON(ctx context.Context, id string) ([]byte, error) {
+func (s Service) ReadAllVersionsAsJSON(ctx context.Context, id string) ([]byte, error) {
 	return s.Table.ReadAllEntityVersionsAsJSON(ctx, id)
 }
 
 // ReadOrganizationIDs returns a paginated list of Organization IDs in the Organization table.
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
-func (s OrganizationService) ReadOrganizationIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
+func (s Service) ReadOrganizationIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
 	return s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
 }
 
@@ -172,7 +172,7 @@ func (s OrganizationService) ReadOrganizationIDs(ctx context.Context, reverse bo
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
 // Note that this is a best-effort attempt to return the requested Organizations, retrieved individually, in parallel.
 // It is probably not the best way to page through a large Organization table.
-func (s OrganizationService) ReadOrganizations(ctx context.Context, reverse bool, limit int, offset string) []Organization {
+func (s Service) ReadOrganizations(ctx context.Context, reverse bool, limit int, offset string) []Organization {
 	ids, err := s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
 	if err != nil {
 		return []Organization{}
@@ -186,35 +186,35 @@ func (s OrganizationService) ReadOrganizations(ctx context.Context, reverse bool
 
 // ReadStatuses returns a paginated Status list for which there are Organizations in the Organization table.
 // Sorting is alphabetical (or reverse). The offset is the last Status returned in a previous request.
-func (s OrganizationService) ReadStatuses(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
+func (s Service) ReadStatuses(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
 	return s.Table.ReadPartKeyValues(ctx, rowOrganizationsStatus, reverse, limit, offset)
 }
 
 // ReadAllStatuses returns a complete, alphabetical Status list for which there are Organizations in the Organization table.
-func (s OrganizationService) ReadAllStatuses(ctx context.Context) ([]string, error) {
+func (s Service) ReadAllStatuses(ctx context.Context) ([]string, error) {
 	return s.Table.ReadAllPartKeyValues(ctx, rowOrganizationsStatus)
 }
 
 // ReadOrganizationsByStatus returns paginated Organizations by Status. Sorting is chronological (or reverse).
 // The offset is the ID of the last Organization returned in a previous request.
-func (s OrganizationService) ReadOrganizationsByStatus(ctx context.Context, status string, reverse bool, limit int, offset string) ([]Organization, error) {
+func (s Service) ReadOrganizationsByStatus(ctx context.Context, status string, reverse bool, limit int, offset string) ([]Organization, error) {
 	return s.Table.ReadEntitiesFromRow(ctx, rowOrganizationsStatus, status, reverse, limit, offset)
 }
 
 // ReadOrganizationsByStatusAsJSON returns paginated JSON Organizations by Status. Sorting is chronological (or reverse).
 // The offset is the ID of the last Organization returned in a previous request.
-func (s OrganizationService) ReadOrganizationsByStatusAsJSON(ctx context.Context, status string, reverse bool, limit int, offset string) ([]byte, error) {
+func (s Service) ReadOrganizationsByStatusAsJSON(ctx context.Context, status string, reverse bool, limit int, offset string) ([]byte, error) {
 	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowOrganizationsStatus, status, reverse, limit, offset)
 }
 
 // ReadAllOrganizationsByStatus returns the complete list of Organizations, sorted chronologically by CreatedAt timestamp.
 // Caution: this may be a LOT of data!
-func (s OrganizationService) ReadAllOrganizationsByStatus(ctx context.Context, status string) ([]Organization, error) {
+func (s Service) ReadAllOrganizationsByStatus(ctx context.Context, status string) ([]Organization, error) {
 	return s.Table.ReadAllEntitiesFromRow(ctx, rowOrganizationsStatus, status)
 }
 
 // ReadAllOrganizationsByStatusAsJSON returns the complete list of Organizations, serialized as JSON.
 // Caution: this may be a LOT of data!
-func (s OrganizationService) ReadAllOrganizationsByStatusAsJSON(ctx context.Context, status string) ([]byte, error) {
+func (s Service) ReadAllOrganizationsByStatusAsJSON(ctx context.Context, status string) ([]byte, error) {
 	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowOrganizationsStatus, status)
 }

@@ -35,7 +35,7 @@ func (o Organization) CompressedJSON() []byte {
 // the supplied values are valid, returning a list of problems. If the list is
 // empty, then the Organization is valid.
 func (o Organization) Validate() []string {
-	problems := []string{}
+	var problems []string
 	if o.ID == "" || !tuid.IsValid(tuid.TUID(o.ID)) {
 		problems = append(problems, "ID is missing or invalid")
 	}
@@ -52,7 +52,8 @@ func (o Organization) Validate() []string {
 		problems = append(problems, "Name is missing")
 	}
 	if o.Status == "" || !o.Status.IsValid() {
-		expected := strings.Join(Statuses, ", ")
+		statuses := v.Map(Statuses, func(s Status) string { return string(s) })
+		expected := strings.Join(statuses, ", ")
 		problems = append(problems, "Status is missing or invalid. Expecting: "+expected)
 	}
 	return problems

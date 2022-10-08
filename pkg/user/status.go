@@ -13,14 +13,19 @@ const ENABLED Status = "ENABLED"
 const DISABLED Status = "DISABLED"
 
 // Statuses is the complete list of valid User or Organization statuses
-var Statuses = []string{"PENDING", "ENABLED", "DISABLED"}
+var Statuses = []Status{PENDING, ENABLED, DISABLED}
 
 // IsValid returns true if the supplied Status is recognized
 func (s Status) IsValid() bool {
 	for _, v := range Statuses {
-		if string(s) == v {
+		if s == v {
 			return true
 		}
 	}
 	return false
+}
+
+// String returns a string representation of the Status
+func (s Status) String() string {
+	return string(s)
 }

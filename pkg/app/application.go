@@ -3,10 +3,11 @@ package app
 import (
 	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go-v2/service/ses"
 	"os"
 	"runtime"
 	"time"
-	"versionary-api/pkg/client"
+	"versionary-api/pkg/email"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -40,27 +41,29 @@ func (a About) String() string {
 
 // Application is the main application object, which contains configuration settings, keys, and initialized services.
 type Application struct {
-	Name               string                // Name of the application
-	GitHash            string                // Git hash of the application
-	BuildTime          time.Time             // Executable build time
-	Language           string                // Go Compiler version (e.g. "go1.x")
-	Environment        string                // Environment name (e.g. "dev", "test", "staging", "prod")
-	BaseDomain         string                // Base domain for the application (e.g. "versionary.net")
-	AdminURL           string                // Admin App URL (e.g. "https://admin.versionary.net")
-	APIURL             string                // API URL (e.g. "https://api.versionary.net")
-	WebURL             string                // Web URL (e.g. "https://www.versionary.net")
-	Description        string                // Description of the application
-	EntityTypes        []string              // Valid entity type names (e.g. "Event", "User", etc.)
-	AWSConfig          aws.Config            // AWS Configuration
-	DBClient           *dynamodb.Client      // DynamoDB client
-	ParameterStore     client.ParameterStore // AWS SSM Parameter Store client
-	DeviceService      device.DeviceService
+	Name               string           // Name of the application
+	GitHash            string           // Git hash of the application
+	BuildTime          time.Time        // Executable build time
+	Language           string           // Go Compiler version (e.g. "go1.x")
+	Environment        string           // Environment name (e.g. "dev", "test", "staging", "prod")
+	BaseDomain         string           // Base domain for the application (e.g. "versionary.net")
+	AdminURL           string           // Admin App URL (e.g. "https://admin.versionary.net")
+	APIURL             string           // API URL (e.g. "https://api.versionary.net")
+	WebURL             string           // Web URL (e.g. "https://www.versionary.net")
+	Description        string           // Description of the application
+	EntityTypes        []string         // Valid entity type names (e.g. "Event", "User", etc.)
+	AWSConfig          aws.Config       // AWS Configuration
+	DBClient           *dynamodb.Client // AWS DynamoDB client
+	SESClient          *ses.Client      // AWS SES client
+	ParameterStore     ParameterStore   // AWS SSM Parameter Store client
+	DeviceService      device.Service
 	DeviceCountService device.CountService
-	EventService       event.EventService
-	OrgService         org.OrganizationService
-	TokenService       token.TokenService
-	UserService        user.UserService
-	ViewService        view.ViewService
+	EmailService       email.Service
+	EventService       event.Service
+	OrgService         org.Service
+	TokenService       token.Service
+	UserService        user.Service
+	ViewService        view.Service
 	ViewCountService   view.CountService
 }
 
@@ -127,6 +130,7 @@ func (a *Application) setDefaults() {
 	a.EntityTypes = []string{
 		"Device",
 		"DeviceCount",
+		"Email",
 		"Event",
 		"Organization",
 		"Token",
@@ -152,40 +156,57 @@ func (a *Application) Init(env string) error {
 	}
 	a.AWSConfig = cfg
 	a.DBClient = dynamodb.NewFromConfig(cfg)
-	a.ParameterStore = client.NewParameterStore(cfg)
+	a.SESClient = ses.NewFromConfig(cfg)
+	a.ParameterStore = NewParameterStore(cfg)
 
 	// Initialize Services
-	a.DeviceService = device.DeviceService{
+	a.DeviceService = device.Service{
 		EntityType: "Device",
-		Table:      device.NewDeviceTable(a.DBClient, a.Environment),
+		Table:      device.NewTable(a.DBClient, a.Environment),
 	}
 	a.DeviceCountService = device.CountService{
 		EntityType: "DeviceCount",
-		Table:      device.NewDeviceCountTable(a.DBClient, a.Environment),
+		Table:      device.NewCountTable(a.DBClient, a.Environment),
 	}
-	a.EventService = event.EventService{
+	a.EmailService = email.Service{
+		EntityType: "Email",
+		Client:     a.SESClient,
+		Table:      email.NewTable(a.DBClient, a.Environment),
+		DefaultFrom: email.Identity{
+			Name:    "Versionary",
+			Address: "noreply@versionary.net",
+		},
+		DefaultSubject: "Versionary",
+		SafeDomains: []string{
+			"prinzing.net",
+			"versionary.net",
+			"voxtechnica.info",
+		},
+		LimitSending: env != "prod",
+	}
+	a.EventService = event.Service{
 		EntityType: "Event",
-		Table:      event.NewEventTable(a.DBClient, a.Environment),
+		Table:      event.NewTable(a.DBClient, a.Environment),
 	}
-	a.OrgService = org.OrganizationService{
+	a.OrgService = org.Service{
 		EntityType: "Organization",
-		Table:      org.NewOrganizationTable(a.DBClient, a.Environment),
+		Table:      org.NewTable(a.DBClient, a.Environment),
 	}
-	a.TokenService = token.TokenService{
+	a.TokenService = token.Service{
 		EntityType: "Token",
-		Table:      token.NewTokenTable(a.DBClient, a.Environment),
+		Table:      token.NewTable(a.DBClient, a.Environment),
 	}
-	a.UserService = user.UserService{
+	a.UserService = user.Service{
 		EntityType: "User",
-		Table:      user.NewUserTable(a.DBClient, a.Environment),
+		Table:      user.NewTable(a.DBClient, a.Environment),
 	}
-	a.ViewService = view.ViewService{
+	a.ViewService = view.Service{
 		EntityType: "View",
-		Table:      view.NewViewTable(a.DBClient, a.Environment),
+		Table:      view.NewTable(a.DBClient, a.Environment),
 	}
 	a.ViewCountService = view.CountService{
 		EntityType: "ViewCount",
-		Table:      view.NewViewCountTable(a.DBClient, a.Environment),
+		Table:      view.NewCountTable(a.DBClient, a.Environment),
 	}
 
 	// fmt.Println("Initialized Application in ", time.Since(startTime))
@@ -199,40 +220,55 @@ func (a *Application) InitMock(env string) error {
 	a.setDefaults()
 
 	// Initialize Mock Clients
-	a.ParameterStore = client.NewParameterStoreMock()
+	a.ParameterStore = NewParameterStoreMock()
 
 	// Initialize Services
-	a.DeviceService = device.DeviceService{
+	a.DeviceService = device.Service{
 		EntityType: "Device",
-		Table:      device.NewDeviceMemTable(device.NewDeviceTable(a.DBClient, a.Environment)),
+		Table:      device.NewMemTable(device.NewTable(a.DBClient, a.Environment)),
 	}
 	a.DeviceCountService = device.CountService{
 		EntityType: "DeviceCount",
-		Table:      device.NewDeviceCountMemTable(device.NewDeviceCountTable(a.DBClient, a.Environment)),
+		Table:      device.NewCountMemTable(device.NewCountTable(a.DBClient, a.Environment)),
 	}
-	a.EventService = event.EventService{
+	a.EmailService = email.Service{
+		EntityType: "Email",
+		Table:      email.NewMemTable(email.NewTable(a.DBClient, a.Environment)),
+		DefaultFrom: email.Identity{
+			Name:    "Test Account",
+			Address: "noreply@versionary.net",
+		},
+		DefaultSubject: "Test Message",
+		SafeDomains: []string{
+			"simulator.amazonses.com",
+			"versionary.net",
+			"voxtechnica.info",
+		},
+		LimitSending: true,
+	}
+	a.EventService = event.Service{
 		EntityType: "Event",
-		Table:      event.NewEventMemTable(event.NewEventTable(a.DBClient, a.Environment)),
+		Table:      event.NewMemTable(event.NewTable(a.DBClient, a.Environment)),
 	}
-	a.OrgService = org.OrganizationService{
+	a.OrgService = org.Service{
 		EntityType: "Organization",
-		Table:      org.NewOrganizationMemTable(org.NewOrganizationTable(a.DBClient, a.Environment)),
+		Table:      org.NewMemTable(org.NewTable(a.DBClient, a.Environment)),
 	}
-	a.TokenService = token.TokenService{
+	a.TokenService = token.Service{
 		EntityType: "Token",
-		Table:      token.NewTokenMemTable(token.NewTokenTable(a.DBClient, a.Environment)),
+		Table:      token.NewMemTable(token.NewTable(a.DBClient, a.Environment)),
 	}
-	a.UserService = user.UserService{
+	a.UserService = user.Service{
 		EntityType: "User",
-		Table:      user.NewUserMemTable(user.NewUserTable(a.DBClient, a.Environment)),
+		Table:      user.NewMemTable(user.NewTable(a.DBClient, a.Environment)),
 	}
-	a.ViewService = view.ViewService{
+	a.ViewService = view.Service{
 		EntityType: "View",
-		Table:      view.NewViewMemTable(view.NewViewTable(a.DBClient, a.Environment)),
+		Table:      view.NewMemTable(view.NewTable(a.DBClient, a.Environment)),
 	}
 	a.ViewCountService = view.CountService{
 		EntityType: "ViewCount",
-		Table:      view.NewViewCountMemTable(view.NewViewCountTable(a.DBClient, a.Environment)),
+		Table:      view.NewCountMemTable(view.NewCountTable(a.DBClient, a.Environment)),
 	}
 
 	return nil

@@ -23,8 +23,8 @@ var rowCountsDate = v.TableRow[Count]{
 	JsonValue:    func(c Count) []byte { return c.CompressedJSON() },
 }
 
-// NewViewCountTable instantiates a new DynamoDB View Count table.
-func NewViewCountTable(dbClient *dynamodb.Client, env string) v.Table[Count] {
+// NewCountTable instantiates a new DynamoDB View Count table.
+func NewCountTable(dbClient *dynamodb.Client, env string) v.Table[Count] {
 	if env == "" {
 		env = "dev"
 	}
@@ -37,8 +37,8 @@ func NewViewCountTable(dbClient *dynamodb.Client, env string) v.Table[Count] {
 	}
 }
 
-// NewViewCountMemTable creates an in-memory ViewCount table for testing purposes.
-func NewViewCountMemTable(table v.Table[Count]) v.MemTable[Count] {
+// NewCountMemTable creates an in-memory ViewCount table for testing purposes.
+func NewCountMemTable(table v.Table[Count]) v.MemTable[Count] {
 	return v.NewMemTable(table)
 }
 

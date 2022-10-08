@@ -47,7 +47,7 @@ func (d Device) CompressedJSON() []byte {
 // the supplied values are valid, returning a list of problems. If the list is
 // empty, then the Device is valid.
 func (d Device) Validate() []string {
-	problems := []string{}
+	var problems []string
 	if d.ID == "" || !tuid.IsValid(tuid.TUID(d.ID)) {
 		problems = append(problems, "ID is missing or invalid")
 	}

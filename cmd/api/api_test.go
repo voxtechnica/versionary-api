@@ -53,12 +53,12 @@ func generateUsers() {
 
 	// Regular API user (no special roles) and associated bearer token
 	rUser, problems, err := api.UserService.Create(ctx, user.User{
-		FirstName: "Regular",
-		LastName:  "User",
-		Email:     "info@versionary.net",
-		OrgID:     userOrg.ID,
-		OrgName:   userOrg.Name,
-		Status:    user.PENDING,
+		GivenName:  "Regular",
+		FamilyName: "User",
+		Email:      "info@versionary.net",
+		OrgID:      userOrg.ID,
+		OrgName:    userOrg.Name,
+		Status:     user.PENDING,
 	})
 	if err != nil || len(problems) > 0 {
 		log.Fatal(err)
@@ -75,13 +75,13 @@ func generateUsers() {
 
 	// Admin API user (has admin role) and associated bearer token
 	aUser, problems, err := api.UserService.Create(ctx, user.User{
-		FirstName: "Admin",
-		LastName:  "User",
-		Email:     "admin@versionary.net",
-		Roles:     []string{"admin"},
-		OrgID:     userOrg.ID,
-		OrgName:   userOrg.Name,
-		Status:    user.ENABLED,
+		GivenName:  "Admin",
+		FamilyName: "User",
+		Email:      "admin@versionary.net",
+		Roles:      []string{"admin"},
+		OrgID:      userOrg.ID,
+		OrgName:    userOrg.Name,
+		Status:     user.ENABLED,
 	})
 	if err != nil || len(problems) > 0 {
 		log.Fatal(err)

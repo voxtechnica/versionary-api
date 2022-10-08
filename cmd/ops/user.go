@@ -27,8 +27,8 @@ func initUserCmd(root *cobra.Command) {
 		RunE:  createUser,
 	}
 	createCmd.Flags().StringP("env", "e", "", "Operating environment: dev | test | staging | prod")
-	createCmd.Flags().StringP("firstname", "f", "", "First Name")
-	createCmd.Flags().StringP("lastname", "l", "", "Last Name")
+	createCmd.Flags().StringP("givenname", "g", "", "Given Name")
+	createCmd.Flags().StringP("familyname", "f", "", "Family Name")
 	createCmd.Flags().StringP("email", "m", "", "Email Address")
 	createCmd.Flags().StringP("password", "p", "", "Password")
 	createCmd.Flags().StringP("org", "o", "", "Organization ID")
@@ -74,11 +74,11 @@ func createUser(cmd *cobra.Command, args []string) error {
 
 	// Parse flags for user information
 	u := user.User{
-		FirstName: cmd.Flag("firstname").Value.String(),
-		LastName:  cmd.Flag("lastname").Value.String(),
-		Email:     cmd.Flag("email").Value.String(),
-		Password:  cmd.Flag("password").Value.String(),
-		OrgID:     cmd.Flag("org").Value.String(),
+		GivenName:  cmd.Flag("givenname").Value.String(),
+		FamilyName: cmd.Flag("familyname").Value.String(),
+		Email:      cmd.Flag("email").Value.String(),
+		Password:   cmd.Flag("password").Value.String(),
+		OrgID:      cmd.Flag("org").Value.String(),
 	}
 	if admin, _ := cmd.Flags().GetBool("admin"); admin {
 		u.Roles = append(u.Roles, "admin")

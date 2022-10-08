@@ -18,8 +18,8 @@ type User struct {
 	CreatedAt     time.Time `json:"createdAt"`
 	VersionID     string    `json:"versionID"`
 	UpdatedAt     time.Time `json:"updatedAt"`
-	FirstName     string    `json:"firstName"`
-	LastName      string    `json:"lastName"`
+	GivenName     string    `json:"givenName"`
+	FamilyName    string    `json:"familyName"`
 	Email         string    `json:"email"`
 	Password      string    `json:"password,omitempty"`
 	PasswordHash  string    `json:"passwordHash,omitempty"`
@@ -71,18 +71,27 @@ func (u User) RestoreScrubbed(user User) User {
 	return u
 }
 
+// FullName returns the User's full name.
+func (u User) FullName() string {
+	return strings.TrimSpace(u.GivenName + " " + u.FamilyName)
+}
+
 // String returns a minimal string representation of the User (an RFC 5322 email address).
 func (u User) String() string {
-	if u.FirstName == "" && u.LastName == "" {
+	f := u.FullName()
+	if f == "" {
 		return u.Email
 	}
-	return u.FirstName + " " + u.LastName + " <" + u.Email + ">"
+	if u.Email == "" {
+		return f
+	}
+	return f + " <" + u.Email + ">"
 }
 
 // Validate checks whether the User has all required fields and whether the supplied values are valid,
 // returning a list of problems. If the list is empty, then the User is valid.
 func (u User) Validate() []string {
-	problems := []string{}
+	var problems []string
 	if u.ID == "" || !tuid.IsValid(tuid.TUID(u.ID)) {
 		problems = append(problems, "ID is missing or invalid")
 	}
@@ -102,7 +111,8 @@ func (u User) Validate() []string {
 		problems = append(problems, "OrgID is not a TUID")
 	}
 	if u.Status == "" || !u.Status.IsValid() {
-		expected := strings.Join(Statuses, ", ")
+		statuses := v.Map(Statuses, func(s Status) string { return string(s) })
+		expected := strings.Join(statuses, ", ")
 		problems = append(problems, "Status is missing or invalid. Expecting: "+expected)
 	}
 	return problems
@@ -117,7 +127,7 @@ func (u User) ValidEmail() bool {
 	return err == nil
 }
 
-// ValidPassword checks the supplied clear-text pashword against stored password hash.
+// ValidPassword checks the supplied clear-text password against stored password hash.
 func (u User) ValidPassword(password string) bool {
 	return u.ID != "" && password != "" && u.PasswordHash != "" &&
 		hashPassword(u.ID, password) == u.PasswordHash

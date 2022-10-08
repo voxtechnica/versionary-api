@@ -1086,6 +1086,718 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/email_addresses": {
+            "get": {
+                "description": "Get a list of email addresses for which emails exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Get Email Addresses",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default: 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email Addresses",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/email_statuses": {
+            "get": {
+                "description": "Get a list of status codes for which emails exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Get Email Statuses",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email Statuses",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/emails": {
+            "get": {
+                "description": "List Emails, paging with reverse, limit, and offset. Optionally, filter by email address or status.\nRegular users can only list their own Emails. Administrators can list all Emails.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "List Emails",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (User or Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email Address",
+                        "name": "address",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "PENDING",
+                            "SENT",
+                            "UNSENT",
+                            "ERROR"
+                        ],
+                        "type": "string",
+                        "description": "Status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default: 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Emails",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/email.Email"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not Owner or Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create and send a new Email message.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Create/Send a new Email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Email",
+                        "name": "email",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/email.Email"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Newly-created Email",
+                        "schema": {
+                            "$ref": "#/definitions/email.Email"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "URL of the newly created Email"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid JSON body)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "422": {
+                        "description": "Email validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/emails/{id}": {
+            "get": {
+                "description": "Get Email by ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Get Email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (User or Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email",
+                        "schema": {
+                            "$ref": "#/definitions/email.Email"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Owner or Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update the provided complete Email. If the status is PENDING, the Email is sent.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Update/Send Email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Email",
+                        "name": "email",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/email.Email"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email",
+                        "schema": {
+                            "$ref": "#/definitions/email.Email"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid JSON or parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "422": {
+                        "description": "Email validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete and return the specified Email.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Delete Email",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email that was deleted",
+                        "schema": {
+                            "$ref": "#/definitions/email.Email"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "head": {
+                "description": "Check if the specified Email exists.",
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Email Exists",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Email ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Email Exists"
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/v1/emails/{id}/versions": {
+            "get": {
+                "description": "Get Email Versions by ID, paging with reverse, limit, and offset.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Get Email Versions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default: 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email Versions",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/email.Email"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Owner or Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/emails/{id}/versions/{versionid}": {
+            "get": {
+                "description": "Get Email Version by ID and VersionID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Get Email Version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (User or Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email VersionID",
+                        "name": "versionid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email Version",
+                        "schema": {
+                            "$ref": "#/definitions/email.Email"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Owner or Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "head": {
+                "description": "Check if the specified Email version exists.",
+                "tags": [
+                    "Email"
+                ],
+                "summary": "Email Version Exists",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Email ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Email VersionID",
+                        "name": "versionid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Email Version Exists"
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter)"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
         "/v1/event_dates": {
             "get": {
                 "description": "Get a paginated list of ISO dates (e.g. yyyy-mm-dd) for which events exist.",
@@ -2397,7 +3109,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/token.TokenRequest"
+                            "$ref": "#/definitions/token.Request"
                         }
                     }
                 ],
@@ -2405,7 +3117,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Token Response",
                         "schema": {
-                            "$ref": "#/definitions/token.TokenResponse"
+                            "$ref": "#/definitions/token.Response"
                         },
                         "headers": {
                             "Location": {
@@ -4237,6 +4949,72 @@ const docTemplate = `{
                 }
             }
         },
+        "email.Email": {
+            "type": "object",
+            "properties": {
+                "bcc": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/email.Identity"
+                    }
+                },
+                "bodyHTML": {
+                    "type": "string"
+                },
+                "bodyText": {
+                    "type": "string"
+                },
+                "cc": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/email.Identity"
+                    }
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "eventMessage": {
+                    "type": "string"
+                },
+                "from": {
+                    "$ref": "#/definitions/email.Identity"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "to": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/email.Identity"
+                    }
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "versionID": {
+                    "type": "string"
+                }
+            }
+        },
+        "email.Identity": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "Email address of the person/identity",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Full name of the person/identity",
+                    "type": "string"
+                }
+            }
+        },
         "event.Event": {
             "type": "object",
             "properties": {
@@ -4397,27 +5175,7 @@ const docTemplate = `{
                 }
             }
         },
-        "token.Token": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "expiresAt": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "userId": {
-                    "type": "string"
-                }
-            }
-        },
-        "token.TokenRequest": {
+        "token.Request": {
             "type": "object",
             "properties": {
                 "grantType": {
@@ -4434,7 +5192,7 @@ const docTemplate = `{
                 }
             }
         },
-        "token.TokenResponse": {
+        "token.Response": {
             "type": "object",
             "properties": {
                 "accessToken": {
@@ -4447,6 +5205,26 @@ const docTemplate = `{
                 },
                 "tokenType": {
                     "description": "usually \"Bearer\"",
+                    "type": "string"
+                }
+            }
+        },
+        "token.Token": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "expiresAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "userId": {
                     "type": "string"
                 }
             }
@@ -4474,13 +5252,13 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
-                "firstName": {
+                "familyName": {
+                    "type": "string"
+                },
+                "givenName": {
                     "type": "string"
                 },
                 "id": {
-                    "type": "string"
-                },
-                "lastName": {
                     "type": "string"
                 },
                 "orgID": {

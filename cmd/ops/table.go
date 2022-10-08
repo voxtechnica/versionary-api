@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 	"versionary-api/pkg/device"
+	"versionary-api/pkg/email"
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/org"
 	"versionary-api/pkg/token"
@@ -52,21 +53,23 @@ func checkTables(cmd *cobra.Command, args []string) error {
 		// TODO: add new DynamoDB tables here
 		switch entity {
 		case "Device":
-			checkTable(ctx, device.NewDeviceTable(ops.DBClient, ops.Environment))
+			checkTable(ctx, device.NewTable(ops.DBClient, ops.Environment))
 		case "DeviceCount":
-			checkTable(ctx, device.NewDeviceCountTable(ops.DBClient, ops.Environment))
+			checkTable(ctx, device.NewCountTable(ops.DBClient, ops.Environment))
+		case "Email":
+			checkTable(ctx, email.NewTable(ops.DBClient, ops.Environment))
 		case "Event":
-			checkTable(ctx, event.NewEventTable(ops.DBClient, ops.Environment))
+			checkTable(ctx, event.NewTable(ops.DBClient, ops.Environment))
 		case "Organization":
-			checkTable(ctx, org.NewOrganizationTable(ops.DBClient, ops.Environment))
+			checkTable(ctx, org.NewTable(ops.DBClient, ops.Environment))
 		case "Token":
-			checkTable(ctx, token.NewTokenTable(ops.DBClient, ops.Environment))
+			checkTable(ctx, token.NewTable(ops.DBClient, ops.Environment))
 		case "User":
-			checkTable(ctx, user.NewUserTable(ops.DBClient, ops.Environment))
+			checkTable(ctx, user.NewTable(ops.DBClient, ops.Environment))
 		case "View":
-			checkTable(ctx, view.NewViewTable(ops.DBClient, ops.Environment))
+			checkTable(ctx, view.NewTable(ops.DBClient, ops.Environment))
 		case "ViewCount":
-			checkTable(ctx, view.NewViewCountTable(ops.DBClient, ops.Environment))
+			checkTable(ctx, view.NewCountTable(ops.DBClient, ops.Environment))
 		default:
 			fmt.Println("Skipping unknown entity type:", entity)
 		}

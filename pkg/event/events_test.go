@@ -12,11 +12,11 @@ import (
 )
 
 var (
-	// Event EventService
+	// Event Service
 	ctx      = context.Background()
-	table    = NewEventTable(nil, "test")
-	memTable = NewEventMemTable(table)
-	service  = EventService{EntityType: "Event", Table: memTable}
+	table    = NewTable(nil, "test")
+	memTable = NewMemTable(table)
+	service  = Service{EntityType: "Event", Table: memTable}
 
 	// Known timestamps
 	t1 = time.Date(2022, time.April, 1, 12, 0, 0, 0, time.UTC)

@@ -25,15 +25,15 @@ func registerTokenRoutes(r *gin.Engine) {
 }
 
 // createToken receives an OAuth TokenRequest, validates the User password,
-// creates a new Token, and returns an OAuth TokenResponse.
+// creates a new Token, and returns an OAuth Response.
 //
 // @Summary Create a new Token
 // @Description Create a new OAuth Bearer Token.
 // @Tags Token
 // @Accept json
 // @Produce json
-// @Param TokenRequest body token.TokenRequest true "Token Request"
-// @Success 201 {object} token.TokenResponse "Token Response"
+// @Param TokenRequest body token.Request true "Token Request"
+// @Success 201 {object} token.Response "Token Response"
 // @Failure 400 {object} APIEvent "Bad Request (invalid JSON body)"
 // @Failure 401 {object} APIEvent "Unauthorized (invalid username or password)"
 // @Failure 500 {object} APIEvent "Internal Server Error"
@@ -41,7 +41,7 @@ func registerTokenRoutes(r *gin.Engine) {
 // @Router /v1/tokens [post]
 func createToken(c *gin.Context) {
 	// Parse the request body as an OAuth TokenRequest
-	var req token.TokenRequest
+	var req token.Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid JSON body: %w", err))
 		return
@@ -96,9 +96,9 @@ func createToken(c *gin.Context) {
 		Message:    fmt.Sprintf("created Token %s for User %s", t.ID, u.ID),
 		URI:        c.Request.URL.String(),
 	})
-	// Return an OAuth TokenResponse
+	// Return an OAuth Response
 	c.Header("Location", c.Request.URL.String()+"/"+t.ID)
-	c.JSON(http.StatusCreated, token.TokenResponse{
+	c.JSON(http.StatusCreated, token.Response{
 		AccessToken: t.ID,
 		TokenType:   "Bearer",
 		ExpiresAt:   t.ExpiresAt,

@@ -111,6 +111,7 @@ func registerRoutes(r *gin.Engine) {
 	r.Use(bearerTokenHandler())
 	r.NoRoute(notFound)
 	registerDeviceRoutes(r)
+	registerEmailRoutes(r)
 	registerEventRoutes(r)
 	registerOrganizationRoutes(r)
 	registerTokenRoutes(r)
@@ -192,6 +193,27 @@ func bearerTokenHandler() gin.HandlerFunc {
 					c.Set("user", u.Scrub())
 				}
 			}
+		}
+		c.Next()
+	}
+}
+
+// userAuthenticator is a middleware function that ensures that the request is authenticated.
+// If the user is not present (no valid bearer token), the request is aborted with a 401 Unauthorized status.
+// If an authenticated user is present, the processing continues. Anonymous requests are rejected.
+// In many cases, the user will be authorized for their content in a subsequent handler function.
+func userAuthenticator() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		_, ok := c.Get("user")
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, APIEvent{
+				CreatedAt: time.Now(),
+				LogLevel:  "ERROR",
+				Code:      http.StatusUnauthorized,
+				Message:   "unauthenticated",
+				URI:       c.Request.URL.String(),
+			})
+			return
 		}
 		c.Next()
 	}

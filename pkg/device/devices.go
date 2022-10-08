@@ -51,8 +51,8 @@ var rowDevicesDate = v.TableRow[Device]{
 	TimeToLive:   func(d Device) int64 { return d.ExpiresAt.Unix() },
 }
 
-// NewDeviceTable instantiates a new DynamoDB Device table.
-func NewDeviceTable(dbClient *dynamodb.Client, env string) v.Table[Device] {
+// NewTable instantiates a new DynamoDB Device table.
+func NewTable(dbClient *dynamodb.Client, env string) v.Table[Device] {
 	if env == "" {
 		env = "dev"
 	}
@@ -69,8 +69,8 @@ func NewDeviceTable(dbClient *dynamodb.Client, env string) v.Table[Device] {
 	}
 }
 
-// NewDeviceMemTable creates an in-memory Device table for testing purposes.
-func NewDeviceMemTable(table v.Table[Device]) v.MemTable[Device] {
+// NewMemTable creates an in-memory Device table for testing purposes.
+func NewMemTable(table v.Table[Device]) v.MemTable[Device] {
 	return v.NewMemTable(table)
 }
 
@@ -78,8 +78,8 @@ func NewDeviceMemTable(table v.Table[Device]) v.MemTable[Device] {
 // Device Service
 //==============================================================================
 
-// DeviceService is used to manage a Device database.
-type DeviceService struct {
+// Service is used to manage a Device database.
+type Service struct {
 	EntityType string
 	Table      v.TableReadWriter[Device]
 }
@@ -89,7 +89,7 @@ type DeviceService struct {
 //------------------------------------------------------------------------------
 
 // Create a Device in the Device table.
-func (s DeviceService) Create(ctx context.Context, header, userID string) (Device, []string, error) {
+func (s Service) Create(ctx context.Context, header, userID string) (Device, []string, error) {
 	t := tuid.NewID()
 	at, _ := t.Time()
 	d := Device{
@@ -116,7 +116,7 @@ func (s DeviceService) Create(ctx context.Context, header, userID string) (Devic
 // Update a Device in the Device table. If the UserAgent has changed, the Device will get a new VersionID.
 // Otherwise, the VersionID will remain the same, and only the LastSeenAt and ExpiresAt times will be updated.
 // Note that we're writing (not updating) the Device so that historical Devices by Date are preserved.
-func (s DeviceService) Update(ctx context.Context, deviceID, header, userID string) (Device, []string, error) {
+func (s Service) Update(ctx context.Context, deviceID, header, userID string) (Device, []string, error) {
 	if deviceID == "" || !tuid.IsValid(tuid.TUID(deviceID)) {
 		return Device{}, []string{}, errors.New("error updating Device: a valid deviceID is required")
 	}
@@ -152,72 +152,72 @@ func (s DeviceService) Update(ctx context.Context, deviceID, header, userID stri
 
 // Write a Device to the Device table. This method assumes that the Device has all the required fields.
 // It would most likely be used for "refreshing" the index rows in the Device table.
-func (s DeviceService) Write(ctx context.Context, o Device) (Device, error) {
+func (s Service) Write(ctx context.Context, o Device) (Device, error) {
 	return o, s.Table.WriteEntity(ctx, o)
 }
 
 // Delete a Device from the Device table. The deleted Device is returned.
-func (s DeviceService) Delete(ctx context.Context, id string) (Device, error) {
+func (s Service) Delete(ctx context.Context, id string) (Device, error) {
 	return s.Table.DeleteEntityWithID(ctx, id)
 }
 
 // Exists checks if a Device exists in the Device table.
-func (s DeviceService) Exists(ctx context.Context, id string) bool {
+func (s Service) Exists(ctx context.Context, id string) bool {
 	return s.Table.EntityExists(ctx, id)
 }
 
 // Read a specified Device from the Device table.
-func (s DeviceService) Read(ctx context.Context, id string) (Device, error) {
+func (s Service) Read(ctx context.Context, id string) (Device, error) {
 	return s.Table.ReadEntity(ctx, id)
 }
 
 // ReadAsJSON gets a specified Device from the Device table, serialized as JSON.
-func (s DeviceService) ReadAsJSON(ctx context.Context, id string) ([]byte, error) {
+func (s Service) ReadAsJSON(ctx context.Context, id string) ([]byte, error) {
 	return s.Table.ReadEntityAsJSON(ctx, id)
 }
 
 // VersionExists checks if a specified Device version exists in the Device table.
-func (s DeviceService) VersionExists(ctx context.Context, id, versionID string) bool {
+func (s Service) VersionExists(ctx context.Context, id, versionID string) bool {
 	return s.Table.EntityVersionExists(ctx, id, versionID)
 }
 
 // ReadVersion gets a specified Device version from the Device table.
-func (s DeviceService) ReadVersion(ctx context.Context, id, versionID string) (Device, error) {
+func (s Service) ReadVersion(ctx context.Context, id, versionID string) (Device, error) {
 	return s.Table.ReadEntityVersion(ctx, id, versionID)
 }
 
 // ReadVersionAsJSON gets a specified Device version from the Device table, serialized as JSON.
-func (s DeviceService) ReadVersionAsJSON(ctx context.Context, id, versionID string) ([]byte, error) {
+func (s Service) ReadVersionAsJSON(ctx context.Context, id, versionID string) ([]byte, error) {
 	return s.Table.ReadEntityVersionAsJSON(ctx, id, versionID)
 }
 
 // ReadVersions returns paginated versions of the specified Device.
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
-func (s DeviceService) ReadVersions(ctx context.Context, id string, reverse bool, limit int, offset string) ([]Device, error) {
+func (s Service) ReadVersions(ctx context.Context, id string, reverse bool, limit int, offset string) ([]Device, error) {
 	return s.Table.ReadEntityVersions(ctx, id, reverse, limit, offset)
 }
 
 // ReadVersionsAsJSON returns paginated versions of the specified Device, serialized as JSON.
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
-func (s DeviceService) ReadVersionsAsJSON(ctx context.Context, id string, reverse bool, limit int, offset string) ([]byte, error) {
+func (s Service) ReadVersionsAsJSON(ctx context.Context, id string, reverse bool, limit int, offset string) ([]byte, error) {
 	return s.Table.ReadEntityVersionsAsJSON(ctx, id, reverse, limit, offset)
 }
 
 // ReadAllVersions returns all versions of the specified Device in chronological order.
 // Caution: this may be a LOT of data!
-func (s DeviceService) ReadAllVersions(ctx context.Context, id string) ([]Device, error) {
+func (s Service) ReadAllVersions(ctx context.Context, id string) ([]Device, error) {
 	return s.Table.ReadAllEntityVersions(ctx, id)
 }
 
 // ReadAllVersionsAsJSON returns all versions of the specified Device, serialized as JSON.
 // Caution: this may be a LOT of data!
-func (s DeviceService) ReadAllVersionsAsJSON(ctx context.Context, id string) ([]byte, error) {
+func (s Service) ReadAllVersionsAsJSON(ctx context.Context, id string) ([]byte, error) {
 	return s.Table.ReadAllEntityVersionsAsJSON(ctx, id)
 }
 
 // ReadDeviceIDs returns a paginated list of Device IDs in the Device table.
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
-func (s DeviceService) ReadDeviceIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
+func (s Service) ReadDeviceIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
 	return s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
 }
 
@@ -225,7 +225,7 @@ func (s DeviceService) ReadDeviceIDs(ctx context.Context, reverse bool, limit in
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
 // Note that this is a best-effort attempt to return the requested Devices, retrieved individually, in parallel.
 // It is probably not the best way to page through a large Device table.
-func (s DeviceService) ReadDevices(ctx context.Context, reverse bool, limit int, offset string) []Device {
+func (s Service) ReadDevices(ctx context.Context, reverse bool, limit int, offset string) []Device {
 	ids, err := s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
 	if err != nil {
 		return []Device{}
@@ -239,34 +239,34 @@ func (s DeviceService) ReadDevices(ctx context.Context, reverse bool, limit int,
 
 // ReadUserIDs returns a paginated UserID list for which there are Devices in the Device table.
 // Sorting is alphabetical (or reverse). The offset is the last UserID returned in a previous request.
-func (s DeviceService) ReadUserIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
+func (s Service) ReadUserIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
 	return s.Table.ReadPartKeyValues(ctx, rowDevicesUser, reverse, limit, offset)
 }
 
 // ReadAllUserIDs returns a complete, alphabetical UserID list for which there are Devices in the Device table.
-func (s DeviceService) ReadAllUserIDs(ctx context.Context) ([]string, error) {
+func (s Service) ReadAllUserIDs(ctx context.Context) ([]string, error) {
 	return s.Table.ReadAllPartKeyValues(ctx, rowDevicesUser)
 }
 
 // ReadDevicesByUserID returns paginated Devices by UserID. Sorting is chronological (or reverse).
 // The offset is the ID of the last Device returned in a previous request.
-func (s DeviceService) ReadDevicesByUserID(ctx context.Context, userID string, reverse bool, limit int, offset string) ([]Device, error) {
+func (s Service) ReadDevicesByUserID(ctx context.Context, userID string, reverse bool, limit int, offset string) ([]Device, error) {
 	return s.Table.ReadEntitiesFromRow(ctx, rowDevicesUser, userID, reverse, limit, offset)
 }
 
 // ReadDevicesByUserIDAsJSON returns paginated JSON Devices by UserID. Sorting is chronological (or reverse).
 // The offset is the ID of the last Device returned in a previous request.
-func (s DeviceService) ReadDevicesByUserIDAsJSON(ctx context.Context, userID string, reverse bool, limit int, offset string) ([]byte, error) {
+func (s Service) ReadDevicesByUserIDAsJSON(ctx context.Context, userID string, reverse bool, limit int, offset string) ([]byte, error) {
 	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowDevicesUser, userID, reverse, limit, offset)
 }
 
 // ReadAllDevicesByUserID returns the complete list of Devices, sorted chronologically by CreatedAt timestamp.
-func (s DeviceService) ReadAllDevicesByUserID(ctx context.Context, userID string) ([]Device, error) {
+func (s Service) ReadAllDevicesByUserID(ctx context.Context, userID string) ([]Device, error) {
 	return s.Table.ReadAllEntitiesFromRow(ctx, rowDevicesUser, userID)
 }
 
 // ReadAllDevicesByUserIDAsJSON returns the complete list of Devices, serialized as JSON.
-func (s DeviceService) ReadAllDevicesByUserIDAsJSON(ctx context.Context, userID string) ([]byte, error) {
+func (s Service) ReadAllDevicesByUserIDAsJSON(ctx context.Context, userID string) ([]byte, error) {
 	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowDevicesUser, userID)
 }
 
@@ -276,39 +276,39 @@ func (s DeviceService) ReadAllDevicesByUserIDAsJSON(ctx context.Context, userID 
 
 // ReadDates returns a paginated Date list for which there are Devices in the Device table.
 // Sorting is chronological (or reverse). The offset is the last Date returned in a previous request.
-func (s DeviceService) ReadDates(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
+func (s Service) ReadDates(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
 	return s.Table.ReadPartKeyValues(ctx, rowDevicesDate, reverse, limit, offset)
 }
 
 // ReadAllDates returns a complete, chronological list of Dates for which there are Devices in the Device table.
-func (s DeviceService) ReadAllDates(ctx context.Context) ([]string, error) {
+func (s Service) ReadAllDates(ctx context.Context) ([]string, error) {
 	return s.Table.ReadAllPartKeyValues(ctx, rowDevicesDate)
 }
 
 // ReadDevicesByDate returns paginated Devices by Date. Sorting is chronological (or reverse).
 // The offset is the ID of the last Device returned in a previous request.
-func (s DeviceService) ReadDevicesByDate(ctx context.Context, date string, reverse bool, limit int, offset string) ([]Device, error) {
+func (s Service) ReadDevicesByDate(ctx context.Context, date string, reverse bool, limit int, offset string) ([]Device, error) {
 	return s.Table.ReadEntitiesFromRow(ctx, rowDevicesDate, date, reverse, limit, offset)
 }
 
 // ReadDevicesByDateAsJSON returns paginated JSON Devices by Date. Sorting is chronological (or reverse).
 // The offset is the ID of the last Device returned in a previous request.
-func (s DeviceService) ReadDevicesByDateAsJSON(ctx context.Context, date string, reverse bool, limit int, offset string) ([]byte, error) {
+func (s Service) ReadDevicesByDateAsJSON(ctx context.Context, date string, reverse bool, limit int, offset string) ([]byte, error) {
 	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowDevicesDate, date, reverse, limit, offset)
 }
 
 // ReadAllDevicesByDate returns the complete list of Devices, sorted chronologically by CreatedAt timestamp.
-func (s DeviceService) ReadAllDevicesByDate(ctx context.Context, date string) ([]Device, error) {
+func (s Service) ReadAllDevicesByDate(ctx context.Context, date string) ([]Device, error) {
 	return s.Table.ReadAllEntitiesFromRow(ctx, rowDevicesDate, date)
 }
 
 // ReadAllDevicesByDateAsJSON returns the complete list of Devices, serialized as JSON.
-func (s DeviceService) ReadAllDevicesByDateAsJSON(ctx context.Context, date string) ([]byte, error) {
+func (s Service) ReadAllDevicesByDateAsJSON(ctx context.Context, date string) ([]byte, error) {
 	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowDevicesDate, date)
 }
 
 // CountDevicesByDate returns a DeviceCount for Devices in the Device table on the specified Date.
-func (s DeviceService) CountDevicesByDate(ctx context.Context, date string) (Count, error) {
+func (s Service) CountDevicesByDate(ctx context.Context, date string) (Count, error) {
 	dc := Count{}
 	if date == "" || !dateRegex.MatchString(date) {
 		return dc, fmt.Errorf("count devices by date: invalid date: %s", date)

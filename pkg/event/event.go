@@ -78,7 +78,7 @@ func (e Event) Unwrap() error {
 // Validate checks whether the Event has all required fields and whether the supplied values
 // are valid, returning a list of problems. If the list is empty, then the Event is valid.
 func (e Event) Validate() []string {
-	problems := []string{}
+	var problems []string
 	if e.ID == "" || !tuid.IsValid(tuid.TUID(e.ID)) {
 		problems = append(problems, "ID is missing or invalid")
 	}
