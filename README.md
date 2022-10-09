@@ -9,6 +9,8 @@ It uses the Go programming language with the following technologies:
 * [AWS DynamoDB](https://aws.amazon.com/dynamodb/)
 * [AWS Lambda](https://aws.amazon.com/lambda/)
 * [AWS API Gateway](https://aws.amazon.com/api-gateway/)
+* [AWS SSM Parameter Store](https://aws.amazon.com/systems-manager/features/#Parameter_Store)
+* [AWS Simple Email Service (SES)](https://aws.amazon.com/ses/)
 * [Gin Web Framework](https://gin-gonic.com/)
 
 ## Learning Resources
@@ -44,6 +46,8 @@ go get github.com/awslabs/aws-lambda-go-api-proxy
 go get github.com/gin-gonic/gin
 go get github.com/spf13/cobra
 go get github.com/stretchr/testify
+go get github.com/swaggo/files
+go get github.com/swaggo/gin-swagger
 go get github.com/voxtechnica/tuid-go
 go get github.com/voxtechnica/user-agent
 go get github.com/voxtechnica/versionary
@@ -72,18 +76,58 @@ make test
 
 1. Install the [AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html).
 2. Configure your AWS IAM credentials using `aws configure`, supplying your access key, secret key, and default region.
-3. Install the [Go Language](https://golang.org/doc/install).
+3. Install the [Go Language](https://golang.org/doc/install), and set up
+   a [GOPATH environment variable](https://github.com/golang/go/wiki/SettingGOPATH).
 4. Install an IDE, such as [VSCode](https://code.visualstudio.com/), [GoLand](https://www.jetbrains.com/go/),
-   or [IntelliJ IDEA](http://www.jetbrains.com/idea/). VSCode with the Go plugin is excellent value (free!), but the
-   JetBrains IDEs (GoLand or IntelliJ IDEA with the Go plugin) offer more. In addition to outstanding refactoring
-   support, they actually teach you to write better code as you use the tools.
+   or [IntelliJ IDEA](http://www.jetbrains.com/idea/). VSCode with the Go plugin is excellent value (free!), and is
+   probably the best choice for most developers. The JetBrains IDEs have better support for refactoring, and may be
+   worth the cost if you're a professional developer.
+5. Install some Go tools used in the [Makefile](Makefile) in your GOPATH bin folder:
+
+```bash
+go install honnef.co/go/tools/cmd/staticcheck@latest
+go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest
+go install github.com/swaggo/swag/cmd/swag@latest
+```
 
 ## Initial Environment Setup
 
-1. Create an S3 bucket for Lambda functions (e.g. `versionary-lambdas`), used to package the CloudFormation template.
-2. Provision and configure services for sending messages, as described for
-   the [Message Service](./doc/MessageServiceSetup.md).
-3. Create a bootstrap admin bearer token, as described for the [User Service](./doc/UserServiceSetup.md).
+1. Create an [S3 bucket](https://s3.console.aws.amazon.com/s3/buckets?region=us-west-2#) for Lambda functions
+   (e.g. `versionary-lambdas`), used to package the CloudFormation template. It must be unique across all AWS accounts.
+   Also, you'll need to update the name in the Makefile `package` command.
+2. [Verify your domain](https://us-west-2.console.aws.amazon.com/ses/home?region=us-west-2#verified-senders-domain:)
+   for sending email via AWS Simple Email Service (SES). If you're using AWS Route 53
+   to [manage your domain](https://console.aws.amazon.com/route53/home?region=us-west-2#hosted-zones:),
+   this is a trivial exercise, and happens very quickly.
+3. Build the applications for running in your local development environment:
+
+```bash
+make build
+```
+
+4. Create tables in DynamoDB for the Versionary API in your development environment:
+
+```bash
+./ops table --env dev
+```
+
+5. Create a bootstrap admin user account and bearer token. Make a note of the token for exploring the API:
+
+```bash
+./ops user create --env dev --admin --email username@example.com --password password --familyname Family --givenname Given
+./ops token create --env dev username@example.com
+```
+
+6. Run the API locally:
+
+```bash
+./api --env dev
+```
+
+7. Explore the API with [Postman](https://www.postman.com/), or a similar tool. You'll need to set the `Authorization`
+   header to `Bearer <token>`, where `<token>` is the token you created previously. For simple GET requests, you can use
+   the [ModHeader)](https://modheader.com/) extension for Chrome or Firefox. Also, be sure to check out
+   the Swagger [API documentation](http://localhost:8080/docs).
 
 ## Release process
 
@@ -103,6 +147,6 @@ to deploy the code to that environment:
 
 1. Ensure that you have the desired git branch checked out locally, and that all tests pass.
 2. Run `make build` to build the `./api` and `./ops` commands for local use.
-3. Run `./ops -env <env> -action create-tables` to create any missing DynamoDB tables in the environment.
+3. Run `./ops table --env <env>` to create any missing DynamoDB tables in the environment.
 4. Run `make deploy env=[qa|staging|prod]` to build release artifacts and deploy the CloudFormation template.
 5. Test the updated code running in the specified environment.
