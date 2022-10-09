@@ -111,7 +111,8 @@ make build
 ./ops table --env dev
 ```
 
-5. Create a bootstrap admin user account and bearer token. Make a note of the token for exploring the API:
+5. Create a bootstrap admin user account and bearer token. Make a note of the token for exploring the API. Note that the
+   token will expire in a month, and you can use either the token command or the `v1/tokens` API to create a new one.
 
 ```bash
 ./ops user create --env dev --admin --email username@example.com --password password --familyname Family --givenname Given
@@ -126,8 +127,8 @@ make build
 
 7. Explore the API with [Postman](https://www.postman.com/), or a similar tool. You'll need to set the `Authorization`
    header to `Bearer <token>`, where `<token>` is the token you created previously. For simple GET requests, you can use
-   the [ModHeader)](https://modheader.com/) extension for Chrome or Firefox. Also, be sure to check out
-   the Swagger [API documentation](http://localhost:8080/docs).
+   the [ModHeader](https://modheader.com/) extension for Chrome or Firefox. Also, be sure to check out the
+   Swagger [API documentation](http://localhost:8080/docs).
 
 ## Release process
 
