@@ -40,6 +40,7 @@ go get github.com/aws/aws-sdk-go-v2
 go get github.com/aws/aws-sdk-go-v2/config
 go get github.com/aws/aws-sdk-go-v2/service/dynamodb
 go get github.com/aws/aws-sdk-go-v2/service/dynamodb/types
+go get github.com/aws/aws-sdk-go-v2/service/s3
 go get github.com/aws/aws-sdk-go-v2/service/ses
 go get github.com/aws/aws-sdk-go-v2/service/ssm
 go get github.com/awslabs/aws-lambda-go-api-proxy
@@ -79,15 +80,14 @@ make test
 3. Install the [Go Language](https://golang.org/doc/install), and set up
    a [GOPATH environment variable](https://github.com/golang/go/wiki/SettingGOPATH).
 4. Install an IDE, such as [VSCode](https://code.visualstudio.com/), [GoLand](https://www.jetbrains.com/go/),
-   or [IntelliJ IDEA](http://www.jetbrains.com/idea/). VSCode with the Go plugin is excellent value (free!), and is
-   probably the best choice for most developers. The JetBrains IDEs have better support for refactoring, and may be
-   worth the cost if you're a professional developer.
+   or [IntelliJ IDEA](http://www.jetbrains.com/idea/) with the [Go plugin](https://plugins.jetbrains.com/plugin/9568-go)
+   . VSCode with the [Go extension](https://marketplace.visualstudio.com/items?itemName=golang.go) is excellent value (
+   free!), and is probably the best choice for most developers. The JetBrains IDEs have better support for refactoring,
+   and may be worth the cost if you're a professional developer.
 5. Install some Go tools used in the [Makefile](Makefile) in your GOPATH bin folder:
 
 ```bash
-go install honnef.co/go/tools/cmd/staticcheck@latest
-go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest
-go install github.com/swaggo/swag/cmd/swag@latest
+make tools
 ```
 
 ## Initial Environment Setup
@@ -105,14 +105,16 @@ go install github.com/swaggo/swag/cmd/swag@latest
 make build
 ```
 
-4. Create tables in DynamoDB for the Versionary API in your development environment:
+4. Create tables in DynamoDB and buckets in S3 for the Versionary API in your development environment:
 
 ```bash
-./ops table --env dev
+./ops table check --env dev
+./ops bucket check --env dev
 ```
 
-5. Create a bootstrap admin user account and bearer token. Make a note of the token for exploring the API. Note that the
-   token will expire in a month, and you can use either the token command or the `v1/tokens` API to create a new one.
+5. Create a bootstrap admin user account and bearer token, as below, substituting appropriate values. Make a note of the
+   token for exploring the API. Note that the token will expire in a month, and you can use either the token command or
+   the `v1/tokens` API to create a new one when needed.
 
 ```bash
 ./ops user create --env dev --admin --email username@example.com --password password --familyname Family --givenname Given

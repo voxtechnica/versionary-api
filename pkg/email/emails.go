@@ -20,10 +20,10 @@ import (
 var rowEmails = v.TableRow[Email]{
 	RowName:      "emails_version",
 	PartKeyName:  "id",
-	PartKeyValue: func(d Email) string { return d.ID },
+	PartKeyValue: func(e Email) string { return e.ID },
 	SortKeyName:  "update_id",
-	SortKeyValue: func(d Email) string { return d.VersionID },
-	JsonValue:    func(d Email) []byte { return d.CompressedJSON() },
+	SortKeyValue: func(e Email) string { return e.VersionID },
+	JsonValue:    func(e Email) []byte { return e.CompressedJSON() },
 }
 
 // rowEmailsAddress is a TableRow definition for current Email versions, partitioned by Email address.

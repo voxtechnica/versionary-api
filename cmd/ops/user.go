@@ -7,9 +7,8 @@ import (
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/user"
 
-	"github.com/voxtechnica/tuid-go"
-
 	"github.com/spf13/cobra"
+	"github.com/voxtechnica/tuid-go"
 )
 
 // initUserCmd initializes the user commands.

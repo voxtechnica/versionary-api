@@ -3,23 +3,24 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/service/ses"
 	"os"
 	"runtime"
 	"time"
-	"versionary-api/pkg/email"
-
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/voxtechnica/tuid-go"
-
 	"versionary-api/pkg/device"
+	"versionary-api/pkg/email"
 	"versionary-api/pkg/event"
+	"versionary-api/pkg/image"
 	"versionary-api/pkg/org"
 	"versionary-api/pkg/token"
 	"versionary-api/pkg/user"
 	"versionary-api/pkg/view"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/ses"
+	"github.com/voxtechnica/tuid-go"
 )
 
 // About provides basic information about the API.
@@ -54,12 +55,14 @@ type Application struct {
 	EntityTypes        []string         // Valid entity type names (e.g. "Event", "User", etc.)
 	AWSConfig          aws.Config       // AWS Configuration
 	DBClient           *dynamodb.Client // AWS DynamoDB client
+	S3Client           *s3.Client       // AWS S3 client
 	SESClient          *ses.Client      // AWS SES client
 	ParameterStore     ParameterStore   // AWS SSM Parameter Store client
 	DeviceService      device.Service
 	DeviceCountService device.CountService
 	EmailService       email.Service
 	EventService       event.Service
+	ImageService       image.Service
 	OrgService         org.Service
 	TokenService       token.Service
 	UserService        user.Service
@@ -132,6 +135,7 @@ func (a *Application) setDefaults() {
 		"DeviceCount",
 		"Email",
 		"Event",
+		"Image",
 		"Organization",
 		"Token",
 		"User",
@@ -156,6 +160,7 @@ func (a *Application) Init(env string) error {
 	}
 	a.AWSConfig = cfg
 	a.DBClient = dynamodb.NewFromConfig(cfg)
+	a.S3Client = s3.NewFromConfig(cfg)
 	a.SESClient = ses.NewFromConfig(cfg)
 	a.ParameterStore = NewParameterStore(cfg)
 
@@ -187,6 +192,11 @@ func (a *Application) Init(env string) error {
 	a.EventService = event.Service{
 		EntityType: "Event",
 		Table:      event.NewTable(a.DBClient, a.Environment),
+	}
+	a.ImageService = image.Service{
+		EntityType: "Image",
+		Bucket:     image.NewBucket(a.S3Client, a.Environment),
+		Table:      image.NewTable(a.DBClient, a.Environment),
 	}
 	a.OrgService = org.Service{
 		EntityType: "Organization",
@@ -249,6 +259,11 @@ func (a *Application) InitMock(env string) error {
 	a.EventService = event.Service{
 		EntityType: "Event",
 		Table:      event.NewMemTable(event.NewTable(a.DBClient, a.Environment)),
+	}
+	a.ImageService = image.Service{
+		EntityType: "Image",
+		Bucket:     image.NewMemBucket(image.NewBucket(a.S3Client, a.Environment)),
+		Table:      image.NewMemTable(image.NewTable(a.DBClient, a.Environment)),
 	}
 	a.OrgService = org.Service{
 		EntityType: "Organization",

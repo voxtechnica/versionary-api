@@ -29,6 +29,14 @@ dependencies:
 	go mod tidy
 .PHONY:dependencies
 
+# Install/Update Tools
+tools:
+	@echo "Installing/updating tools:"
+	go install honnef.co/go/tools/cmd/staticcheck@latest
+	go install golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow@latest
+	go install github.com/swaggo/swag/cmd/swag@latest
+.PHONY:tools
+
 # Swaggo gin-swagger API Documentation
 # go install github.com/swaggo/swag/cmd/swag@latest
 docs:

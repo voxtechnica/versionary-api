@@ -9,6 +9,7 @@ import (
 	"versionary-api/pkg/device"
 	"versionary-api/pkg/email"
 	"versionary-api/pkg/event"
+	"versionary-api/pkg/image"
 	"versionary-api/pkg/org"
 	"versionary-api/pkg/token"
 	"versionary-api/pkg/user"
@@ -79,6 +80,8 @@ func checkTables(cmd *cobra.Command, args []string) error {
 			checkTable(ctx, email.NewTable(ops.DBClient, ops.Environment))
 		case "Event":
 			checkTable(ctx, event.NewTable(ops.DBClient, ops.Environment))
+		case "Image":
+			checkTable(ctx, image.NewTable(ops.DBClient, ops.Environment))
 		case "Organization":
 			checkTable(ctx, org.NewTable(ops.DBClient, ops.Environment))
 		case "Token":
@@ -144,6 +147,8 @@ func deleteTables(cmd *cobra.Command, args []string) error {
 			deleteTable(ctx, email.NewTable(ops.DBClient, ops.Environment))
 		case "Event":
 			deleteTable(ctx, event.NewTable(ops.DBClient, ops.Environment))
+		case "Image":
+			deleteTable(ctx, image.NewTable(ops.DBClient, ops.Environment))
 		case "Organization":
 			deleteTable(ctx, org.NewTable(ops.DBClient, ops.Environment))
 		case "Token":

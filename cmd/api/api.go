@@ -113,6 +113,7 @@ func registerRoutes(r *gin.Engine) {
 	registerDeviceRoutes(r)
 	registerEmailRoutes(r)
 	registerEventRoutes(r)
+	registerImageRoutes(r)
 	registerOrganizationRoutes(r)
 	registerTokenRoutes(r)
 	registerTuidRoutes(r)

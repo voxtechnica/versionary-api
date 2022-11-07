@@ -48,6 +48,8 @@ func main() {
 	rootCmd.AddCommand(aboutCmd)
 
 	// Initialize the application commands:
+	initBucketCmd(rootCmd)
+	initImageCmd(rootCmd)
 	initTableCmd(rootCmd)
 	initTokenCmd(rootCmd)
 	initTuidCmd(rootCmd)
