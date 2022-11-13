@@ -18,6 +18,7 @@ import (
 	gin "github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"github.com/voxtechnica/tuid-go"
 
 	"versionary-api/cmd/api/docs"
 	"versionary-api/pkg/app"
@@ -110,6 +111,7 @@ func main() {
 func registerRoutes(r *gin.Engine) {
 	r.Use(bearerTokenHandler())
 	r.NoRoute(notFound)
+	registerContentRoutes(r)
 	registerDeviceRoutes(r)
 	registerEmailRoutes(r)
 	registerEventRoutes(r)
@@ -125,7 +127,7 @@ func registerRoutes(r *gin.Engine) {
 
 // initSwagger initializes the Swagger API documentation.
 //
-// @Summary Show API documentation
+// @Description Show API documentation
 // @Description Show Swagger API documentation, generated from annotations in the running code.
 // @Tags Diagnostic
 // @Produce html
@@ -185,7 +187,7 @@ func bearerTokenHandler() gin.HandlerFunc {
 		if h != "" {
 			b, a, f := strings.Cut(strings.TrimSpace(h), " ")
 			if f && strings.ToLower(b) == "bearer" && len(a) > 0 {
-				t, u, err := api.TokenUser(c, a)
+				t, u, err := tokenUser(c, a)
 				if err != nil {
 					abortWithError(c, http.StatusUnauthorized, err)
 					return
@@ -197,6 +199,34 @@ func bearerTokenHandler() gin.HandlerFunc {
 		}
 		c.Next()
 	}
+}
+
+// tokenUser reads a specified Token and its associated User.
+func tokenUser(ctx context.Context, tokenID string) (token.Token, user.User, error) {
+	// Validate the Application
+	if api.TokenService.Table == nil || api.UserService.Table == nil {
+		return token.Token{}, user.User{}, fmt.Errorf("application not initialized")
+	}
+	// Validate the bearer token
+	if tokenID == "" || !tuid.IsValid(tuid.TUID(tokenID)) {
+		return token.Token{}, user.User{}, fmt.Errorf("invalid bearer token")
+	}
+	// Read the specified token
+	t, err := api.TokenService.Read(ctx, tokenID)
+	if err != nil {
+		// tokens expire, so this will be a common response
+		return token.Token{}, user.User{}, fmt.Errorf("error reading token: %w", err)
+	}
+	// Read the associated user
+	u, err := api.UserService.Read(ctx, t.UserID)
+	if err != nil {
+		return t, user.User{}, fmt.Errorf("error reading user %s from token: %w", t.UserID, err)
+	}
+	// Check that the user is active (not disabled)
+	if u.Status == user.DISABLED {
+		return t, u, fmt.Errorf("user %s status is %s", u.ID, u.Status)
+	}
+	return t, u, nil
 }
 
 // userAuthenticator is a middleware function that ensures that the request is authenticated.

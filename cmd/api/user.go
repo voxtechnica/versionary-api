@@ -34,7 +34,7 @@ func registerUserRoutes(r *gin.Engine) {
 
 // createUser creates a new User.
 //
-// @Summary Create a new User
+// @Description Create a new User
 // @Description Create a new User.
 // @Tags User
 // @Accept json
@@ -91,7 +91,7 @@ func createUser(c *gin.Context) {
 
 // readUsers returns a paginated list of Users.
 //
-// @Summary List Users
+// @Description List Users
 // @Description List Users, paging with reverse, limit, and offset.
 // @Description Optionally, filter by email, organization, role, or status.
 // @Tags User
@@ -199,7 +199,7 @@ func readUsers(c *gin.Context) {
 
 // readUser returns the current version of the specified User.
 //
-// @Summary Get User
+// @Description Get User
 // @Description Get User by ID or email, scrubbing sensitive information if the requester is not an administrator.
 // @Tags User
 // @Produce json
@@ -271,7 +271,7 @@ func readUser(c *gin.Context) {
 
 // existsUser checks if the specified User exists.
 //
-// @Summary User Exists
+// @Description User Exists
 // @Description Check if the specified User exists.
 // @Tags User
 // @Param id path string true "User ID"
@@ -292,7 +292,7 @@ func existsUser(c *gin.Context) {
 
 // readUserVersions returns a paginated list of versions of the specified User.
 //
-// @Summary List User Versions
+// @Description List User Versions
 // @Description Get User Versions by User ID, paging with reverse, limit, and offset.
 // @Tags User
 // @Produce json
@@ -345,7 +345,7 @@ func readUserVersions(c *gin.Context) {
 
 // readUserVersion returns the specified version of the specified User.
 //
-// @Summary Get User Version
+// @Description Get User Version
 // @Description Get User Version by ID and VersionID, scrubbing sensitive information if the requester is not an administrator.
 // @Tags User
 // @Produce json
@@ -411,7 +411,7 @@ func readUserVersion(c *gin.Context) {
 
 // existsUserVersion checks if the specified User version exists.
 //
-// @Summary User Version Exists
+// @Description User Version Exists
 // @Description Check if the specified User version exists.
 // @Tags User
 // @Param id path string true "User ID"
@@ -435,7 +435,7 @@ func existsUserVersion(c *gin.Context) {
 // updateUser updates and returns the specified User.
 // Note that the updated version needs to be complete; this is not a partial update (e.g. PATCH).
 //
-// @Summary Update User
+// @Description Update User
 // @Description Update the provided complete User, ensuring that sensitive information is retained.
 // @Tags User
 // @Accept json
@@ -543,7 +543,7 @@ func updateUser(c *gin.Context) {
 
 // deleteUser deletes the specified User.
 //
-// @Summary Delete User
+// @Description Delete User
 // @Description Delete and return the specified User. Attempt to delete their associated Tokens as well, logging errors.
 // @Tags User
 // @Produce json
@@ -621,7 +621,7 @@ func deleteUser(c *gin.Context) {
 
 // readUserEmails returns a list of email addresses for which users exist.
 //
-// @Summary List User Email Addresses
+// @Description List User Email Addresses
 // @Description Get a paginated list of email addresses for which users exist.
 // @Tags User
 // @Produce json
@@ -661,7 +661,7 @@ func readUserEmails(c *gin.Context) {
 // readUserOrgIDs returns a list of Organization IDs for which users exist.
 // It's useful for paging through users by organization.
 //
-// @Summary List User Organization IDs
+// @Description List User Organization IDs
 // @Description Get a list of Organization IDs for which users exist.
 // @Tags User
 // @Produce json
@@ -691,7 +691,7 @@ func readUserOrgIDs(c *gin.Context) {
 // readUserRoles returns a list of roles for which users exist.
 // It's useful for paging through users by role.
 //
-// @Summary List User Roles
+// @Description List User Roles
 // @Description Get a list of roles for which users exist.
 // @Tags User
 // @Produce json
@@ -721,7 +721,7 @@ func readUserRoles(c *gin.Context) {
 // readUserStatuses returns a list of status codes for which users exist.
 // It's useful for paging through users by status.
 //
-// @Summary List User Statuses
+// @Description List User Statuses
 // @Description Get a list of status codes for which users exist.
 // @Tags User
 // @Produce json

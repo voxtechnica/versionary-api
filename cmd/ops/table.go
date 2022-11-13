@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"versionary-api/pkg/content"
 	"versionary-api/pkg/device"
 	"versionary-api/pkg/email"
 	"versionary-api/pkg/event"
@@ -72,6 +73,8 @@ func checkTables(cmd *cobra.Command, args []string) error {
 	for _, entity := range tables {
 		// TODO: add new DynamoDB tables here
 		switch entity {
+		case "Content":
+			checkTable(ctx, content.NewTable(ops.DBClient, ops.Environment))
 		case "Device":
 			checkTable(ctx, device.NewTable(ops.DBClient, ops.Environment))
 		case "DeviceCount":
@@ -139,6 +142,8 @@ func deleteTables(cmd *cobra.Command, args []string) error {
 	for _, entity := range tables {
 		// TODO: add new DynamoDB tables here
 		switch entity {
+		case "Content":
+			deleteTable(ctx, content.NewTable(ops.DBClient, ops.Environment))
 		case "Device":
 			deleteTable(ctx, device.NewTable(ops.DBClient, ops.Environment))
 		case "DeviceCount":

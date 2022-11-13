@@ -1,5 +1,7 @@
 package image
 
+import "github.com/voxtechnica/versionary"
+
 // Status indicates the operational state of an Image
 type Status string
 
@@ -31,4 +33,9 @@ func (s Status) IsValid() bool {
 // String returns a string representation of the Status
 func (s Status) String() string {
 	return string(s)
+}
+
+// SupportedStatuses returns a list of the supported Image statuses
+func SupportedStatuses() []string {
+	return versionary.Map(Statuses, func(s Status) string { return s.String() })
 }

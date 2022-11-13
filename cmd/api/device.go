@@ -34,7 +34,7 @@ func registerDeviceRoutes(r *gin.Engine) {
 
 // createDevice creates a new Device.
 //
-// @Summary Create a new Device
+// @Description Create a new Device
 // @Description Create a new Device from a User-Agent header.
 // @Tags Device
 // @Accept json
@@ -82,7 +82,7 @@ func createDevice(c *gin.Context) {
 // updateDevice updates and returns the specified Device.
 // Note that if the Device does not exist (e.g. TTL expired), a new Device will be created.
 //
-// @Summary Update Device
+// @Description Update Device
 // @Description Update the specified Device from a User-Agent header.
 // @Tags Device
 // @Accept json
@@ -142,7 +142,7 @@ func updateDevice(c *gin.Context) {
 
 // deleteDevice deletes the specified Device.
 //
-// @Summary Delete Device
+// @Description Delete Device
 // @Description Delete and return the specified Device.
 // @Tags Device
 // @Produce json
@@ -196,7 +196,7 @@ func deleteDevice(c *gin.Context) {
 
 // readDevices returns a paginated list of Devices.
 //
-// @Summary List Devices
+// @Description List Devices
 // @Description List Devices, paging with reverse, limit, and offset. Optionally, filter by UserID or Date.
 // @Tags Device
 // @Produce json
@@ -271,7 +271,7 @@ func readDevices(c *gin.Context) {
 
 // readDevice returns the current version of the specified Device.
 //
-// @Summary Get Device
+// @Description Get Device
 // @Description Get Device by ID.
 // @Tags Device
 // @Produce json
@@ -312,7 +312,7 @@ func readDevice(c *gin.Context) {
 
 // existsDevice checks if the specified Device exists.
 //
-// @Summary Device Exists
+// @Description Device Exists
 // @Description Check if the specified Device exists.
 // @Tags Device
 // @Param id path string true "Device ID"
@@ -333,7 +333,7 @@ func existsDevice(c *gin.Context) {
 
 // readDeviceVersions returns a paginated list of versions of the specified Device.
 //
-// @Summary Get Device Versions
+// @Description Get Device Versions
 // @Description Get Device Versions by ID, paging with reverse, limit, and offset.
 // @Tags Device
 // @Produce json
@@ -386,7 +386,7 @@ func readDeviceVersions(c *gin.Context) {
 
 // readDeviceVersion returns the specified version of the specified Device.
 //
-// @Summary Get Device Version
+// @Description Get Device Version
 // @Description Get Device Version by ID and VersionID.
 // @Tags Device
 // @Produce json
@@ -433,7 +433,7 @@ func readDeviceVersion(c *gin.Context) {
 
 // existsDeviceVersion checks if the specified Device version exists.
 //
-// @Summary Device Version Exists
+// @Description Device Version Exists
 // @Description Check if the specified Device version exists.
 // @Tags Device
 // @Param id path string true "Device ID"
@@ -457,7 +457,7 @@ func existsDeviceVersion(c *gin.Context) {
 // readDeviceDates returns a list of dates for which devices exist.
 // It's useful for paging through devices by date.
 //
-// @Summary Get Device Dates
+// @Description Get Device Dates
 // @Description Get a list of dates for which devices exist.
 // @Tags Device
 // @Produce json
@@ -487,7 +487,7 @@ func readDeviceDates(c *gin.Context) {
 // readDeviceUserIDs returns a list of User IDs for which devices exist.
 // It's useful for paging through devices by User ID.
 //
-// @Summary Get Device User IDs
+// @Description Get Device User IDs
 // @Description Get a list of User IDs for which devices exist.
 // @Tags Device
 // @Produce json
@@ -527,7 +527,7 @@ func readDeviceUserIDs(c *gin.Context) {
 
 // readDeviceCounts returns a paginated list of device counts by date.
 //
-// @Summary Get Device Counts
+// @Description Get Device Counts
 // @Description Get a paginated list of device counts by date.
 // @Tags Device
 // @Produce json
@@ -567,7 +567,7 @@ func readDeviceCounts(c *gin.Context) {
 
 // readDeviceCount returns the number of devices encountered on the specified date.
 //
-// @Summary Get Device Count
+// @Description Get Device Count
 // @Description Get the number of devices encountered on the specified date.
 // @Tags Device
 // @Produce json
@@ -610,7 +610,7 @@ func readDeviceCount(c *gin.Context) {
 
 // existsDeviceCount checks if the specified Device Count exists.
 //
-// @Summary Device Count Exists
+// @Description Device Count Exists
 // @Description Check if the specified Device Count exists.
 // @Tags Device
 // @Param id path string true "Date (YYYY-MM-DD)"
@@ -631,7 +631,7 @@ func existsDeviceCount(c *gin.Context) {
 
 // updateDeviceCount updates the number of devices encountered on the specified date.
 //
-// @Summary Update Device Count
+// @Description Update Device Count
 // @Description Update the number of devices encountered on the specified date.
 // @Tags Device
 // @Produce json

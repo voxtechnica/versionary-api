@@ -39,7 +39,7 @@ func registerImageRoutes(r *gin.Engine) {
 
 // createImage creates a new Image.
 //
-// @Summary Create a new Image
+// @Description Create a new Image
 // @Description Create a new Image.
 // @Tags Image
 // @Accept json
@@ -96,7 +96,7 @@ func createImage(c *gin.Context) {
 
 // readImages returns a paginated list of Images.
 //
-// @Summary List Images
+// @Description List Images
 // @Description List Images, paging with reverse, limit, and offset. Optionally, filter by status.
 // @Tags Image
 // @Produce json
@@ -164,7 +164,7 @@ func readImages(c *gin.Context) {
 
 // readImage returns the current version of the specified Image.
 //
-// @Summary Get Image
+// @Description Get Image
 // @Description Get Image by ID.
 // @Tags Image
 // @Produce json
@@ -205,7 +205,7 @@ func readImage(c *gin.Context) {
 
 // existsImage checks if the specified Image exists.
 //
-// @Summary Image Exists
+// @Description Image Exists
 // @Description Check if the specified Image exists.
 // @Tags Image
 // @Param id path string true "Image ID"
@@ -226,7 +226,7 @@ func existsImage(c *gin.Context) {
 
 // readImageVersions returns a paginated list of versions of the specified Image.
 //
-// @Summary Get Image Versions
+// @Description Get Image Versions
 // @Description Get Image Versions by ID, paging with reverse, limit, and offset.
 // @Tags Image
 // @Produce json
@@ -279,7 +279,7 @@ func readImageVersions(c *gin.Context) {
 
 // readImageVersion returns the specified version of the specified Image.
 //
-// @Summary Get Image Version
+// @Description Get Image Version
 // @Description Get Image Version by ID and VersionID.
 // @Tags Image
 // @Produce json
@@ -326,7 +326,7 @@ func readImageVersion(c *gin.Context) {
 
 // existsImageVersion checks if the specified Image version exists.
 //
-// @Summary Image Version Exists
+// @Description Image Version Exists
 // @Description Check if the specified Image version exists.
 // @Tags Image
 // @Param id path string true "Image ID"
@@ -347,16 +347,16 @@ func existsImageVersion(c *gin.Context) {
 	}
 }
 
-// readSimilarImages returns a list of similar ImageDistance objects for the specified Image.
+// readSimilarImages returns a list of similar Distance objects for the specified Image.
 //
-// @Summary Find Similar Images
+// @Description Find Similar Images
 // @Description Find similar Images, within the specified perceptual hash distance.
 // @Tags Image
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
 // @Param maxdist query int false "Maximum Distance (range: 0-64, default: 16)" default(16) minimum(0) maximum(64)
 // @Param limit query int false "Limit (default: 20, max: 100)" default(20) maximum(100)
-// @Success 200 {array} image.ImageDistance "Image Distances"
+// @Success 200 {array} image.Distance "Image Distances"
 // @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
@@ -420,7 +420,7 @@ func readSimilarImages(c *gin.Context) {
 
 // getImageDownloadURL returns the Image download URL.
 //
-// @Summary Get Image Download URL
+// @Description Get Image Download URL
 // @Description Get a pre-signed file download URL for the specified Image.
 // @Tags Image
 // @Produce json
@@ -465,7 +465,7 @@ func getImageDownloadURL(c *gin.Context) {
 
 // getImageUploadURL returns the Image upload URL.
 //
-// @Summary Get Image Upload URL
+// @Description Get Image Upload URL
 // @Description Get a pre-signed file upload URL for the specified Image.
 // @Tags Image
 // @Produce json
@@ -510,7 +510,7 @@ func getImageUploadURL(c *gin.Context) {
 // updateImage updates and returns the specified Image.
 // Note that the updated version needs to be complete; this is not a partial update (e.g. PATCH).
 //
-// @Summary Update Image
+// @Description Update Image
 // @Description Update the provided, complete Image.
 // @Tags Image
 // @Accept json
@@ -577,7 +577,7 @@ func updateImage(c *gin.Context) {
 
 // deleteImage deletes the specified Image.
 //
-// @Summary Delete Image
+// @Description Delete Image
 // @Description Delete and return the specified Image.
 // @Tags Image
 // @Produce json
@@ -632,7 +632,7 @@ func deleteImage(c *gin.Context) {
 // readImageStatuses returns a list of status codes for which images exist.
 // It's useful for paging through images by status.
 //
-// @Summary Get Image Statuses
+// @Description Get Image Statuses
 // @Description Get a complete list of status codes for which images exist.
 // @Tags Image
 // @Produce json
@@ -662,7 +662,7 @@ func readImageStatuses(c *gin.Context) {
 // readImageTags returns a list of tags for which images exist.
 // It's useful for paging through images by tag.
 //
-// @Summary Get Image Tags
+// @Description Get Image Tags
 // @Description Get a complete list of tags for which images exist.
 // @Tags Image
 // @Produce json
@@ -691,14 +691,14 @@ func readImageTags(c *gin.Context) {
 
 // readImageLabels returns a list of images labels, optionally filtered with search terms.
 //
-// @Summary Get Image Labels
+// @Description Get Image Labels
 // @Description Get a list of Image Labels, optionally filtered with search terms.
 // @Tags Image
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
 // @Param search query string false "Search Terms, separated by spaces"
 // @Param any query bool false "Any Match? (default: false; all search terms must match)"
-// @Param sorted query bool false "Sort by Value? (unpaginated; default: false)"
+// @Param sorted query bool false "Sort by Value? (not paginated; default: false)"
 // @Param reverse query bool false "Reverse Order (default: false)"
 // @Param limit query int false "Limit (default: 1000)"
 // @Param offset query string false "Offset (default: forward/reverse alphanumeric)"

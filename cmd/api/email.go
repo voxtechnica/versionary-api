@@ -32,7 +32,7 @@ func registerEmailRoutes(r *gin.Engine) {
 
 // createEmail creates and sends a new Email message.
 //
-// @Summary Create/Send a new Email
+// @Description Create/Send a new Email
 // @Description Create and send a new Email message.
 // @Tags Email
 // @Accept json
@@ -89,7 +89,7 @@ func createEmail(c *gin.Context) {
 
 // readEmails returns a paginated list of Emails.
 //
-// @Summary List Emails
+// @Description List Emails
 // @Description List Emails, paging with reverse, limit, and offset. Optionally, filter by email address or status.
 // @Description Regular users can only list their own Emails. Administrators can list all Emails.
 // @Tags Email
@@ -178,7 +178,7 @@ func readEmails(c *gin.Context) {
 
 // readEmail returns the current version of the specified Email.
 //
-// @Summary Get Email
+// @Description Get Email
 // @Description Get Email by ID.
 // @Tags Email
 // @Produce json
@@ -228,7 +228,7 @@ func readEmail(c *gin.Context) {
 
 // existsEmail checks if the specified Email exists.
 //
-// @Summary Email Exists
+// @Description Email Exists
 // @Description Check if the specified Email exists.
 // @Tags Email
 // @Param id path string true "Email ID"
@@ -249,7 +249,7 @@ func existsEmail(c *gin.Context) {
 
 // readEmailVersions returns a paginated list of versions of the specified Email.
 //
-// @Summary Get Email Versions
+// @Description Get Email Versions
 // @Description Get Email Versions by ID, paging with reverse, limit, and offset.
 // @Tags Email
 // @Produce json
@@ -302,7 +302,7 @@ func readEmailVersions(c *gin.Context) {
 
 // readEmailVersion returns the specified version of the specified Email.
 //
-// @Summary Get Email Version
+// @Description Get Email Version
 // @Description Get Email Version by ID and VersionID.
 // @Tags Email
 // @Produce json
@@ -358,7 +358,7 @@ func readEmailVersion(c *gin.Context) {
 
 // existsEmailVersion checks if the specified Email version exists.
 //
-// @Summary Email Version Exists
+// @Description Email Version Exists
 // @Description Check if the specified Email version exists.
 // @Tags Email
 // @Param id path string true "Email ID"
@@ -382,7 +382,7 @@ func existsEmailVersion(c *gin.Context) {
 // updateEmail updates and returns the specified Email. If the status is PENDING, the Email is sent.
 // Note that the updated version needs to be complete; this is not a partial update (e.g. PATCH).
 //
-// @Summary Update/Send Email
+// @Description Update/Send Email
 // @Description Update the provided complete Email. If the status is PENDING, the Email is sent.
 // @Tags Email
 // @Accept json
@@ -449,7 +449,7 @@ func updateEmail(c *gin.Context) {
 
 // deleteEmail deletes the specified Email.
 //
-// @Summary Delete Email
+// @Description Delete Email
 // @Description Delete and return the specified Email.
 // @Tags Email
 // @Produce json
@@ -504,7 +504,7 @@ func deleteEmail(c *gin.Context) {
 // readEmailAddresses returns a list of email addresses for which emails exist.
 // It's useful for paging through emails by email address.
 //
-// @Summary Get Email Addresses
+// @Description Get Email Addresses
 // @Description Get a list of email addresses for which emails exist.
 // @Tags Email
 // @Produce json
@@ -543,7 +543,7 @@ func readEmailAddresses(c *gin.Context) {
 // readEmailStatuses returns a list of status codes for which emails exist.
 // It's useful for paging through emails by status.
 //
-// @Summary Get Email Statuses
+// @Description Get Email Statuses
 // @Description Get a list of status codes for which emails exist.
 // @Tags Email
 // @Produce json

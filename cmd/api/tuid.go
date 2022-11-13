@@ -22,7 +22,7 @@ func registerTuidRoutes(r *gin.Engine) {
 
 // createTUID generates a new TUID based on the current system time.
 //
-// @Summary Generate a new TUID
+// @Description Generate a new TUID
 // @Description Generate a new TUID based on current system time and return the TUIDInfo.
 // @Tags TUID
 // @Produce json
@@ -38,7 +38,7 @@ func createTUID(c *gin.Context) {
 
 // readTUIDs generates the specified number of TUIDs, based on the current system time.
 //
-// @Summary Generate the specified number of TUIDs
+// @Description Generate the specified number of TUIDs
 // @Description Generate the specified number of TUIDs, based on the current system time.
 // @Tags TUID
 // @Produce json
@@ -64,7 +64,7 @@ func readTUIDs(c *gin.Context) {
 // readTUID reads TUIDInfo for the specified TUID.
 // It can be useful for extracting the timestamp from an ID.
 //
-// @Summary Read TUIDInfo for the provided TUID
+// @Description Read TUIDInfo for the provided TUID
 // @Description Parse the provided TUID, returning the TUIDInfo. This can be useful for extracting the timestamp from an ID.
 // @Tags TUID
 // @Produce json

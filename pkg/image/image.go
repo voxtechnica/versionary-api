@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"versionary-api/pkg/policy"
 
 	b "versionary-api/pkg/bucket"
 
@@ -18,7 +19,8 @@ type Image struct {
 	VersionID      string    `json:"versionID"`
 	UpdatedAt      time.Time `json:"updatedAt"`
 	Title          string    `json:"title"`                    // Image title, suitable for display as a caption
-	AltText        string    `json:"altText"`                  // Image description for accessibility
+	AltText        string    `json:"altText"`                  // Concise Image description for accessibility
+	Description    string    `json:"description"`              // Full Image description
 	SourceURI      string    `json:"sourceURI,omitempty"`      // SourceURI is the URI of the original image
 	SourceFileName string    `json:"sourceFileName,omitempty"` // SourceFileName is the name of the original image
 	MediaType      MediaType `json:"mediaType"`                // Media Type (image/jpeg, image/webp, image/png, image/gif)
@@ -29,7 +31,7 @@ type Image struct {
 	Width          int       `json:"width,omitempty"`          // Width of the image in pixels
 	Height         int       `json:"height,omitempty"`         // Height of the image in pixels
 	AspectRatio    float64   `json:"aspectRatio,omitempty"`    // AspectRatio is width / height
-	Tags           []string  `json:"tags,omitempty"`           // Tags are associated image topics or categories
+	Tags           []string  `json:"tags,omitempty"`           // Tags are used to group images by topic or category
 	Status         Status    `json:"status"`                   // Status is the current status of the image
 }
 
@@ -82,6 +84,14 @@ func (i Image) CompressedJSON() []byte {
 	return j
 }
 
+// Sanitize removes potentially dangerous HTML tags from the Image's text fields.
+func (i Image) Sanitize() Image {
+	i.Title = policy.PlainText.Sanitize(i.Title)
+	i.AltText = policy.PlainText.Sanitize(i.AltText)
+	i.Description = policy.RichText.Sanitize(i.Description)
+	return i
+}
+
 // Validate checks whether the Image has all required fields and whether the supplied values are valid,
 // returning a list of problems. If the list is empty, then the Image is valid.
 func (i Image) Validate() []string {
@@ -113,11 +123,18 @@ func (i Image) Validate() []string {
 	return problems
 }
 
+// WordCount returns the number of words in the Image's text fields.
+func (i Image) WordCount() int {
+	count := len(strings.Fields(i.Label()))
+	count += len(strings.Fields(policy.PlainText.Sanitize(i.Description)))
+	return count
+}
+
 //------------------------------------------------------------------------------
 
-// ImageDistance represents the perceptual distance between two images,
+// Distance represents the perceptual distance between two images,
 // along with information about the similar image.
-type ImageDistance struct {
+type Distance struct {
 	ID       string `json:"id"`               // Image ID of the similar Image
 	Label    string `json:"label"`            // Image title or alt text, if available
 	Source   string `json:"source,omitempty"` // Source is the URI or file name of the original image
@@ -130,8 +147,8 @@ type ImageDistance struct {
 	Distance int    `json:"distance"`         // The number of differing perceptual hash bits
 }
 
-// Populate the ImageDistance fields from the provided Image.
-func (d *ImageDistance) Populate(i Image) {
+// Populate the Distance fields from the provided Image.
+func (d *Distance) Populate(i Image) {
 	d.ID = i.ID
 	d.Label = i.Label()
 	if i.SourceURI != "" {

@@ -11,19 +11,17 @@ import (
 // MediaType is a type for supported Image media types.
 type MediaType string
 
-const (
-	// GIF is the media type for GIF images
-	GIF MediaType = "image/gif"
+// GIF is the media type for GIF images
+const GIF MediaType = "image/gif"
 
-	// JPEG is the media type for JPEG images
-	JPEG MediaType = "image/jpeg"
+// JPEG is the media type for JPEG images
+const JPEG MediaType = "image/jpeg"
 
-	// PNG is the media type for PNG images
-	PNG MediaType = "image/png"
+// PNG is the media type for PNG images
+const PNG MediaType = "image/png"
 
-	// WebP is the media type for WebP images
-	WebP MediaType = "image/webp"
-)
+// WebP is the media type for WebP images
+const WebP MediaType = "image/webp"
 
 // MediaTypes is the complete list of valid, supported MediaTypes and their corresponding file extensions.
 var MediaTypes = map[MediaType]string{

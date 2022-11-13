@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"time"
+	"versionary-api/pkg/content"
 	"versionary-api/pkg/device"
 	"versionary-api/pkg/email"
 	"versionary-api/pkg/event"
@@ -20,7 +21,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/ses"
-	"github.com/voxtechnica/tuid-go"
 )
 
 // About provides basic information about the API.
@@ -58,6 +58,7 @@ type Application struct {
 	S3Client           *s3.Client       // AWS S3 client
 	SESClient          *ses.Client      // AWS SES client
 	ParameterStore     ParameterStore   // AWS SSM Parameter Store client
+	ContentService     content.Service
 	DeviceService      device.Service
 	DeviceCountService device.CountService
 	EmailService       email.Service
@@ -131,6 +132,7 @@ func (a *Application) setDefaults() {
 	// Entity Types
 	// TODO: Update this list and initialize new services below as new entity types are added
 	a.EntityTypes = []string{
+		"Content",
 		"Device",
 		"DeviceCount",
 		"Email",
@@ -165,6 +167,10 @@ func (a *Application) Init(env string) error {
 	a.ParameterStore = NewParameterStore(cfg)
 
 	// Initialize Services
+	a.ContentService = content.Service{
+		EntityType: "Content",
+		Table:      content.NewTable(a.DBClient, a.Environment),
+	}
 	a.DeviceService = device.Service{
 		EntityType: "Device",
 		Table:      device.NewTable(a.DBClient, a.Environment),
@@ -233,6 +239,10 @@ func (a *Application) InitMock(env string) error {
 	a.ParameterStore = NewParameterStoreMock()
 
 	// Initialize Services
+	a.ContentService = content.Service{
+		EntityType: "Content",
+		Table:      content.NewMemTable(content.NewTable(a.DBClient, a.Environment)),
+	}
 	a.DeviceService = device.Service{
 		EntityType: "Device",
 		Table:      device.NewMemTable(device.NewTable(a.DBClient, a.Environment)),
@@ -287,32 +297,4 @@ func (a *Application) InitMock(env string) error {
 	}
 
 	return nil
-}
-
-// TokenUser reads a specified Token and its associated User.
-func (a *Application) TokenUser(ctx context.Context, tokenID string) (token.Token, user.User, error) {
-	// Validate the Application
-	if a.TokenService.Table == nil || a.UserService.Table == nil {
-		return token.Token{}, user.User{}, fmt.Errorf("application not initialized")
-	}
-	// Validate the bearer token
-	if tokenID == "" || !tuid.IsValid(tuid.TUID(tokenID)) {
-		return token.Token{}, user.User{}, fmt.Errorf("invalid bearer token")
-	}
-	// Read the specified token
-	t, err := a.TokenService.Read(ctx, tokenID)
-	if err != nil {
-		// tokens expire, so this will be a common response
-		return token.Token{}, user.User{}, fmt.Errorf("error reading token: %w", err)
-	}
-	// Read the associated user
-	u, err := a.UserService.Read(ctx, t.UserID)
-	if err != nil {
-		return t, user.User{}, fmt.Errorf("error reading user %s from token: %w", t.UserID, err)
-	}
-	// Check that the user is active (not disabled)
-	if u.Status == user.DISABLED {
-		return t, u, fmt.Errorf("user %s status is %s", u.ID, u.Status)
-	}
-	return t, u, nil
 }

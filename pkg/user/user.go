@@ -25,8 +25,10 @@ type User struct {
 	PasswordHash  string    `json:"passwordHash,omitempty"`
 	PasswordReset string    `json:"passwordReset,omitempty"`
 	Roles         []string  `json:"roles,omitempty"`
-	OrgID         string    `json:"orgID"`
-	OrgName       string    `json:"orgName"`
+	OrgID         string    `json:"orgID,omitempty"`
+	OrgName       string    `json:"orgName,omitempty"`
+	AvatarURL     string    `json:"avatarURL,omitempty"`
+	WebsiteURL    string    `json:"websiteURL,omitempty"`
 	Status        Status    `json:"status"`
 }
 

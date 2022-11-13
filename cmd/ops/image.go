@@ -79,7 +79,7 @@ func uploadImage(cmd *cobra.Command, args []string) error {
 	}
 
 	// Determine the media type
-	blob, err := ops.ImageService.FetchSourceFile(ctx, sourceFileName)
+	blob, err := ops.ImageService.FetchSourceFile(sourceFileName)
 	if err != nil {
 		return fmt.Errorf("error fetching source file %s: %w", sourceFileName, err)
 	}

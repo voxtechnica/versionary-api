@@ -55,7 +55,7 @@ func TestImageAnalysis(t *testing.T) {
 		AltText:        "Stack Icon 64x64",
 		SourceFileName: "testdata/stack.64.png",
 	}
-	img64, err := service.FetchSourceFile(ctx, stack64.SourceFileName)
+	img64, err := service.FetchSourceFile(stack64.SourceFileName)
 	expect.NoError(err, "no error fetching source image")
 	expect.NotNil(img64, "image bytes exist")
 	stack64, err = service.Analyze(stack64, img64)
@@ -80,7 +80,7 @@ func TestImageAnalysis(t *testing.T) {
 		AltText:        "Amazon Rainforest in Ecuador",
 		SourceFileName: "testdata/Ecuador.Rainforest.jpeg",
 	}
-	imgJPEG, err := service.FetchSourceFile(ctx, jpeg.SourceFileName)
+	imgJPEG, err := service.FetchSourceFile(jpeg.SourceFileName)
 	expect.NoError(err, "no error fetching source image")
 	expect.NotNil(imgJPEG, "image bytes exist")
 	jpeg, err = service.Analyze(jpeg, imgJPEG)
@@ -104,7 +104,7 @@ func TestImageAnalysis(t *testing.T) {
 		AltText:        "Amazon Rainforest in Ecuador",
 		SourceFileName: "testdata/Ecuador.Rainforest.webp",
 	}
-	imgWebP, err := service.FetchSourceFile(ctx, webp.SourceFileName)
+	imgWebP, err := service.FetchSourceFile(webp.SourceFileName)
 	expect.NoError(err, "no error fetching source image")
 	expect.NotNil(imgWebP, "image bytes exist")
 	webp, err = service.Analyze(webp, imgWebP)

@@ -12,6 +12,7 @@ It uses the Go programming language with the following technologies:
 * [AWS SSM Parameter Store](https://aws.amazon.com/systems-manager/features/#Parameter_Store)
 * [AWS Simple Email Service (SES)](https://aws.amazon.com/ses/)
 * [Gin Web Framework](https://gin-gonic.com/)
+* [Cobra CLI Framework](https://cobra.dev/)
 
 ## Learning Resources
 

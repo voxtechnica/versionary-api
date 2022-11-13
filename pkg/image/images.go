@@ -136,6 +136,7 @@ func NewMemBucket(bucket b.Bucket) b.MemBucket {
 // Image Service
 //==============================================================================
 
+// Service is a service for managing Images.
 type Service struct {
 	EntityType string
 	Bucket     b.BucketReadWriter
@@ -176,7 +177,7 @@ func (s Service) FetchSourceURI(ctx context.Context, uri string) ([]byte, error)
 }
 
 // FetchSourceFile fetches the source image from the given file path and returns the image blob.
-func (s Service) FetchSourceFile(ctx context.Context, path string) ([]byte, error) {
+func (s Service) FetchSourceFile(path string) ([]byte, error) {
 	// A source file path is required.
 	if path == "" {
 		return nil, fmt.Errorf("error fetching image source: no file path provided")
@@ -265,7 +266,7 @@ func (s Service) Create(ctx context.Context, i Image) (Image, []string, error) {
 			return i, problems, fmt.Errorf("error creating %s %s: %w", s.EntityType, i.ID, err)
 		}
 	} else if i.SourceFileName != "" {
-		blob, err = s.FetchSourceFile(ctx, i.SourceFileName)
+		blob, err = s.FetchSourceFile(i.SourceFileName)
 		if err != nil {
 			i.Status = ERROR
 			return i, problems, fmt.Errorf("error creating %s %s: %w", s.EntityType, i.ID, err)
@@ -329,7 +330,7 @@ func (s Service) Update(ctx context.Context, i Image) (Image, []string, error) {
 					return i, problems, fmt.Errorf("error updating %s %s: %w", s.EntityType, i.ID, err)
 				}
 			} else if i.SourceFileName != "" {
-				blob, err = s.FetchSourceFile(ctx, i.SourceFileName)
+				blob, err = s.FetchSourceFile(i.SourceFileName)
 				if err != nil {
 					i.Status = ERROR
 					return i, problems, fmt.Errorf("error updating %s %s: %w", s.EntityType, i.ID, err)
@@ -583,15 +584,15 @@ func (s Service) ReadAllImageLabels(ctx context.Context, sortByValue bool) ([]v.
 
 // FilterImageLabels returns a filtered list of Image IDs with associated labels.
 // The list contains only those labels that match the provided filter query.
-// The query string is split into words, and the words are compared with the Image label.
+// The contains query string is split into words, and the words are compared with the Image label.
 // If anyMatch is true, then an Image label is included if any of the words are found (an OR filter).
 // If anyMatch is false, then the Image label must contain all the words in the query string (an AND filter).
-func (s Service) FilterImageLabels(ctx context.Context, query string, anyMatch bool) ([]v.TextValue, error) {
+func (s Service) FilterImageLabels(ctx context.Context, contains string, anyMatch bool) ([]v.TextValue, error) {
 	imageLabels, err := s.ReadAllImageLabels(ctx, false)
 	if err != nil {
 		return imageLabels, fmt.Errorf("filter image labels: %w", err)
 	}
-	return filterTextValues(imageLabels, query, anyMatch), nil
+	return filterTextValues(imageLabels, contains, anyMatch), nil
 }
 
 //------------------------------------------------------------------------------
@@ -608,11 +609,11 @@ func (s Service) ReadAllImageHashes(ctx context.Context) ([]v.TextValue, error) 
 	return s.Table.ReadAllTextValues(ctx, rowImageHashes, s.EntityType, false)
 }
 
-// FindSimilarImages returns an ImageDistance slice, ordered in increasing distance, of
+// FindSimilarImages returns a Distance slice, ordered in increasing distance, of
 // images having perceptual hash values within the specified distance of the query image.
 // maxDistance must be between 0 and 64 (inclusive). 16 might be a reasonable value.
 // For performance reasons (Image data are fetched in parallel), the maximum limit is 100.
-func (s Service) FindSimilarImages(ctx context.Context, pHash string, maxDistance int, limit int) ([]ImageDistance, error) {
+func (s Service) FindSimilarImages(ctx context.Context, pHash string, maxDistance int, limit int) ([]Distance, error) {
 	// Validate the provided parameters.
 	if pHash == "" {
 		return nil, errors.New("find similar images: empty perceptual hash")
@@ -659,14 +660,14 @@ func (s Service) FindSimilarImages(ctx context.Context, pHash string, maxDistanc
 		ids[i] = distances[i].id
 	}
 	images := s.ReadImageMap(ctx, ids)
-	// Generate ImageDistance results.
-	results := make([]ImageDistance, len(distances))
+	// Generate Distance results.
+	results := make([]Distance, len(distances))
 	for i := 0; i < len(distances); i++ {
 		results[i].ID = distances[i].id
 		results[i].Distance = distances[i].dist
-		image, ok := images[results[i].ID]
+		img, ok := images[results[i].ID]
 		if ok {
-			results[i].Populate(image)
+			results[i].Populate(img)
 		}
 	}
 	return results, nil
@@ -765,9 +766,10 @@ func PHashDistance(h1, h2 string) (int, error) {
 // The query string is split into words, and the words are compared with the value in the TextValue.
 // If anyMatch is true, then a TextValue is included if any of the words are found (OR filter).
 // If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
-func filterTextValues(textValues []v.TextValue, query string, anyMatch bool) []v.TextValue {
+// The filtered results are sorted alphabetically by value, not by ID.
+func filterTextValues(textValues []v.TextValue, contains string, anyMatch bool) []v.TextValue {
 	var filtered []v.TextValue
-	terms := strings.Fields(strings.ToLower(query))
+	terms := strings.Fields(strings.ToLower(contains))
 	if len(terms) == 0 {
 		return filtered
 	}
@@ -782,6 +784,9 @@ func filterTextValues(textValues []v.TextValue, query string, anyMatch bool) []v
 			}
 		}
 	}
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].Value < filtered[j].Value
+	})
 	return filtered
 }
 

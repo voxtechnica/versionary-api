@@ -12,7 +12,6 @@ import (
 
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/org"
-	"versionary-api/pkg/user"
 )
 
 // registerOrganizationRoutes initializes the Organization routes.
@@ -31,7 +30,7 @@ func registerOrganizationRoutes(r *gin.Engine) {
 
 // createOrganization creates a new Organization.
 //
-// @Summary Create a new Organization
+// @Description Create a new Organization
 // @Description Create a new Organization.
 // @Tags Organization
 // @Accept json
@@ -88,7 +87,7 @@ func createOrganization(c *gin.Context) {
 
 // readOrganizations returns a paginated list of Organizations.
 //
-// @Summary List Organizations
+// @Description List Organizations
 // @Description List Organizations, paging with reverse, limit, and offset. Optionally, filter by status.
 // @Tags Organization
 // @Produce json
@@ -111,7 +110,7 @@ func readOrganizations(c *gin.Context) {
 		return
 	}
 	status := strings.ToUpper(c.Query("status"))
-	if status != "" && !user.Status(status).IsValid() {
+	if status != "" && !org.Status(status).IsValid() {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid status: %s", status))
 		return
 	}
@@ -139,7 +138,7 @@ func readOrganizations(c *gin.Context) {
 
 // readOrganization returns the current version of the specified Organization.
 //
-// @Summary Get Organization
+// @Description Get Organization
 // @Description Get Organization by ID.
 // @Tags Organization
 // @Produce json
@@ -180,7 +179,7 @@ func readOrganization(c *gin.Context) {
 
 // existsOrganization checks if the specified Organization exists.
 //
-// @Summary Organization Exists
+// @Description Organization Exists
 // @Description Check if the specified Organization exists.
 // @Tags Organization
 // @Param id path string true "Organization ID"
@@ -201,7 +200,7 @@ func existsOrganization(c *gin.Context) {
 
 // readOrganizationVersions returns a paginated list of versions of the specified Organization.
 //
-// @Summary Get Organization Versions
+// @Description Get Organization Versions
 // @Description Get Organization Versions by ID, paging with reverse, limit, and offset.
 // @Tags Organization
 // @Produce json
@@ -254,7 +253,7 @@ func readOrganizationVersions(c *gin.Context) {
 
 // readOrganizationVersion returns the specified version of the specified Organization.
 //
-// @Summary Get Organization Version
+// @Description Get Organization Version
 // @Description Get Organization Version by ID and VersionID.
 // @Tags Organization
 // @Produce json
@@ -301,7 +300,7 @@ func readOrganizationVersion(c *gin.Context) {
 
 // existsOrganizationVersion checks if the specified Organization version exists.
 //
-// @Summary Organization Version Exists
+// @Description Organization Version Exists
 // @Description Check if the specified Organization version exists.
 // @Tags Organization
 // @Param id path string true "Organization ID"
@@ -325,7 +324,7 @@ func existsOrganizationVersion(c *gin.Context) {
 // updateOrganization updates and returns the specified Organization.
 // Note that the updated version needs to be complete; this is not a partial update (e.g. PATCH).
 //
-// @Summary Update Organization
+// @Description Update Organization
 // @Description Update the provided, complete Organization.
 // @Tags Organization
 // @Accept json
@@ -392,7 +391,7 @@ func updateOrganization(c *gin.Context) {
 
 // deleteOrganization deletes the specified Organization.
 //
-// @Summary Delete Organization
+// @Description Delete Organization
 // @Description Delete and return the specified Organization.
 // @Tags Organization
 // @Produce json
@@ -447,7 +446,7 @@ func deleteOrganization(c *gin.Context) {
 // readOrganizationStatuses returns a list of status codes for which organizations exist.
 // It's useful for paging through organizations by status.
 //
-// @Summary Get Organization Statuses
+// @Description Get Organization Statuses
 // @Description Get a list of status codes for which organizations exist.
 // @Tags Organization
 // @Produce json

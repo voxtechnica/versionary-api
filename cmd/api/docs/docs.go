@@ -18,14 +18,13 @@ const docTemplate = `{
     "paths": {
         "/about": {
             "get": {
-                "description": "Basic information about the API, including the operating environment and the current git commit.",
+                "description": "Basic information about the API\nBasic information about the API, including the operating environment and the current git commit.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Diagnostic"
                 ],
-                "summary": "Basic information about the API",
                 "responses": {
                     "200": {
                         "description": "Information about the running application",
@@ -38,7 +37,7 @@ const docTemplate = `{
         },
         "/commit": {
             "get": {
-                "description": "Redirects to the current git commit on GitHub.",
+                "description": "Redirect to the current git commit on GitHub\nRedirects to the current git commit on GitHub.",
                 "produces": [
                     "text/html",
                     "application/json"
@@ -46,7 +45,6 @@ const docTemplate = `{
                 "tags": [
                     "Diagnostic"
                 ],
-                "summary": "Redirect to the current git commit on GitHub",
                 "responses": {
                     "307": {
                         "description": "Redirect URL",
@@ -71,14 +69,13 @@ const docTemplate = `{
         },
         "/docs": {
             "get": {
-                "description": "Show Swagger API documentation, generated from annotations in the running code.",
+                "description": "Show API documentation\nShow Swagger API documentation, generated from annotations in the running code.",
                 "produces": [
                     "text/html"
                 ],
                 "tags": [
                     "Diagnostic"
                 ],
-                "summary": "Show API documentation",
                 "responses": {
                     "307": {
                         "description": "Temporary Redirect",
@@ -91,7 +88,7 @@ const docTemplate = `{
         },
         "/echo": {
             "post": {
-                "description": "Echo the request back to the client, including the provided Token and associated User.",
+                "description": "Echo the request back to the client\nEcho the request back to the client, including the provided Token and associated User.",
                 "consumes": [
                     "text/plain",
                     "application/json"
@@ -102,7 +99,6 @@ const docTemplate = `{
                 "tags": [
                     "Diagnostic"
                 ],
-                "summary": "Echo the request back to the client",
                 "parameters": [
                     {
                         "type": "string",
@@ -156,14 +152,13 @@ const docTemplate = `{
         },
         "/logout": {
             "get": {
-                "description": "Delete the OAuth Bearer Token provided in the Authorization header (e.g. to log out).",
+                "description": "Logout\nDelete the OAuth Bearer Token provided in the Authorization header (e.g. to log out).",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Token"
                 ],
-                "summary": "Logout",
                 "parameters": [
                     {
                         "type": "string",
@@ -197,14 +192,13 @@ const docTemplate = `{
         },
         "/user_agent": {
             "get": {
-                "description": "Echo a parsed User-Agent header.",
+                "description": "Echo a parsed User-Agent header\nEcho a parsed User-Agent header.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Diagnostic"
                 ],
-                "summary": "Echo a parsed User-Agent header",
                 "parameters": [
                     {
                         "type": "string",
@@ -223,16 +217,806 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/content_authors": {
+            "get": {
+                "description": "Get Content Authors\nGet a list of content authors for which contents exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Content Authors",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/content_tags": {
+            "get": {
+                "description": "Get Content Tags\nGet a list of content tags for which contents exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Content Tags",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/content_titles": {
+            "get": {
+                "description": "List Content Titles\nList Content Titles by type, author, or tag, paging with reverse, limit, and offset.\nOne of type, author, or tag are required. Optionally, filter results with search terms.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "BOOK",
+                            "CHAPTER",
+                            "ARTICLE",
+                            "CATEGORY"
+                        ],
+                        "type": "string",
+                        "description": "Type",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Author",
+                        "name": "author",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Tag",
+                        "name": "tag",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search Terms, separated by spaces",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Any Match? (default: false; all search terms must match)",
+                        "name": "any",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Sort by Value? (not paginated; default: false)",
+                        "name": "sorted",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default: 1000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Contents",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/content.Content"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/content_types": {
+            "get": {
+                "description": "Get Content Types\nGet a list of content types for which contents exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Content Types",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/contents": {
+            "get": {
+                "description": "List Contents\nList Contents, paging with reverse, limit, and offset.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default: 20)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Contents",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/content.Content"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a new Content\nCreate a new unit of Content (Book, Chapter, Article, Category, etc.)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Content",
+                        "name": "content",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/content.Content"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Newly-created Content",
+                        "schema": {
+                            "$ref": "#/definitions/content.Content"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "URL of the newly created Content"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid JSON body)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "422": {
+                        "description": "Content validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/contents/{id}": {
+            "get": {
+                "description": "Get Content\nGet Content by ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Content ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Content",
+                        "schema": {
+                            "$ref": "#/definitions/content.Content"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update Content\nUpdate the provided, complete unit of Content.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Content",
+                        "name": "content",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/content.Content"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Content ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Content",
+                        "schema": {
+                            "$ref": "#/definitions/content.Content"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid JSON or parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "422": {
+                        "description": "Content validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete Content\nDelete and return the specified Content.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Content ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Content that was deleted",
+                        "schema": {
+                            "$ref": "#/definitions/content.Content"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "head": {
+                "description": "Content Exists\nCheck if the specified Content exists.",
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Content ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Content Exists"
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/v1/contents/{id}/versions": {
+            "get": {
+                "description": "Get Content Versions\nGet Content Versions by ID, paging with reverse, limit, and offset.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Content ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default: 20)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Content Versions",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/content.Content"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/contents/{id}/versions/{versionid}": {
+            "get": {
+                "description": "Get Content Version\nGet Content Version by ID and VersionID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Content ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Content VersionID",
+                        "name": "versionid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Content Version",
+                        "schema": {
+                            "$ref": "#/definitions/content.Content"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "head": {
+                "description": "Content Version Exists\nCheck if the specified Content version exists.",
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Content ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Content VersionID",
+                        "name": "versionid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Content Version Exists"
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter)"
+                    },
+                    "404": {
+                        "description": "Not Found"
+                    }
+                }
+            }
+        },
         "/v1/device_counts": {
             "get": {
-                "description": "Get a paginated list of device counts by date.",
+                "description": "Get Device Counts\nGet a paginated list of device counts by date.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Device"
                 ],
-                "summary": "Get Device Counts",
                 "parameters": [
                     {
                         "type": "string",
@@ -299,14 +1083,13 @@ const docTemplate = `{
         },
         "/v1/device_counts/{date}": {
             "get": {
-                "description": "Get the number of devices encountered on the specified date.",
+                "description": "Get Device Count\nGet the number of devices encountered on the specified date.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Device"
                 ],
-                "summary": "Get Device Count",
                 "parameters": [
                     {
                         "type": "string",
@@ -363,14 +1146,13 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update the number of devices encountered on the specified date.",
+                "description": "Update Device Count\nUpdate the number of devices encountered on the specified date.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Device"
                 ],
-                "summary": "Update Device Count",
                 "parameters": [
                     {
                         "type": "string",
@@ -421,11 +1203,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified Device Count exists.",
+                "description": "Device Count Exists\nCheck if the specified Device Count exists.",
                 "tags": [
                     "Device"
                 ],
-                "summary": "Device Count Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -450,14 +1231,13 @@ const docTemplate = `{
         },
         "/v1/device_dates": {
             "get": {
-                "description": "Get a list of dates for which devices exist.",
+                "description": "Get Device Dates\nGet a list of dates for which devices exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Device"
                 ],
-                "summary": "Get Device Dates",
                 "parameters": [
                     {
                         "type": "string",
@@ -500,14 +1280,13 @@ const docTemplate = `{
         },
         "/v1/device_user_ids": {
             "get": {
-                "description": "Get a list of User IDs for which devices exist.",
+                "description": "Get Device User IDs\nGet a list of User IDs for which devices exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Device"
                 ],
-                "summary": "Get Device User IDs",
                 "parameters": [
                     {
                         "type": "string",
@@ -574,14 +1353,13 @@ const docTemplate = `{
         },
         "/v1/devices": {
             "get": {
-                "description": "List Devices, paging with reverse, limit, and offset. Optionally, filter by UserID or Date.",
+                "description": "List Devices\nList Devices, paging with reverse, limit, and offset. Optionally, filter by UserID or Date.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Device"
                 ],
-                "summary": "List Devices",
                 "parameters": [
                     {
                         "type": "string",
@@ -658,7 +1436,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new Device from a User-Agent header.",
+                "description": "Create a new Device\nCreate a new Device from a User-Agent header.",
                 "consumes": [
                     "application/json"
                 ],
@@ -668,7 +1446,6 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
-                "summary": "Create a new Device",
                 "parameters": [
                     {
                         "type": "string",
@@ -708,14 +1485,13 @@ const docTemplate = `{
         },
         "/v1/devices/{id}": {
             "get": {
-                "description": "Get Device by ID.",
+                "description": "Get Device\nGet Device by ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Device"
                 ],
-                "summary": "Get Device",
                 "parameters": [
                     {
                         "type": "string",
@@ -753,7 +1529,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update the specified Device from a User-Agent header.",
+                "description": "Update Device\nUpdate the specified Device from a User-Agent header.",
                 "consumes": [
                     "application/json"
                 ],
@@ -763,7 +1539,6 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
-                "summary": "Update Device",
                 "parameters": [
                     {
                         "type": "string",
@@ -820,14 +1595,13 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete and return the specified Device.",
+                "description": "Delete Device\nDelete and return the specified Device.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Device"
                 ],
-                "summary": "Delete Device",
                 "parameters": [
                     {
                         "type": "string",
@@ -884,11 +1658,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified Device exists.",
+                "description": "Device Exists\nCheck if the specified Device exists.",
                 "tags": [
                     "Device"
                 ],
-                "summary": "Device Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -913,14 +1686,13 @@ const docTemplate = `{
         },
         "/v1/devices/{id}/versions": {
             "get": {
-                "description": "Get Device Versions by ID, paging with reverse, limit, and offset.",
+                "description": "Get Device Versions\nGet Device Versions by ID, paging with reverse, limit, and offset.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Device"
                 ],
-                "summary": "Get Device Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -1000,14 +1772,13 @@ const docTemplate = `{
         },
         "/v1/devices/{id}/versions/{versionid}": {
             "get": {
-                "description": "Get Device Version by ID and VersionID.",
+                "description": "Get Device Version\nGet Device Version by ID and VersionID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Device"
                 ],
-                "summary": "Get Device Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -1052,11 +1823,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified Device version exists.",
+                "description": "Device Version Exists\nCheck if the specified Device version exists.",
                 "tags": [
                     "Device"
                 ],
-                "summary": "Device Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -1088,14 +1858,13 @@ const docTemplate = `{
         },
         "/v1/email_addresses": {
             "get": {
-                "description": "Get a list of email addresses for which emails exist.",
+                "description": "Get Email Addresses\nGet a list of email addresses for which emails exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Email"
                 ],
-                "summary": "Get Email Addresses",
                 "parameters": [
                     {
                         "type": "string",
@@ -1156,14 +1925,13 @@ const docTemplate = `{
         },
         "/v1/email_statuses": {
             "get": {
-                "description": "Get a list of status codes for which emails exist.",
+                "description": "Get Email Statuses\nGet a list of status codes for which emails exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Email"
                 ],
-                "summary": "Get Email Statuses",
                 "parameters": [
                     {
                         "type": "string",
@@ -1206,14 +1974,13 @@ const docTemplate = `{
         },
         "/v1/emails": {
             "get": {
-                "description": "List Emails, paging with reverse, limit, and offset. Optionally, filter by email address or status.\nRegular users can only list their own Emails. Administrators can list all Emails.",
+                "description": "List Emails\nList Emails, paging with reverse, limit, and offset. Optionally, filter by email address or status.\nRegular users can only list their own Emails. Administrators can list all Emails.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Email"
                 ],
-                "summary": "List Emails",
                 "parameters": [
                     {
                         "type": "string",
@@ -1296,7 +2063,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create and send a new Email message.",
+                "description": "Create/Send a new Email\nCreate and send a new Email message.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1306,7 +2073,6 @@ const docTemplate = `{
                 "tags": [
                     "Email"
                 ],
-                "summary": "Create/Send a new Email",
                 "parameters": [
                     {
                         "type": "string",
@@ -1373,14 +2139,13 @@ const docTemplate = `{
         },
         "/v1/emails/{id}": {
             "get": {
-                "description": "Get Email by ID.",
+                "description": "Get Email\nGet Email by ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Email"
                 ],
-                "summary": "Get Email",
                 "parameters": [
                     {
                         "type": "string",
@@ -1437,7 +2202,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update the provided complete Email. If the status is PENDING, the Email is sent.",
+                "description": "Update/Send Email\nUpdate the provided complete Email. If the status is PENDING, the Email is sent.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1447,7 +2212,6 @@ const docTemplate = `{
                 "tags": [
                     "Email"
                 ],
-                "summary": "Update/Send Email",
                 "parameters": [
                     {
                         "type": "string",
@@ -1513,14 +2277,13 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete and return the specified Email.",
+                "description": "Delete Email\nDelete and return the specified Email.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Email"
                 ],
-                "summary": "Delete Email",
                 "parameters": [
                     {
                         "type": "string",
@@ -1577,11 +2340,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified Email exists.",
+                "description": "Email Exists\nCheck if the specified Email exists.",
                 "tags": [
                     "Email"
                 ],
-                "summary": "Email Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -1606,14 +2368,13 @@ const docTemplate = `{
         },
         "/v1/emails/{id}/versions": {
             "get": {
-                "description": "Get Email Versions by ID, paging with reverse, limit, and offset.",
+                "description": "Get Email Versions\nGet Email Versions by ID, paging with reverse, limit, and offset.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Email"
                 ],
-                "summary": "Get Email Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -1693,14 +2454,13 @@ const docTemplate = `{
         },
         "/v1/emails/{id}/versions/{versionid}": {
             "get": {
-                "description": "Get Email Version by ID and VersionID.",
+                "description": "Get Email Version\nGet Email Version by ID and VersionID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Email"
                 ],
-                "summary": "Get Email Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -1764,11 +2524,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified Email version exists.",
+                "description": "Email Version Exists\nCheck if the specified Email version exists.",
                 "tags": [
                     "Email"
                 ],
-                "summary": "Email Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -1800,14 +2559,13 @@ const docTemplate = `{
         },
         "/v1/event_dates": {
             "get": {
-                "description": "Get a paginated list of ISO dates (e.g. yyyy-mm-dd) for which events exist.",
+                "description": "List Event Dates\nGet a paginated list of ISO dates (e.g. yyyy-mm-dd) for which events exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Event"
                 ],
-                "summary": "List Event Dates",
                 "parameters": [
                     {
                         "type": "string",
@@ -1874,14 +2632,13 @@ const docTemplate = `{
         },
         "/v1/event_entity_ids": {
             "get": {
-                "description": "Get a paginated list of entity IDs for which events exist.",
+                "description": "List Event Entity IDs\nGet a paginated list of entity IDs for which events exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Event"
                 ],
-                "summary": "List Event Entity IDs",
                 "parameters": [
                     {
                         "type": "string",
@@ -1948,14 +2705,13 @@ const docTemplate = `{
         },
         "/v1/event_entity_types": {
             "get": {
-                "description": "Get a complete, sorted list of entity types for which events exist.",
+                "description": "List Event Entity Types\nGet a complete, sorted list of entity types for which events exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Event"
                 ],
-                "summary": "List Event Entity Types",
                 "parameters": [
                     {
                         "type": "string",
@@ -1998,14 +2754,13 @@ const docTemplate = `{
         },
         "/v1/event_log_levels": {
             "get": {
-                "description": "Get a complete, sorted list of log levels for which events exist.",
+                "description": "List Event Log Levels\nGet a complete, sorted list of log levels for which events exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Event"
                 ],
-                "summary": "List Event Log Levels",
                 "parameters": [
                     {
                         "type": "string",
@@ -2048,14 +2803,13 @@ const docTemplate = `{
         },
         "/v1/events": {
             "get": {
-                "description": "List Events, paging with reverse, limit, and offset.\nOptionally, filter by date, entity ID, or log level.\nIf no filter is specified, the default is to return up to limit recent Events in reverse order.",
+                "description": "List Events\nList Events, paging with reverse, limit, and offset.\nOptionally, filter by date, entity ID, or log level.\nIf no filter is specified, the default is to return up to limit recent Events in reverse order.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Event"
                 ],
-                "summary": "List Events",
                 "parameters": [
                     {
                         "type": "string",
@@ -2152,7 +2906,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new Event.",
+                "description": "Create a new Event\nCreate a new Event.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2162,7 +2916,6 @@ const docTemplate = `{
                 "tags": [
                     "Event"
                 ],
-                "summary": "Create a new Event",
                 "parameters": [
                     {
                         "type": "string",
@@ -2220,14 +2973,13 @@ const docTemplate = `{
         },
         "/v1/events/{id}": {
             "get": {
-                "description": "Get Event by ID.",
+                "description": "Get Event\nGet Event by ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Event"
                 ],
-                "summary": "Get Event",
                 "parameters": [
                     {
                         "type": "string",
@@ -2265,14 +3017,13 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete and return the specified Event.",
+                "description": "Delete Event\nDelete and return the specified Event.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Event"
                 ],
-                "summary": "Delete Event",
                 "parameters": [
                     {
                         "type": "string",
@@ -2329,11 +3080,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified Event exists.",
+                "description": "Event Exists\nCheck if the specified Event exists.",
                 "tags": [
                     "Event"
                 ],
-                "summary": "Event Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -2358,14 +3108,13 @@ const docTemplate = `{
         },
         "/v1/image_labels": {
             "get": {
-                "description": "Get a list of Image Labels, optionally filtered with search terms.",
+                "description": "Get Image Labels\nGet a list of Image Labels, optionally filtered with search terms.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Image"
                 ],
-                "summary": "Get Image Labels",
                 "parameters": [
                     {
                         "type": "string",
@@ -2388,7 +3137,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "boolean",
-                        "description": "Sort by Value? (unpaginated; default: false)",
+                        "description": "Sort by Value? (not paginated; default: false)",
                         "name": "sorted",
                         "in": "query"
                     },
@@ -2450,14 +3199,13 @@ const docTemplate = `{
         },
         "/v1/image_statuses": {
             "get": {
-                "description": "Get a complete list of status codes for which images exist.",
+                "description": "Get Image Statuses\nGet a complete list of status codes for which images exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Image"
                 ],
-                "summary": "Get Image Statuses",
                 "parameters": [
                     {
                         "type": "string",
@@ -2500,14 +3248,13 @@ const docTemplate = `{
         },
         "/v1/image_tags": {
             "get": {
-                "description": "Get a complete list of tags for which images exist.",
+                "description": "Get Image Tags\nGet a complete list of tags for which images exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Image"
                 ],
-                "summary": "Get Image Tags",
                 "parameters": [
                     {
                         "type": "string",
@@ -2550,14 +3297,13 @@ const docTemplate = `{
         },
         "/v1/images": {
             "get": {
-                "description": "List Images, paging with reverse, limit, and offset. Optionally, filter by status.",
+                "description": "List Images\nList Images, paging with reverse, limit, and offset. Optionally, filter by status.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Image"
                 ],
-                "summary": "List Images",
                 "parameters": [
                     {
                         "type": "string",
@@ -2640,7 +3386,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new Image.",
+                "description": "Create a new Image\nCreate a new Image.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2650,7 +3396,6 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
-                "summary": "Create a new Image",
                 "parameters": [
                     {
                         "type": "string",
@@ -2717,14 +3462,13 @@ const docTemplate = `{
         },
         "/v1/images/{id}": {
             "get": {
-                "description": "Get Image by ID.",
+                "description": "Get Image\nGet Image by ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Image"
                 ],
-                "summary": "Get Image",
                 "parameters": [
                     {
                         "type": "string",
@@ -2762,7 +3506,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update the provided, complete Image.",
+                "description": "Update Image\nUpdate the provided, complete Image.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2772,7 +3516,6 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
-                "summary": "Update Image",
                 "parameters": [
                     {
                         "type": "string",
@@ -2838,14 +3581,13 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete and return the specified Image.",
+                "description": "Delete Image\nDelete and return the specified Image.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Image"
                 ],
-                "summary": "Delete Image",
                 "parameters": [
                     {
                         "type": "string",
@@ -2902,11 +3644,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified Image exists.",
+                "description": "Image Exists\nCheck if the specified Image exists.",
                 "tags": [
                     "Image"
                 ],
-                "summary": "Image Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -2931,14 +3672,13 @@ const docTemplate = `{
         },
         "/v1/images/{id}/download_url": {
             "get": {
-                "description": "Get a pre-signed file download URL for the specified Image.",
+                "description": "Get Image Download URL\nGet a pre-signed file download URL for the specified Image.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Image"
                 ],
-                "summary": "Get Image Download URL",
                 "parameters": [
                     {
                         "type": "string",
@@ -2978,14 +3718,13 @@ const docTemplate = `{
         },
         "/v1/images/{id}/similar": {
             "get": {
-                "description": "Find similar Images, within the specified perceptual hash distance.",
+                "description": "Find Similar Images\nFind similar Images, within the specified perceptual hash distance.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Image"
                 ],
-                "summary": "Find Similar Images",
                 "parameters": [
                     {
                         "type": "string",
@@ -3018,7 +3757,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/image.ImageDistance"
+                                "$ref": "#/definitions/image.Distance"
                             }
                         }
                     },
@@ -3057,14 +3796,13 @@ const docTemplate = `{
         },
         "/v1/images/{id}/upload_url": {
             "get": {
-                "description": "Get a pre-signed file upload URL for the specified Image.",
+                "description": "Get Image Upload URL\nGet a pre-signed file upload URL for the specified Image.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Image"
                 ],
-                "summary": "Get Image Upload URL",
                 "parameters": [
                     {
                         "type": "string",
@@ -3123,14 +3861,13 @@ const docTemplate = `{
         },
         "/v1/images/{id}/versions": {
             "get": {
-                "description": "Get Image Versions by ID, paging with reverse, limit, and offset.",
+                "description": "Get Image Versions\nGet Image Versions by ID, paging with reverse, limit, and offset.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Image"
                 ],
-                "summary": "Get Image Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -3210,14 +3947,13 @@ const docTemplate = `{
         },
         "/v1/images/{id}/versions/{versionid}": {
             "get": {
-                "description": "Get Image Version by ID and VersionID.",
+                "description": "Get Image Version\nGet Image Version by ID and VersionID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Image"
                 ],
-                "summary": "Get Image Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -3262,11 +3998,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified Image version exists.",
+                "description": "Image Version Exists\nCheck if the specified Image version exists.",
                 "tags": [
                     "Image"
                 ],
-                "summary": "Image Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -3298,14 +4033,13 @@ const docTemplate = `{
         },
         "/v1/organization_statuses": {
             "get": {
-                "description": "Get a list of status codes for which organizations exist.",
+                "description": "Get Organization Statuses\nGet a list of status codes for which organizations exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Organization"
                 ],
-                "summary": "Get Organization Statuses",
                 "parameters": [
                     {
                         "type": "string",
@@ -3348,14 +4082,13 @@ const docTemplate = `{
         },
         "/v1/organizations": {
             "get": {
-                "description": "List Organizations, paging with reverse, limit, and offset. Optionally, filter by status.",
+                "description": "List Organizations\nList Organizations, paging with reverse, limit, and offset. Optionally, filter by status.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Organization"
                 ],
-                "summary": "List Organizations",
                 "parameters": [
                     {
                         "type": "string",
@@ -3431,7 +4164,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new Organization.",
+                "description": "Create a new Organization\nCreate a new Organization.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3441,7 +4174,6 @@ const docTemplate = `{
                 "tags": [
                     "Organization"
                 ],
-                "summary": "Create a new Organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -3508,14 +4240,13 @@ const docTemplate = `{
         },
         "/v1/organizations/{id}": {
             "get": {
-                "description": "Get Organization by ID.",
+                "description": "Get Organization\nGet Organization by ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Organization"
                 ],
-                "summary": "Get Organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -3553,7 +4284,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update the provided, complete Organization.",
+                "description": "Update Organization\nUpdate the provided, complete Organization.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3563,7 +4294,6 @@ const docTemplate = `{
                 "tags": [
                     "Organization"
                 ],
-                "summary": "Update Organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -3629,14 +4359,13 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete and return the specified Organization.",
+                "description": "Delete Organization\nDelete and return the specified Organization.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Organization"
                 ],
-                "summary": "Delete Organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -3693,11 +4422,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified Organization exists.",
+                "description": "Organization Exists\nCheck if the specified Organization exists.",
                 "tags": [
                     "Organization"
                 ],
-                "summary": "Organization Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -3722,14 +4450,13 @@ const docTemplate = `{
         },
         "/v1/organizations/{id}/versions": {
             "get": {
-                "description": "Get Organization Versions by ID, paging with reverse, limit, and offset.",
+                "description": "Get Organization Versions\nGet Organization Versions by ID, paging with reverse, limit, and offset.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Organization"
                 ],
-                "summary": "Get Organization Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -3809,14 +4536,13 @@ const docTemplate = `{
         },
         "/v1/organizations/{id}/versions/{versionid}": {
             "get": {
-                "description": "Get Organization Version by ID and VersionID.",
+                "description": "Get Organization Version\nGet Organization Version by ID and VersionID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Organization"
                 ],
-                "summary": "Get Organization Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -3861,11 +4587,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified Organization version exists.",
+                "description": "Organization Version Exists\nCheck if the specified Organization version exists.",
                 "tags": [
                     "Organization"
                 ],
-                "summary": "Organization Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -3897,14 +4622,13 @@ const docTemplate = `{
         },
         "/v1/token_user_ids": {
             "get": {
-                "description": "List User IDs for which tokens exist. This is useful for paging through tokens by user.",
+                "description": "List User IDs for which tokens exist\nList User IDs for which tokens exist. This is useful for paging through tokens by user.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Token"
                 ],
-                "summary": "List User IDs for which tokens exist",
                 "parameters": [
                     {
                         "type": "string",
@@ -3971,14 +4695,13 @@ const docTemplate = `{
         },
         "/v1/tokens": {
             "get": {
-                "description": "List OAuth Bearer Tokens by User ID (defaults to the Context User).",
+                "description": "List Tokens\nList OAuth Bearer Tokens by User ID (defaults to the Context User).",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Token"
                 ],
-                "summary": "List Tokens",
                 "parameters": [
                     {
                         "type": "string",
@@ -4031,7 +4754,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new OAuth Bearer Token.",
+                "description": "Create a new Token\nCreate a new OAuth Bearer Token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4041,7 +4764,6 @@ const docTemplate = `{
                 "tags": [
                     "Token"
                 ],
-                "summary": "Create a new Token",
                 "parameters": [
                     {
                         "description": "Token Request",
@@ -4089,14 +4811,13 @@ const docTemplate = `{
         },
         "/v1/tokens/{id}": {
             "get": {
-                "description": "Read OAuth Bearer Token by ID (e.g. to verify a token has not expired).",
+                "description": "Read Token\nRead OAuth Bearer Token by ID (e.g. to verify a token has not expired).",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Token"
                 ],
-                "summary": "Read Token",
                 "parameters": [
                     {
                         "type": "string",
@@ -4153,14 +4874,13 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete OAuth Bearer Token by ID (e.g. to log out).",
+                "description": "Delete Token\nDelete OAuth Bearer Token by ID (e.g. to log out).",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Token"
                 ],
-                "summary": "Delete Token",
                 "parameters": [
                     {
                         "type": "string",
@@ -4217,11 +4937,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified OAuth Bearer Token exists.",
+                "description": "Token Exists\nCheck if the specified OAuth Bearer Token exists.",
                 "tags": [
                     "Token"
                 ],
-                "summary": "Token Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -4246,14 +4965,13 @@ const docTemplate = `{
         },
         "/v1/tuids": {
             "get": {
-                "description": "Generate the specified number of TUIDs, based on the current system time.",
+                "description": "Generate the specified number of TUIDs\nGenerate the specified number of TUIDs, based on the current system time.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "TUID"
                 ],
-                "summary": "Generate the specified number of TUIDs",
                 "parameters": [
                     {
                         "type": "integer",
@@ -4281,14 +4999,13 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Generate a new TUID based on current system time and return the TUIDInfo.",
+                "description": "Generate a new TUID\nGenerate a new TUID based on current system time and return the TUIDInfo.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "TUID"
                 ],
-                "summary": "Generate a new TUID",
                 "responses": {
                     "201": {
                         "description": "TUIDInfo for the generated TUID",
@@ -4307,14 +5024,13 @@ const docTemplate = `{
         },
         "/v1/tuids/{id}": {
             "get": {
-                "description": "Parse the provided TUID, returning the TUIDInfo. This can be useful for extracting the timestamp from an ID.",
+                "description": "Read TUIDInfo for the provided TUID\nParse the provided TUID, returning the TUIDInfo. This can be useful for extracting the timestamp from an ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "TUID"
                 ],
-                "summary": "Read TUIDInfo for the provided TUID",
                 "parameters": [
                     {
                         "type": "string",
@@ -4342,14 +5058,13 @@ const docTemplate = `{
         },
         "/v1/user_emails": {
             "get": {
-                "description": "Get a paginated list of email addresses for which users exist.",
+                "description": "List User Email Addresses\nGet a paginated list of email addresses for which users exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "User"
                 ],
-                "summary": "List User Email Addresses",
                 "parameters": [
                     {
                         "type": "string",
@@ -4410,14 +5125,13 @@ const docTemplate = `{
         },
         "/v1/user_org_ids": {
             "get": {
-                "description": "Get a list of Organization IDs for which users exist.",
+                "description": "List User Organization IDs\nGet a list of Organization IDs for which users exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "User"
                 ],
-                "summary": "List User Organization IDs",
                 "parameters": [
                     {
                         "type": "string",
@@ -4460,14 +5174,13 @@ const docTemplate = `{
         },
         "/v1/user_roles": {
             "get": {
-                "description": "Get a list of roles for which users exist.",
+                "description": "List User Roles\nGet a list of roles for which users exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "User"
                 ],
-                "summary": "List User Roles",
                 "parameters": [
                     {
                         "type": "string",
@@ -4510,14 +5223,13 @@ const docTemplate = `{
         },
         "/v1/user_statuses": {
             "get": {
-                "description": "Get a list of status codes for which users exist.",
+                "description": "List User Statuses\nGet a list of status codes for which users exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "User"
                 ],
-                "summary": "List User Statuses",
                 "parameters": [
                     {
                         "type": "string",
@@ -4560,14 +5272,13 @@ const docTemplate = `{
         },
         "/v1/users": {
             "get": {
-                "description": "List Users, paging with reverse, limit, and offset.\nOptionally, filter by email, organization, role, or status.",
+                "description": "List Users\nList Users, paging with reverse, limit, and offset.\nOptionally, filter by email, organization, role, or status.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "User"
                 ],
-                "summary": "List Users",
                 "parameters": [
                     {
                         "type": "string",
@@ -4661,7 +5372,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new User.",
+                "description": "Create a new User\nCreate a new User.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4671,7 +5382,6 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
-                "summary": "Create a new User",
                 "parameters": [
                     {
                         "type": "string",
@@ -4738,14 +5448,13 @@ const docTemplate = `{
         },
         "/v1/users/{id}": {
             "get": {
-                "description": "Get User by ID or email, scrubbing sensitive information if the requester is not an administrator.",
+                "description": "Get User\nGet User by ID or email, scrubbing sensitive information if the requester is not an administrator.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "User"
                 ],
-                "summary": "Get User",
                 "parameters": [
                     {
                         "type": "string",
@@ -4802,7 +5511,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update the provided complete User, ensuring that sensitive information is retained.",
+                "description": "Update User\nUpdate the provided complete User, ensuring that sensitive information is retained.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4812,7 +5521,6 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
-                "summary": "Update User",
                 "parameters": [
                     {
                         "type": "string",
@@ -4878,14 +5586,13 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete and return the specified User. Attempt to delete their associated Tokens as well, logging errors.",
+                "description": "Delete User\nDelete and return the specified User. Attempt to delete their associated Tokens as well, logging errors.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "User"
                 ],
-                "summary": "Delete User",
                 "parameters": [
                     {
                         "type": "string",
@@ -4942,11 +5649,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified User exists.",
+                "description": "User Exists\nCheck if the specified User exists.",
                 "tags": [
                     "User"
                 ],
-                "summary": "User Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -4977,14 +5683,13 @@ const docTemplate = `{
         },
         "/v1/users/{id}/versions": {
             "get": {
-                "description": "Get User Versions by User ID, paging with reverse, limit, and offset.",
+                "description": "List User Versions\nGet User Versions by User ID, paging with reverse, limit, and offset.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "User"
                 ],
-                "summary": "List User Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -5064,14 +5769,13 @@ const docTemplate = `{
         },
         "/v1/users/{id}/versions/{versionid}": {
             "get": {
-                "description": "Get User Version by ID and VersionID, scrubbing sensitive information if the requester is not an administrator.",
+                "description": "Get User Version\nGet User Version by ID and VersionID, scrubbing sensitive information if the requester is not an administrator.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "User"
                 ],
-                "summary": "Get User Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -5135,11 +5839,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified User version exists.",
+                "description": "User Version Exists\nCheck if the specified User version exists.",
                 "tags": [
                     "User"
                 ],
-                "summary": "User Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -5177,14 +5880,13 @@ const docTemplate = `{
         },
         "/v1/view_counts": {
             "get": {
-                "description": "Get a paginated list of view counts by date.",
+                "description": "Get View Counts\nGet a paginated list of view counts by date.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "View"
                 ],
-                "summary": "Get View Counts",
                 "parameters": [
                     {
                         "type": "string",
@@ -5251,14 +5953,13 @@ const docTemplate = `{
         },
         "/v1/view_counts/{date}": {
             "get": {
-                "description": "Get the number of views encountered on the specified date.",
+                "description": "Get View Count\nGet the number of views encountered on the specified date.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "View"
                 ],
-                "summary": "Get View Count",
                 "parameters": [
                     {
                         "type": "string",
@@ -5315,14 +6016,13 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update the number of views encountered on the specified date.",
+                "description": "Update View Count\nUpdate the number of views encountered on the specified date.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "View"
                 ],
-                "summary": "Update View Count",
                 "parameters": [
                     {
                         "type": "string",
@@ -5373,11 +6073,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified View Count exists.",
+                "description": "View Count Exists\nCheck if the specified View Count exists.",
                 "tags": [
                     "View"
                 ],
-                "summary": "View Count Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -5402,14 +6101,13 @@ const docTemplate = `{
         },
         "/v1/view_dates": {
             "get": {
-                "description": "Get a list of dates for which views exist.",
+                "description": "Get View Dates\nGet a list of dates for which views exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "View"
                 ],
-                "summary": "Get View Dates",
                 "parameters": [
                     {
                         "type": "string",
@@ -5452,14 +6150,13 @@ const docTemplate = `{
         },
         "/v1/view_device_ids": {
             "get": {
-                "description": "Get a list of Device IDs for which views exist.",
+                "description": "Get View Device IDs\nGet a list of Device IDs for which views exist.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "View"
                 ],
-                "summary": "Get View Device IDs",
                 "parameters": [
                     {
                         "type": "string",
@@ -5526,14 +6223,13 @@ const docTemplate = `{
         },
         "/v1/views": {
             "get": {
-                "description": "List Views, paging with reverse, limit, and offset. Optionally, filter by DeviceID or Date.",
+                "description": "List Views\nList Views, paging with reverse, limit, and offset. Optionally, filter by DeviceID or Date.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "View"
                 ],
-                "summary": "List Views",
                 "parameters": [
                     {
                         "type": "string",
@@ -5610,7 +6306,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Create a new View with an associated new/updated Device.",
+                "description": "Create a new View\nCreate a new View with an associated new/updated Device.",
                 "consumes": [
                     "application/json"
                 ],
@@ -5620,7 +6316,6 @@ const docTemplate = `{
                 "tags": [
                     "View"
                 ],
-                "summary": "Create a new View",
                 "parameters": [
                     {
                         "type": "string",
@@ -5660,14 +6355,13 @@ const docTemplate = `{
         },
         "/v1/views/{id}": {
             "get": {
-                "description": "Get View by ID.",
+                "description": "Get View\nGet View by ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "View"
                 ],
-                "summary": "Get View",
                 "parameters": [
                     {
                         "type": "string",
@@ -5705,14 +6399,13 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete and return the specified View.",
+                "description": "Delete View\nDelete and return the specified View.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "View"
                 ],
-                "summary": "Delete View",
                 "parameters": [
                     {
                         "type": "string",
@@ -5769,11 +6462,10 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Check if the specified View exists.",
+                "description": "View Exists\nCheck if the specified View exists.",
                 "tags": [
                     "View"
                 ],
-                "summary": "View Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -5852,6 +6544,155 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "content.Author": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "content.Content": {
+            "type": "object",
+            "properties": {
+                "authors": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/content.Author"
+                    }
+                },
+                "comment": {
+                    "type": "string"
+                },
+                "content": {
+                    "$ref": "#/definitions/content.Section"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "editorId": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "imageCount": {
+                    "type": "integer"
+                },
+                "linkCount": {
+                    "type": "integer"
+                },
+                "sectionCount": {
+                    "type": "integer"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "versionId": {
+                    "type": "string"
+                },
+                "wordCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "content.Link": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "Description is a brief rich text (HTML) description of the destination (optional)",
+                    "type": "string"
+                },
+                "entityId": {
+                    "description": "EntityID (a TUID) of the destination resource (optional)",
+                    "type": "string"
+                },
+                "entityType": {
+                    "description": "EntityType of the destination resource (optional)",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID is used for client application state management",
+                    "type": "string"
+                },
+                "images": {
+                    "description": "Image(s) for the link destination (optional). Thumbnail images of different sizes may be provided.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/image.Image"
+                    }
+                },
+                "shortTitle": {
+                    "description": "ShortTitle (anchor tag body), useful for portrait view (optional)",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "Title (anchor tag body), useful for landscape view (required)",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "URL (anchor tag href), may be relative or absolute (required)",
+                    "type": "string"
+                }
+            }
+        },
+        "content.Section": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "Section ID used for client application state management",
+                    "type": "string"
+                },
+                "images": {
+                    "description": "Section images (optional)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/image.Image"
+                    }
+                },
+                "links": {
+                    "description": "Section links (optional)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/content.Link"
+                    }
+                },
+                "sections": {
+                    "description": "Nested subsections (optional)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/content.Section"
+                    }
+                },
+                "subtitle": {
+                    "description": "Section subtitle (subheading; optional)",
+                    "type": "string"
+                },
+                "text": {
+                    "description": "Section text (HTML content; optional)",
+                    "type": "string"
+                },
+                "title": {
+                    "description": "Section title (heading; optional)",
                     "type": "string"
                 }
             }
@@ -6025,11 +6866,56 @@ const docTemplate = `{
                 }
             }
         },
+        "image.Distance": {
+            "type": "object",
+            "properties": {
+                "distance": {
+                    "description": "The number of differing perceptual hash bits",
+                    "type": "integer"
+                },
+                "fileName": {
+                    "description": "S3 File name (ID + file extension)",
+                    "type": "string"
+                },
+                "fileSize": {
+                    "description": "File size in bytes",
+                    "type": "integer"
+                },
+                "height": {
+                    "description": "Height of the image in pixels",
+                    "type": "integer"
+                },
+                "id": {
+                    "description": "Image ID of the similar Image",
+                    "type": "string"
+                },
+                "label": {
+                    "description": "Image title or alt text, if available",
+                    "type": "string"
+                },
+                "md5Hash": {
+                    "description": "MD5 hash of the image",
+                    "type": "string"
+                },
+                "pHash": {
+                    "description": "PHash is the DTC perceptual hash of the image",
+                    "type": "string"
+                },
+                "source": {
+                    "description": "Source is the URI or file name of the original image",
+                    "type": "string"
+                },
+                "width": {
+                    "description": "Width of the image in pixels",
+                    "type": "integer"
+                }
+            }
+        },
         "image.Image": {
             "type": "object",
             "properties": {
                 "altText": {
-                    "description": "Image description for accessibility",
+                    "description": "Concise Image description for accessibility",
                     "type": "string"
                 },
                 "aspectRatio": {
@@ -6037,6 +6923,10 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "createdAt": {
+                    "type": "string"
+                },
+                "description": {
+                    "description": "Full Image description",
                     "type": "string"
                 },
                 "fileName": {
@@ -6079,7 +6969,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "tags": {
-                    "description": "Tags are associated image topics or categories",
+                    "description": "Tags are used to group images by topic or category",
                     "type": "array",
                     "items": {
                         "type": "string"
@@ -6093,51 +6983,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "versionID": {
-                    "type": "string"
-                },
-                "width": {
-                    "description": "Width of the image in pixels",
-                    "type": "integer"
-                }
-            }
-        },
-        "image.ImageDistance": {
-            "type": "object",
-            "properties": {
-                "distance": {
-                    "description": "The number of differing perceptual hash bits",
-                    "type": "integer"
-                },
-                "fileName": {
-                    "description": "S3 File name (ID + file extension)",
-                    "type": "string"
-                },
-                "fileSize": {
-                    "description": "File size in bytes",
-                    "type": "integer"
-                },
-                "height": {
-                    "description": "Height of the image in pixels",
-                    "type": "integer"
-                },
-                "id": {
-                    "description": "Image ID of the similar Image",
-                    "type": "string"
-                },
-                "label": {
-                    "description": "Image title or alt text, if available",
-                    "type": "string"
-                },
-                "md5Hash": {
-                    "description": "MD5 hash of the image",
-                    "type": "string"
-                },
-                "pHash": {
-                    "description": "PHash is the DTC perceptual hash of the image",
-                    "type": "string"
-                },
-                "source": {
-                    "description": "Source is the URI or file name of the original image",
                     "type": "string"
                 },
                 "width": {
@@ -6339,6 +7184,9 @@ const docTemplate = `{
         "user.User": {
             "type": "object",
             "properties": {
+                "avatarURL": {
+                    "type": "string"
+                },
                 "createdAt": {
                     "type": "string"
                 },
@@ -6382,6 +7230,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "versionID": {
+                    "type": "string"
+                },
+                "websiteURL": {
                     "type": "string"
                 }
             }

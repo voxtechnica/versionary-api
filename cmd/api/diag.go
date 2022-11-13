@@ -24,7 +24,7 @@ func registerDiagRoutes(r *gin.Engine) {
 
 // about provides basic information about the API, including the operating environment and the current git commit.
 //
-// @Summary Basic information about the API
+// @Description Basic information about the API
 // @Description Basic information about the API, including the operating environment and the current git commit.
 // @Tags Diagnostic
 // @Produce json
@@ -36,7 +36,7 @@ func about(c *gin.Context) {
 
 // commit redirects to the current git commit on GitHub.
 //
-// @Summary Redirect to the current git commit on GitHub
+// @Description Redirect to the current git commit on GitHub
 // @Description Redirects to the current git commit on GitHub.
 // @Tags Diagnostic
 // @Produce html,json
@@ -55,7 +55,7 @@ func commit(c *gin.Context) {
 
 // userAgent echoes a parsed client User-Agent header.
 //
-// @Summary Echo a parsed User-Agent header
+// @Description Echo a parsed User-Agent header
 // @Description Echo a parsed User-Agent header.
 // @Tags Diagnostic
 // @Produce json
@@ -70,7 +70,7 @@ func userAgent(c *gin.Context) {
 
 // echoRequest echos the request back to the client, including a recognized Token and associated User.
 //
-// @Summary Echo the request back to the client
+// @Description Echo the request back to the client
 // @Description Echo the request back to the client, including the provided Token and associated User.
 // @Tags Diagnostic
 // @Accept plain,json

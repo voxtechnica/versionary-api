@@ -29,7 +29,7 @@ func registerEventRoutes(r *gin.Engine) {
 
 // createEvent creates a new Event.
 //
-// @Summary Create a new Event
+// @Description Create a new Event
 // @Description Create a new Event.
 // @Tags Event
 // @Accept json
@@ -67,7 +67,7 @@ func createEvent(c *gin.Context) {
 
 // readEvents returns a paginated list of Events.
 //
-// @Summary List Events
+// @Description List Events
 // @Description List Events, paging with reverse, limit, and offset.
 // @Description Optionally, filter by date, entity ID, or log level.
 // @Description If no filter is specified, the default is to return up to limit recent Events in reverse order.
@@ -199,7 +199,7 @@ func readEvents(c *gin.Context) {
 
 // readEvent returns the current version of the specified Event.
 //
-// @Summary Get Event
+// @Description Get Event
 // @Description Get Event by ID.
 // @Tags Event
 // @Produce json
@@ -231,7 +231,7 @@ func readEvent(c *gin.Context) {
 
 // existsEvent checks if the specified Event exists.
 //
-// @Summary Event Exists
+// @Description Event Exists
 // @Description Check if the specified Event exists.
 // @Tags Event
 // @Param id path string true "Event ID"
@@ -252,7 +252,7 @@ func existsEvent(c *gin.Context) {
 
 // deleteEvent deletes the specified Event.
 //
-// @Summary Delete Event
+// @Description Delete Event
 // @Description Delete and return the specified Event.
 // @Tags Event
 // @Produce json
@@ -289,7 +289,7 @@ func deleteEvent(c *gin.Context) {
 // readEventEntityIDs returns a list of entity IDs for which events exist.
 // It's useful for paging through events by entity ID.
 //
-// @Summary List Event Entity IDs
+// @Description List Event Entity IDs
 // @Description Get a paginated list of entity IDs for which events exist.
 // @Tags Event
 // @Produce json
@@ -330,7 +330,7 @@ func readEventEntityIDs(c *gin.Context) {
 // readEventEntityTypes returns a list of entity types for which events exist.
 // It's useful for paging through events by entity type.
 //
-// @Summary List Event Entity Types
+// @Description List Event Entity Types
 // @Description Get a complete, sorted list of entity types for which events exist.
 // @Tags Event
 // @Produce json
@@ -361,7 +361,7 @@ func readEventEntityTypes(c *gin.Context) {
 // readEventLogLevels returns a list of log levels for which events exist.
 // It's useful for paging through events by log level.
 //
-// @Summary List Event Log Levels
+// @Description List Event Log Levels
 // @Description Get a complete, sorted list of log levels for which events exist.
 // @Tags Event
 // @Produce json
@@ -392,7 +392,7 @@ func readEventLogLevels(c *gin.Context) {
 // readEventDates returns a list of ISO dates for which events exist.
 // It's useful for paging through events by date.
 //
-// @Summary List Event Dates
+// @Description List Event Dates
 // @Description Get a paginated list of ISO dates (e.g. yyyy-mm-dd) for which events exist.
 // @Tags Event
 // @Produce json
