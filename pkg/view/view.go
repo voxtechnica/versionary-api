@@ -2,8 +2,10 @@ package view
 
 import (
 	"net/url"
+	"sort"
 	"strings"
 	"time"
+	"versionary-api/pkg/ref"
 
 	"github.com/voxtechnica/tuid-go"
 	ua "github.com/voxtechnica/user-agent"
@@ -92,6 +94,12 @@ func (v View) Type() string {
 	return "View"
 }
 
+// RefID returns the Reference ID of the entity.
+func (v View) RefID() ref.RefID {
+	r, _ := ref.NewRefID(v.Type(), v.ID, "")
+	return r
+}
+
 // CreatedOn returns an ISO-8601 formatted string of the CreatedAt time.
 func (v View) CreatedOn() string {
 	if v.CreatedAt.IsZero() {
@@ -100,7 +108,7 @@ func (v View) CreatedOn() string {
 	return v.CreatedAt.Format("2006-01-02")
 }
 
-// TagKeys returns a list of keys from the tags.
+// TagKeys returns a sorted list of keys from the tags.
 func (v View) TagKeys() []string {
 	var keys []string
 	for k := range v.Tags {
@@ -108,10 +116,13 @@ func (v View) TagKeys() []string {
 			keys = append(keys, k)
 		}
 	}
+	sort.Slice(keys, func(i, j int) bool {
+		return keys[i] < keys[j]
+	})
 	return keys
 }
 
-// TagValues returns a list of key:value pairs from the tags.
+// TagValues returns a sorted list of key:value pairs from the tags.
 func (v View) TagValues() []string {
 	var values []string
 	for k, v := range v.Tags {
@@ -119,6 +130,9 @@ func (v View) TagValues() []string {
 			values = append(values, k+":"+v)
 		}
 	}
+	sort.Slice(values, func(i, j int) bool {
+		return values[i] < values[j]
+	})
 	return values
 }
 

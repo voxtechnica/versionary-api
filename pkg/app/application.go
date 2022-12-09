@@ -167,18 +167,9 @@ func (a *Application) Init(env string) error {
 	a.ParameterStore = NewParameterStore(cfg)
 
 	// Initialize Services
-	a.ContentService = content.Service{
-		EntityType: "Content",
-		Table:      content.NewTable(a.DBClient, a.Environment),
-	}
-	a.DeviceService = device.Service{
-		EntityType: "Device",
-		Table:      device.NewTable(a.DBClient, a.Environment),
-	}
-	a.DeviceCountService = device.CountService{
-		EntityType: "DeviceCount",
-		Table:      device.NewCountTable(a.DBClient, a.Environment),
-	}
+	a.ContentService = content.NewService(a.DBClient, a.Environment)
+	a.DeviceService = device.NewService(a.DBClient, a.Environment)
+	a.DeviceCountService = device.NewCountService(a.DBClient, a.Environment)
 	a.EmailService = email.Service{
 		EntityType: "Email",
 		Client:     a.SESClient,
@@ -195,35 +186,13 @@ func (a *Application) Init(env string) error {
 		},
 		LimitSending: env != "prod",
 	}
-	a.EventService = event.Service{
-		EntityType: "Event",
-		Table:      event.NewTable(a.DBClient, a.Environment),
-	}
-	a.ImageService = image.Service{
-		EntityType: "Image",
-		Bucket:     image.NewBucket(a.S3Client, a.Environment),
-		Table:      image.NewTable(a.DBClient, a.Environment),
-	}
-	a.OrgService = org.Service{
-		EntityType: "Organization",
-		Table:      org.NewTable(a.DBClient, a.Environment),
-	}
-	a.TokenService = token.Service{
-		EntityType: "Token",
-		Table:      token.NewTable(a.DBClient, a.Environment),
-	}
-	a.UserService = user.Service{
-		EntityType: "User",
-		Table:      user.NewTable(a.DBClient, a.Environment),
-	}
-	a.ViewService = view.Service{
-		EntityType: "View",
-		Table:      view.NewTable(a.DBClient, a.Environment),
-	}
-	a.ViewCountService = view.CountService{
-		EntityType: "ViewCount",
-		Table:      view.NewCountTable(a.DBClient, a.Environment),
-	}
+	a.EventService = event.NewService(a.DBClient, a.Environment)
+	a.ImageService = image.NewService(a.DBClient, a.S3Client, a.Environment)
+	a.OrgService = org.NewService(a.DBClient, a.Environment)
+	a.TokenService = token.NewService(a.DBClient, a.Environment)
+	a.UserService = user.NewService(a.DBClient, a.Environment)
+	a.ViewService = view.NewService(a.DBClient, a.Environment)
+	a.ViewCountService = view.NewCountService(a.DBClient, a.Environment)
 
 	// fmt.Println("Initialized Application in ", time.Since(startTime))
 	return nil
@@ -239,18 +208,9 @@ func (a *Application) InitMock(env string) error {
 	a.ParameterStore = NewParameterStoreMock()
 
 	// Initialize Services
-	a.ContentService = content.Service{
-		EntityType: "Content",
-		Table:      content.NewMemTable(content.NewTable(a.DBClient, a.Environment)),
-	}
-	a.DeviceService = device.Service{
-		EntityType: "Device",
-		Table:      device.NewMemTable(device.NewTable(a.DBClient, a.Environment)),
-	}
-	a.DeviceCountService = device.CountService{
-		EntityType: "DeviceCount",
-		Table:      device.NewCountMemTable(device.NewCountTable(a.DBClient, a.Environment)),
-	}
+	a.ContentService = content.NewMockService(a.Environment)
+	a.DeviceService = device.NewMockService(a.Environment)
+	a.DeviceCountService = device.NewMockCountService(a.Environment)
 	a.EmailService = email.Service{
 		EntityType: "Email",
 		Table:      email.NewMemTable(email.NewTable(a.DBClient, a.Environment)),
@@ -266,35 +226,13 @@ func (a *Application) InitMock(env string) error {
 		},
 		LimitSending: true,
 	}
-	a.EventService = event.Service{
-		EntityType: "Event",
-		Table:      event.NewMemTable(event.NewTable(a.DBClient, a.Environment)),
-	}
-	a.ImageService = image.Service{
-		EntityType: "Image",
-		Bucket:     image.NewMemBucket(image.NewBucket(a.S3Client, a.Environment)),
-		Table:      image.NewMemTable(image.NewTable(a.DBClient, a.Environment)),
-	}
-	a.OrgService = org.Service{
-		EntityType: "Organization",
-		Table:      org.NewMemTable(org.NewTable(a.DBClient, a.Environment)),
-	}
-	a.TokenService = token.Service{
-		EntityType: "Token",
-		Table:      token.NewMemTable(token.NewTable(a.DBClient, a.Environment)),
-	}
-	a.UserService = user.Service{
-		EntityType: "User",
-		Table:      user.NewMemTable(user.NewTable(a.DBClient, a.Environment)),
-	}
-	a.ViewService = view.Service{
-		EntityType: "View",
-		Table:      view.NewMemTable(view.NewTable(a.DBClient, a.Environment)),
-	}
-	a.ViewCountService = view.CountService{
-		EntityType: "ViewCount",
-		Table:      view.NewCountMemTable(view.NewCountTable(a.DBClient, a.Environment)),
-	}
+	a.EventService = event.NewMockService(a.Environment)
+	a.ImageService = image.NewMockService(a.Environment)
+	a.OrgService = org.NewMockService(a.Environment)
+	a.TokenService = token.NewMockService(a.Environment)
+	a.UserService = user.NewMockService(a.Environment)
+	a.ViewService = view.NewMockService(a.Environment)
+	a.ViewCountService = view.NewMockCountService(a.Environment)
 
 	return nil
 }

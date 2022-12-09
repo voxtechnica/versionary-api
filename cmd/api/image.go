@@ -15,6 +15,7 @@ import (
 	"versionary-api/pkg/bucket"
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/image"
+	"versionary-api/pkg/ref"
 	"versionary-api/pkg/user"
 )
 
@@ -32,6 +33,7 @@ func registerImageRoutes(r *gin.Engine) {
 	r.GET("/v1/images/:id/upload_url", roleAuthorizer("admin"), getImageUploadURL)
 	r.PUT("/v1/images/:id", roleAuthorizer("admin"), updateImage)
 	r.DELETE("/v1/images/:id", roleAuthorizer("admin"), deleteImage)
+	r.DELETE("/v1/images/:id/versions/:versionid", roleAuthorizer("admin"), deleteImageVersion)
 	r.GET("/v1/image_statuses", roleAuthorizer("admin"), readImageStatuses)
 	r.GET("/v1/image_tags", roleAuthorizer("admin"), readImageTags)
 	r.GET("/v1/image_labels", roleAuthorizer("admin"), readImageLabels)
@@ -131,7 +133,7 @@ func readImages(c *gin.Context) {
 		if err != nil {
 			e, _, _ := api.EventService.Create(c, event.Event{
 				UserID:     contextUserID(c),
-				EntityType: "Image",
+				EntityType: api.ImageService.EntityType,
 				LogLevel:   event.ERROR,
 				Message:    fmt.Errorf("read images by status %s: %w", status, err).Error(),
 				URI:        c.Request.URL.String(),
@@ -146,7 +148,7 @@ func readImages(c *gin.Context) {
 		if err != nil {
 			e, _, _ := api.EventService.Create(c, event.Event{
 				UserID:     contextUserID(c),
-				EntityType: "Image",
+				EntityType: api.ImageService.EntityType,
 				LogLevel:   event.ERROR,
 				Message:    fmt.Errorf("read images by tag %s: %w", tag, err).Error(),
 				URI:        c.Request.URL.String(),
@@ -191,7 +193,7 @@ func readImage(c *gin.Context) {
 		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
-			EntityType: "Image",
+			EntityType: api.ImageService.EntityType,
 			LogLevel:   event.ERROR,
 			Message:    fmt.Errorf("read image %s: %w", id, err).Error(),
 			URI:        c.Request.URL.String(),
@@ -265,7 +267,7 @@ func readImageVersions(c *gin.Context) {
 		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
-			EntityType: "Image",
+			EntityType: api.ImageService.EntityType,
 			LogLevel:   event.ERROR,
 			Message:    fmt.Errorf("read image %s versions: %w", id, err).Error(),
 			URI:        c.Request.URL.String(),
@@ -312,7 +314,7 @@ func readImageVersion(c *gin.Context) {
 		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
-			EntityType: "Image",
+			EntityType: api.ImageService.EntityType,
 			LogLevel:   event.ERROR,
 			Message:    fmt.Errorf("read image %s version %s: %w", id, versionid, err).Error(),
 			URI:        c.Request.URL.String(),
@@ -391,7 +393,7 @@ func readSimilarImages(c *gin.Context) {
 		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
-			EntityType: "Image",
+			EntityType: api.ImageService.EntityType,
 			LogLevel:   event.ERROR,
 			Message:    fmt.Errorf("read similar images %s: %w", id, err).Error(),
 			URI:        c.Request.URL.String(),
@@ -406,7 +408,7 @@ func readSimilarImages(c *gin.Context) {
 		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
-			EntityType: "Image",
+			EntityType: api.ImageService.EntityType,
 			LogLevel:   event.ERROR,
 			Message:    fmt.Errorf("read similar images %s: %w", id, err).Error(),
 			URI:        c.Request.URL.String(),
@@ -451,7 +453,7 @@ func getImageDownloadURL(c *gin.Context) {
 		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
-			EntityType: "Image",
+			EntityType: api.ImageService.EntityType,
 			LogLevel:   event.ERROR,
 			Message:    fmt.Errorf("get image %s download url: %w", id, err).Error(),
 			URI:        c.Request.URL.String(),
@@ -495,7 +497,7 @@ func getImageUploadURL(c *gin.Context) {
 		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
-			EntityType: "Image",
+			EntityType: api.ImageService.EntityType,
 			LogLevel:   event.ERROR,
 			Message:    fmt.Errorf("get image %s upload url: %w", id, err).Error(),
 			URI:        c.Request.URL.String(),
@@ -579,6 +581,7 @@ func updateImage(c *gin.Context) {
 //
 // @Description Delete Image
 // @Description Delete and return the specified Image.
+// @Description The associated Image file is also deleted.
 // @Tags Image
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
@@ -607,7 +610,7 @@ func deleteImage(c *gin.Context) {
 		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
 			EntityID:   id,
-			EntityType: "Image",
+			EntityType: api.ImageService.EntityType,
 			LogLevel:   event.ERROR,
 			Message:    fmt.Errorf("delete image %s: %w", id, err).Error(),
 			URI:        c.Request.URL.String(),
@@ -629,6 +632,51 @@ func deleteImage(c *gin.Context) {
 	c.JSON(http.StatusOK, i)
 }
 
+// deleteImageVersion returns the specified version of the specified Image.
+//
+// @Description Delete Image Version
+// @Description Delete Image Version by ID and VersionID.
+// @Description Note that the associated Image file is not deleted.
+// @Tags Image
+// @Produce json
+// @Param id path string true "Image ID"
+// @Param versionid path string true "Image VersionID"
+// @Success 200 {object} image.Image "Image Version"
+// @Failure 400 {object} APIEvent "Bad Request (invalid path parameter)"
+// @Failure 404 {object} APIEvent "Not Found"
+// @Failure 500 {object} APIEvent "Internal Server Error"
+// @Router /v1/images/{id}/versions/{versionid} [delete]
+func deleteImageVersion(c *gin.Context) {
+	// Validate the path parameters
+	id := c.Param("id")
+	versionid := c.Param("versionid")
+	refID, err := ref.NewRefID(api.ImageService.EntityType, id, versionid)
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %w", err))
+		return
+	}
+	// Delete and return the Image Version
+	version, err := api.ImageService.DeleteVersion(c, id, versionid)
+	if err != nil && errors.Is(err, v.ErrNotFound) {
+		abortWithError(c, http.StatusNotFound, fmt.Errorf("not found: %s", refID))
+		return
+	}
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityID:   id,
+			EntityType: api.ImageService.EntityType,
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("delete %s: %w", refID, err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	c.JSON(http.StatusOK, version)
+}
+
 // readImageStatuses returns a list of status codes for which images exist.
 // It's useful for paging through images by status.
 //
@@ -647,7 +695,7 @@ func readImageStatuses(c *gin.Context) {
 	if err != nil {
 		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
-			EntityType: "Image",
+			EntityType: api.ImageService.EntityType,
 			LogLevel:   event.ERROR,
 			Message:    fmt.Errorf("read image statuses: %w", err).Error(),
 			URI:        c.Request.URL.String(),
@@ -677,7 +725,7 @@ func readImageTags(c *gin.Context) {
 	if err != nil {
 		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
-			EntityType: "Image",
+			EntityType: api.ImageService.EntityType,
 			LogLevel:   event.ERROR,
 			Message:    fmt.Errorf("read image tags: %w", err).Error(),
 			URI:        c.Request.URL.String(),
@@ -728,24 +776,24 @@ func readImageLabels(c *gin.Context) {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid parameter, sorted: %w", err))
 		return
 	}
-	all := sortByValue || c.Query("limit") != ""
+	all := sortByValue || c.Query("limit") == ""
 	// Read the Image Labels
 	var labels []v.TextValue
 	var errMessage string
 	if search != "" {
-		errMessage = "search image labels"
+		errMessage = fmt.Sprintf("search (%s) image labels", search)
 		labels, err = api.ImageService.FilterImageLabels(c, search, anyMatch)
 	} else if all {
 		errMessage = "read all image labels"
 		labels, err = api.ImageService.ReadAllImageLabels(c, sortByValue)
 	} else {
-		errMessage = "read image labels"
+		errMessage = fmt.Sprintf("read %d image labels", limit)
 		labels, err = api.ImageService.ReadImageLabels(c, reverse, limit, offset)
 	}
 	if err != nil {
 		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
-			EntityType: "Image",
+			EntityType: api.ImageService.EntityType,
 			LogLevel:   event.ERROR,
 			Message:    fmt.Errorf("%s: %w", errMessage, err).Error(),
 			URI:        c.Request.URL.String(),

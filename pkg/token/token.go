@@ -2,6 +2,7 @@ package token
 
 import (
 	"time"
+	"versionary-api/pkg/ref"
 
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
@@ -20,6 +21,12 @@ type Token struct {
 // Type returns the entity type of the Token.
 func (t Token) Type() string {
 	return "Token"
+}
+
+// RefID returns the Reference ID of the entity.
+func (t Token) RefID() ref.RefID {
+	r, _ := ref.NewRefID(t.Type(), t.ID, "")
+	return r
 }
 
 // CompressedJSON returns a compressed JSON representation of the Token.

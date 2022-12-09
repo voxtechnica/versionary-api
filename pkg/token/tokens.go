@@ -4,17 +4,23 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"versionary-api/pkg/util"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
 )
 
+//==============================================================================
+// Token Table
+//==============================================================================
+
 // rowTokens is a TableRow definition for OAuth Bearer Tokens. Tokens are not versioned.
 var rowTokens = v.TableRow[Token]{
-	RowName:      "tokens_version",
+	RowName:      "tokens",
 	PartKeyName:  "id",
 	PartKeyValue: func(t Token) string { return t.ID },
+	PartKeyLabel: func(t Token) string { return t.UserID },
 	SortKeyName:  "id",
 	SortKeyValue: func(t Token) string { return t.ID },
 	JsonValue:    func(t Token) []byte { return t.CompressedJSON() },
@@ -25,7 +31,8 @@ var rowTokens = v.TableRow[Token]{
 var rowTokensUser = v.TableRow[Token]{
 	RowName:      "tokens_user",
 	PartKeyName:  "user_id",
-	PartKeyValue: func(t Token) string { return string(t.UserID) },
+	PartKeyValue: func(t Token) string { return t.UserID },
+	PartKeyLabel: func(t Token) string { return t.Email },
 	SortKeyName:  "id",
 	SortKeyValue: func(t Token) string { return t.ID },
 	JsonValue:    func(t Token) []byte { return t.CompressedJSON() },
@@ -54,15 +61,37 @@ func NewMemTable(table v.Table[Token]) v.MemTable[Token] {
 	return v.NewMemTable(table)
 }
 
+//==============================================================================
+// Token Service
+//==============================================================================
+
 // Service is used to manage Tokens in a DynamoDB table.
 type Service struct {
 	EntityType string
 	Table      v.TableReadWriter[Token]
 }
 
-//==============================================================================
+// NewService creates a new Token service backed by a Versionary Table for the specified environment.
+func NewService(dbClient *dynamodb.Client, env string) Service {
+	table := NewTable(dbClient, env)
+	return Service{
+		EntityType: table.EntityType,
+		Table:      table,
+	}
+}
+
+// NewMockService creates a new Token service backed by an in-memory table for testing purposes.
+func NewMockService(env string) Service {
+	table := NewMemTable(NewTable(nil, env))
+	return Service{
+		EntityType: table.TableName,
+		Table:      table,
+	}
+}
+
+//------------------------------------------------------------------------------
 // Tokens
-//==============================================================================
+//------------------------------------------------------------------------------
 
 // Create a Token in the Token table.
 func (s Service) Create(ctx context.Context, t Token) (Token, error) {
@@ -107,10 +136,16 @@ func (s Service) ReadAsJSON(ctx context.Context, id string) ([]byte, error) {
 	return s.Table.ReadEntityAsJSON(ctx, id)
 }
 
-// ReadTokenIDs returns a paginated list of Token IDs in the Token table.
+// ReadIDs returns a paginated list of Token IDs and associated User IDs in the Token table.
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
-func (s Service) ReadTokenIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
-	return s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
+func (s Service) ReadIDs(ctx context.Context, reverse bool, limit int, offset string) ([]v.TextValue, error) {
+	return s.Table.ReadEntityLabels(ctx, reverse, limit, offset)
+}
+
+// ReadAllIDs returns a list of all Token IDs and associated User IDs in the Token table.
+// Sorting is chronological (or reverse).
+func (s Service) ReadAllIDs(ctx context.Context, sortByValue bool) ([]v.TextValue, error) {
+	return s.Table.ReadAllEntityLabels(ctx, sortByValue)
 }
 
 // ReadTokens returns a paginated list of Tokens in the Token table.
@@ -125,9 +160,33 @@ func (s Service) ReadTokens(ctx context.Context, reverse bool, limit int, offset
 	return s.Table.ReadEntities(ctx, ids)
 }
 
-//==============================================================================
+//------------------------------------------------------------------------------
 // Tokens by User ID
-//==============================================================================
+//------------------------------------------------------------------------------
+
+// ReadUsers returns a paginated list of User IDs and Emails for which there are Tokens in the Token table.
+// Sorting is alphabetical (or reverse). The offset is the last User returned in a previous request.
+func (s Service) ReadUsers(ctx context.Context, reverse bool, limit int, offset string) ([]v.TextValue, error) {
+	return s.Table.ReadPartKeyLabels(ctx, rowTokensUser, reverse, limit, offset)
+}
+
+// ReadAllUsers returns a complete, alphabetical list of User IDs and Emails for which there are Tokens in the Token table.
+func (s Service) ReadAllUsers(ctx context.Context, sortByValue bool) ([]v.TextValue, error) {
+	return s.Table.ReadAllPartKeyLabels(ctx, rowTokensUser, sortByValue)
+}
+
+// FilterUsers returns a filtered list of User IDs and Emails for which there are Tokens in the Token table.
+// The filter is a case-insensitive substring match on the Email address.
+// If anyMatch is true, then a TextValue is included in the results if any of the words are found (OR filter).
+// If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
+// The filtered results are sorted alphabetically by Email address, not by ID.
+func (s Service) FilterUsers(ctx context.Context, contains string, anyMatch bool) ([]v.TextValue, error) {
+	filter, err := util.ContainsFilter(contains, anyMatch)
+	if err != nil {
+		return []v.TextValue{}, err
+	}
+	return s.Table.FilterPartKeyLabels(ctx, rowTokensUser, filter)
+}
 
 // ReadUserIDs returns a paginated list of User IDs for which there are Tokens in the Token table.
 // Sorting is alphabetical (or reverse). The offset is the last User returned in a previous request.

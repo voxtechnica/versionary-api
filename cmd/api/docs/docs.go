@@ -219,7 +219,7 @@ const docTemplate = `{
         },
         "/v1/content_authors": {
             "get": {
-                "description": "Get Content Authors\nGet a list of content authors for which contents exist.",
+                "description": "List Content Authors\nList content authors, for which contents exist.",
                 "produces": [
                     "application/json"
                 ],
@@ -266,9 +266,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/content_editors": {
+            "get": {
+                "description": "List Content Editors\nList content editors (IDs and names), for which contents exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Sort by Name? (not paginated; default: false)",
+                        "name": "sorted",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Content Editor IDs and Names",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/versionary.TextValue"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/content_tags": {
             "get": {
-                "description": "Get Content Tags\nGet a list of content tags for which contents exist.",
+                "description": "List Content Tags\nList content tags, for which contents exist.",
                 "produces": [
                     "application/json"
                 ],
@@ -317,7 +372,7 @@ const docTemplate = `{
         },
         "/v1/content_titles": {
             "get": {
-                "description": "List Content Titles\nList Content Titles by type, author, or tag, paging with reverse, limit, and offset.\nOne of type, author, or tag are required. Optionally, filter results with search terms.",
+                "description": "List Content Titles\nList Content Titles by type, author, or tag, paging with reverse, limit, and offset.\nOptionally, filter results with search terms.",
                 "produces": [
                     "application/json"
                 ],
@@ -346,8 +401,14 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Author",
+                        "description": "Author Name",
                         "name": "author",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Editor ID",
+                        "name": "editor",
                         "in": "query"
                     },
                     {
@@ -370,7 +431,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "boolean",
-                        "description": "Sort by Value? (not paginated; default: false)",
+                        "description": "Sort by Title? (not paginated; default: false)",
                         "name": "sorted",
                         "in": "query"
                     },
@@ -382,7 +443,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "Limit (default: 1000)",
+                        "description": "Limit (omit for all)",
                         "name": "limit",
                         "in": "query"
                     },
@@ -395,11 +456,11 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Contents",
+                        "description": "Content IDs and Titles",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/content.Content"
+                                "$ref": "#/definitions/versionary.TextValue"
                             }
                         }
                     },
@@ -432,7 +493,7 @@ const docTemplate = `{
         },
         "/v1/content_types": {
             "get": {
-                "description": "Get Content Types\nGet a list of content types for which contents exist.",
+                "description": "List Content Types\nList content types, for which contents exist.",
                 "produces": [
                     "application/json"
                 ],
@@ -504,7 +565,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "Limit (default: 20)",
+                        "description": "Limit (default: 10)",
                         "name": "limit",
                         "in": "query"
                     },
@@ -868,7 +929,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "Limit (default: 20)",
+                        "description": "Limit (default: 10)",
                         "name": "limit",
                         "in": "query"
                     },
@@ -974,6 +1035,76 @@ const docTemplate = `{
                     }
                 }
             },
+            "delete": {
+                "description": "Delete Content Version\nDelete and return the specified Content version.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Content"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Content ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Content VersionID",
+                        "name": "versionid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Content version that was deleted",
+                        "schema": {
+                            "$ref": "#/definitions/content.Content"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
             "head": {
                 "description": "Content Version Exists\nCheck if the specified Content version exists.",
                 "tags": [
@@ -1004,6 +1135,97 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/v1/device_agents": {
+            "get": {
+                "description": "List Device IDs and UserAgents\nList Device IDs and UserAgents, paging with reverse, limit, and offset.\nOptionally, filter results with search terms.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Device"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search Terms, separated by spaces",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Any Match? (default: false; all search terms must match)",
+                        "name": "any",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Sort by UserAgent? (not paginated; default: false)",
+                        "name": "sorted",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (omit for all)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device IDs and UserAgents",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/versionary.TextValue"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
                     }
                 }
             }
@@ -1804,6 +2026,76 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request (invalid path parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete Device Version\nDelete and return the specified Device Version.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Device"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Device ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Device Version ID",
+                        "name": "versionid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device version that was deleted",
+                        "schema": {
+                            "$ref": "#/definitions/device.Device"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
                         "schema": {
                             "$ref": "#/definitions/main.APIEvent"
                         }
@@ -2801,6 +3093,91 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/event_messages": {
+            "get": {
+                "description": "List Event IDs and Log Messages\nList Event IDs and Log Messages, paging with reverse, limit, and offset.\nOptionally, filter results with search terms.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Event"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search Terms, separated by spaces",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Any Match? (default: false; all search terms must match)",
+                        "name": "any",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default: 1000)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event IDs and Log Messages",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/versionary.TextValue"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/events": {
             "get": {
                 "description": "List Events\nList Events, paging with reverse, limit, and offset.\nOptionally, filter by date, entity ID, or log level.\nIf no filter is specified, the default is to return up to limit recent Events in reverse order.",
@@ -3581,7 +3958,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete Image\nDelete and return the specified Image.",
+                "description": "Delete Image\nDelete and return the specified Image.\nThe associated Image file is also deleted.",
                 "produces": [
                     "application/json"
                 ],
@@ -3997,6 +4374,57 @@ const docTemplate = `{
                     }
                 }
             },
+            "delete": {
+                "description": "Delete Image Version\nDelete Image Version by ID and VersionID.\nNote that the associated Image file is not deleted.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Image"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Image ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Image VersionID",
+                        "name": "versionid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image Version",
+                        "schema": {
+                            "$ref": "#/definitions/image.Image"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
             "head": {
                 "description": "Image Version Exists\nCheck if the specified Image version exists.",
                 "tags": [
@@ -4027,6 +4455,97 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found"
+                    }
+                }
+            }
+        },
+        "/v1/organization_names": {
+            "get": {
+                "description": "List Organization IDs and Names\nList Organization IDs and Names, paging with reverse, limit, and offset.\nOptionally, filter results with search terms.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organization"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search Terms, separated by spaces",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Any Match? (default: false; all search terms must match)",
+                        "name": "any",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Sort by Name? (not paginated; default: false)",
+                        "name": "sorted",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (omit for all)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization IDs and Names",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/versionary.TextValue"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
                     }
                 }
             }
@@ -4586,6 +5105,76 @@ const docTemplate = `{
                     }
                 }
             },
+            "delete": {
+                "description": "Delete Organization Version\nDelete and return the specified Organization version.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Organization"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Organization ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Organization Version ID",
+                        "name": "versionid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization version that was deleted",
+                        "schema": {
+                            "$ref": "#/definitions/org.Organization"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
             "head": {
                 "description": "Organization Version Exists\nCheck if the specified Organization version exists.",
                 "tags": [
@@ -4620,9 +5209,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/token_user_ids": {
+        "/v1/token_ids": {
             "get": {
-                "description": "List User IDs for which tokens exist\nList User IDs for which tokens exist. This is useful for paging through tokens by user.",
+                "description": "List Token/User ID pairs\nList Token/User ID pairs. This is useful for paging through tokens.",
                 "produces": [
                     "application/json"
                 ],
@@ -4639,13 +5228,19 @@ const docTemplate = `{
                     },
                     {
                         "type": "boolean",
+                        "description": "Sort by User ID? (not paginated; default: false)",
+                        "name": "sorted",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
                         "description": "Reverse Order (default: false)",
                         "name": "reverse",
                         "in": "query"
                     },
                     {
                         "type": "integer",
-                        "description": "Limit (default: 1000)",
+                        "description": "Limit (default: all)",
                         "name": "limit",
                         "in": "query"
                     },
@@ -4658,11 +5253,102 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Paginated User IDs",
+                        "description": "Token/User ID pairs",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "type": "string"
+                                "$ref": "#/definitions/versionary.TextValue"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid query parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/token_users": {
+            "get": {
+                "description": "List Users for which tokens exist\nList User IDs and email addresses for which tokens exist.\nThis is useful for paging through tokens by user.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Token"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search Terms, separated by spaces",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Any Match? (default: false; all search terms must match)",
+                        "name": "any",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Sort by Email? (not paginated; default: false)",
+                        "name": "sorted",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (default: all)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User IDs and Email Addresses",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/versionary.TextValue"
                             }
                         }
                     },
@@ -5123,9 +5809,52 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/user_org_ids": {
+        "/v1/user_ids": {
             "get": {
-                "description": "List User Organization IDs\nGet a list of Organization IDs for which users exist.",
+                "description": "List User IDs for Email Address\nList User IDs for a given email address.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Email Address",
+                        "name": "email",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of User IDs",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid query parameter email)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user_names": {
+            "get": {
+                "description": "List User IDs and Names\nList User IDs and Names, paging with reverse, limit, and offset.\nOptionally, filter results with search terms.",
                 "produces": [
                     "application/json"
                 ],
@@ -5139,15 +5868,130 @@ const docTemplate = `{
                         "name": "authorization",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search Terms, separated by spaces",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Any Match? (default: false; all search terms must match)",
+                        "name": "any",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Sort by Name/Email? (not paginated; default: false)",
+                        "name": "sorted",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (omit for all)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Organization IDs",
+                        "description": "User IDs and Names/Emails",
                         "schema": {
                             "type": "array",
                             "items": {
-                                "type": "string"
+                                "$ref": "#/definitions/versionary.TextValue"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user_orgs": {
+            "get": {
+                "description": "List User Organization ID/Name pairs\nGet a list of Organization ID/Name pairs for which users exist.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Sort by Organization Name? (not paginated; default: false)",
+                        "name": "sorted",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Reverse Order (default: false)",
+                        "name": "reverse",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit (omit for all)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offset (default: forward/reverse alphanumeric)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization ID/Name pairs",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/versionary.TextValue"
                             }
                         }
                     },
@@ -5808,6 +6652,76 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request (invalid path parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete User Version\nDelete and return the specified User Version.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User Version ID",
+                        "name": "versionid",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User version that was deleted",
+                        "schema": {
+                            "$ref": "#/definitions/user.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
                         "schema": {
                             "$ref": "#/definitions/main.APIEvent"
                         }
@@ -6581,6 +7495,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "editorId": {
+                    "type": "string"
+                },
+                "editorName": {
                     "type": "string"
                 },
                 "id": {

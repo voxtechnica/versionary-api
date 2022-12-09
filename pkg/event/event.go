@@ -2,6 +2,7 @@ package event
 
 import (
 	"time"
+	"versionary-api/pkg/ref"
 
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
@@ -28,6 +29,22 @@ type Event struct {
 // Type returns the entity type of the Event.
 func (e Event) Type() string {
 	return "Event"
+}
+
+// RefID returns the Reference ID of the entity.
+func (e Event) RefID() ref.RefID {
+	r, _ := ref.NewRefID(e.Type(), e.ID, "")
+	return r
+}
+
+// LogMessage returns an abridged string representation of the event, suitable for logging.
+func (e Event) LogMessage() string {
+	msg := e.CreatedAt.String() + " " + e.LogLevel.String() + " "
+	if e.EntityType != "" && e.EntityID != "" {
+		msg += e.EntityType + "-" + e.EntityID + " "
+	}
+	msg += e.Message
+	return msg
 }
 
 // CreatedOn returns an ISO-8601 formatted string of the event's creation date.

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"versionary-api/pkg/util"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/voxtechnica/tuid-go"
@@ -21,7 +22,8 @@ var rowDevices = v.TableRow[Device]{
 	RowName:      "devices_version",
 	PartKeyName:  "id",
 	PartKeyValue: func(d Device) string { return d.ID },
-	SortKeyName:  "update_id",
+	PartKeyLabel: func(d Device) string { return d.UserAgent.String() },
+	SortKeyName:  "version_id",
 	SortKeyValue: func(d Device) string { return d.VersionID },
 	JsonValue:    func(d Device) []byte { return d.CompressedJSON() },
 	TimeToLive:   func(d Device) int64 { return d.ExpiresAt.Unix() },
@@ -82,6 +84,24 @@ func NewMemTable(table v.Table[Device]) v.MemTable[Device] {
 type Service struct {
 	EntityType string
 	Table      v.TableReadWriter[Device]
+}
+
+// NewService creates a new Device service backed by a Versionary Table for the specified environment.
+func NewService(dbClient *dynamodb.Client, env string) Service {
+	table := NewTable(dbClient, env)
+	return Service{
+		EntityType: table.TableName,
+		Table:      table,
+	}
+}
+
+// NewMockService creates a new Device service backed by an in-memory table for testing purposes.
+func NewMockService(env string) Service {
+	table := NewMemTable(NewTable(nil, env))
+	return Service{
+		EntityType: table.TableName,
+		Table:      table,
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -161,6 +181,11 @@ func (s Service) Delete(ctx context.Context, id string) (Device, error) {
 	return s.Table.DeleteEntityWithID(ctx, id)
 }
 
+// Delete a Device version from the Device table. The deleted Device is returned.
+func (s Service) DeleteVersion(ctx context.Context, id, versionID string) (Device, error) {
+	return s.Table.DeleteEntityVersionWithID(ctx, id, versionID)
+}
+
 // Exists checks if a Device exists in the Device table.
 func (s Service) Exists(ctx context.Context, id string) bool {
 	return s.Table.EntityExists(ctx, id)
@@ -219,6 +244,31 @@ func (s Service) ReadAllVersionsAsJSON(ctx context.Context, id string) ([]byte, 
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
 func (s Service) ReadDeviceIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
 	return s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
+}
+
+// ReadUserAgents returns a paginated list of Device IDs and UserAgents in the Device table.
+// Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
+func (s Service) ReadUserAgents(ctx context.Context, reverse bool, limit int, offset string) ([]v.TextValue, error) {
+	return s.Table.ReadEntityLabels(ctx, reverse, limit, offset)
+}
+
+// ReadAllUserAgents returns all Device IDs and UserAgents in the Device table.
+// Caution: this may be a LOT of data!
+func (s Service) ReadAllUserAgents(ctx context.Context, sortByValue bool) ([]v.TextValue, error) {
+	return s.Table.ReadAllEntityLabels(ctx, sortByValue)
+}
+
+// FilterUserAgents returns a filtered list of Device IDs and UserAgents in the Device table.
+// The case-insensitive contains query is split into words, and the words are compared with the value in the TextValue.
+// If anyMatch is true, then a TextValue is included in the results if any of the words are found (OR filter).
+// If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
+// The filtered results are sorted alphabetically by value, not by ID.
+func (s Service) FilterUserAgents(ctx context.Context, contains string, anyMatch bool) ([]v.TextValue, error) {
+	filter, err := util.ContainsFilter(contains, anyMatch)
+	if err != nil {
+		return []v.TextValue{}, err
+	}
+	return s.Table.FilterEntityLabels(ctx, filter)
 }
 
 // ReadDevices returns a paginated list of Devices in the Device table.
@@ -310,7 +360,7 @@ func (s Service) ReadAllDevicesByDateAsJSON(ctx context.Context, date string) ([
 // CountDevicesByDate returns a DeviceCount for Devices in the Device table on the specified Date.
 func (s Service) CountDevicesByDate(ctx context.Context, date string) (Count, error) {
 	dc := Count{}
-	if date == "" || !dateRegex.MatchString(date) {
+	if !util.IsValidDate(date) {
 		return dc, fmt.Errorf("count devices by date: invalid date: %s", date)
 
 	}

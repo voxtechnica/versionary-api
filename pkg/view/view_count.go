@@ -1,16 +1,10 @@
 package view
 
 import (
-	"regexp"
+	"versionary-api/pkg/util"
 
 	v "github.com/voxtechnica/versionary"
 )
-
-var dateRegex = regexp.MustCompile(`^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$`)
-
-func IsValidDate(date string) bool {
-	return dateRegex.MatchString(date)
-}
 
 type Count struct {
 	Date          string         `json:"date"` // YYYY-MM-DD
@@ -49,7 +43,7 @@ func (c Count) CompressedJSON() []byte {
 // empty, then the ViewCount is valid.
 func (c Count) Validate() []string {
 	problems := []string{}
-	if c.Date == "" || !IsValidDate(c.Date) {
+	if c.Date == "" || !util.IsValidDate(c.Date) {
 		problems = append(problems, "Date is missing or invalid")
 	}
 	return problems

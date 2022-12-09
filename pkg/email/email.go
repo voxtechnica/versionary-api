@@ -3,11 +3,13 @@ package email
 import (
 	"errors"
 	"fmt"
-	"github.com/voxtechnica/tuid-go"
-	v "github.com/voxtechnica/versionary"
 	"net/mail"
 	"strings"
 	"time"
+	"versionary-api/pkg/ref"
+
+	"github.com/voxtechnica/tuid-go"
+	v "github.com/voxtechnica/versionary"
 )
 
 // Identity represents an email address and optional name.
@@ -72,6 +74,12 @@ type Email struct {
 // Type returns the entity type of the Email.
 func (e Email) Type() string {
 	return "Email"
+}
+
+// RefID returns the Reference ID of this entity.
+func (e Email) RefID() ref.RefID {
+	r, _ := ref.NewRefID(e.Type(), e.ID, e.VersionID)
+	return r
 }
 
 // AllAddresses returns a list of all email addresses in the Email message.

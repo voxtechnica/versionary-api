@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -25,6 +26,7 @@ func registerEventRoutes(r *gin.Engine) {
 	r.GET("/v1/event_entity_types", roleAuthorizer("admin"), readEventEntityTypes)
 	r.GET("/v1/event_log_levels", roleAuthorizer("admin"), readEventLogLevels)
 	r.GET("/v1/event_dates", roleAuthorizer("admin"), readEventDates)
+	r.GET("/v1/event_messages", roleAuthorizer("admin"), readEventMessages)
 }
 
 // createEvent creates a new Event.
@@ -428,4 +430,62 @@ func readEventDates(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, dates)
+}
+
+// readEventMessages returns a list of Event IDs and Log Messages.
+//
+// @Description List Event IDs and Log Messages
+// @Description List Event IDs and Log Messages, paging with reverse, limit, and offset.
+// @Description Optionally, filter results with search terms.
+// @Tags Event
+// @Produce json
+// @Param authorization header string true "OAuth Bearer Token (Administrator)"
+// @Param search query string false "Search Terms, separated by spaces"
+// @Param any query bool false "Any Match? (default: false; all search terms must match)"
+// @Param reverse query bool false "Reverse Order (default: false)"
+// @Param limit query int false "Limit (default: 1000)"
+// @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
+// @Success 200 {array} v.TextValue "Event IDs and Log Messages"
+// @Failure 400 {object} APIEvent "Bad Request (invalid parameter)"
+// @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
+// @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
+// @Failure 500 {object} APIEvent "Internal Server Error"
+// @Router /v1/event_messages [get]
+func readEventMessages(c *gin.Context) {
+	// Parse query parameters, with defaults
+	reverse, limit, offset, err := paginationParams(c, false, 1000)
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, err)
+		return
+	}
+	// Search query parameters
+	search := c.Query("search")
+	anyMatch, err := strconv.ParseBool(c.DefaultQuery("any", "false"))
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid parameter, any: %w", err))
+		return
+	}
+	// Read and return the Event IDs and Log Messages
+	var messages []v.TextValue
+	var errMessage string
+	if search != "" {
+		errMessage = fmt.Sprintf("search (%s) event messages", search)
+		messages, err = api.EventService.FilterMessages(c, search, anyMatch)
+	} else {
+		errMessage = fmt.Sprintf("read %d event messages", limit)
+		messages, err = api.EventService.ReadMessages(c, reverse, limit, offset)
+	}
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityType: api.EventService.EntityType,
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("%s: %w", errMessage, err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	c.JSON(http.StatusOK, messages)
 }

@@ -3,13 +3,15 @@ package email
 import (
 	"context"
 	"fmt"
+	"strings"
+	"versionary-api/pkg/util"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/ses"
 	"github.com/aws/aws-sdk-go-v2/service/ses/types"
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
-	"strings"
 )
 
 //==============================================================================
@@ -21,7 +23,8 @@ var rowEmails = v.TableRow[Email]{
 	RowName:      "emails_version",
 	PartKeyName:  "id",
 	PartKeyValue: func(e Email) string { return e.ID },
-	SortKeyName:  "update_id",
+	PartKeyLabel: func(e Email) string { return e.Subject },
+	SortKeyName:  "version_id",
 	SortKeyValue: func(e Email) string { return e.VersionID },
 	JsonValue:    func(e Email) []byte { return e.CompressedJSON() },
 }
@@ -281,6 +284,11 @@ func (s Service) Delete(ctx context.Context, id string) (Email, error) {
 	return s.Table.DeleteEntityWithID(ctx, id)
 }
 
+// Delete an Email version from the Email table. The deleted Email is returned.
+func (s Service) DeleteVersion(ctx context.Context, id, versionID string) (Email, error) {
+	return s.Table.DeleteEntityVersionWithID(ctx, id, versionID)
+}
+
 // Exists checks if an Email exists in the Email table.
 func (s Service) Exists(ctx context.Context, id string) bool {
 	return s.Table.EntityExists(ctx, id)
@@ -339,6 +347,31 @@ func (s Service) ReadAllVersionsAsJSON(ctx context.Context, id string) ([]byte, 
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
 func (s Service) ReadEmailIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
 	return s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
+}
+
+// ReadEmailSubjects returns a paginated list of Email IDs and Subjects in the Email table.
+// Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
+func (s Service) ReadEmailSubjects(ctx context.Context, reverse bool, limit int, offset string) ([]v.TextValue, error) {
+	return s.Table.ReadEntityLabels(ctx, reverse, limit, offset)
+}
+
+// ReadAllEmailSubjects returns all Email IDs and Subjects in the Email table.
+// Caution: this may be a LOT of data!
+func (s Service) ReadAllEmailSubjects(ctx context.Context, sortByValue bool) ([]v.TextValue, error) {
+	return s.Table.ReadAllEntityLabels(ctx, sortByValue)
+}
+
+// FilterEmailSubjects returns a filtered list of Email IDs and Subjects in the Email table.
+// The case-insensitive contains query is split into words, and the words are compared with the value in the TextValue.
+// If anyMatch is true, then a TextValue is included in the results if any of the words are found (OR filter).
+// If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
+// The filtered results are sorted alphabetically by value, not by ID.
+func (s Service) FilterEmailSubjects(ctx context.Context, contains string, anyMatch bool) ([]v.TextValue, error) {
+	filter, err := util.ContainsFilter(contains, anyMatch)
+	if err != nil {
+		return []v.TextValue{}, err
+	}
+	return s.Table.FilterEntityLabels(ctx, filter)
 }
 
 // ReadEmails returns a paginated list of Emails in the Email table.

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/voxtechnica/tuid-go"
@@ -21,7 +22,8 @@ func registerTokenRoutes(r *gin.Engine) {
 	r.HEAD("/v1/tokens/:id", existsToken)
 	r.DELETE("/v1/tokens/:id", deleteToken)
 	r.GET("/logout", logout)
-	r.GET("/v1/token_user_ids", roleAuthorizer("admin"), readTokenUserIDs)
+	r.GET("/v1/token_ids", roleAuthorizer("admin"), readTokenIDs)
+	r.GET("/v1/token_users", roleAuthorizer("admin"), readTokenUsers)
 }
 
 // createToken receives an OAuth TokenRequest, validates the User password,
@@ -376,44 +378,129 @@ func logout(c *gin.Context) {
 	c.JSON(http.StatusOK, t)
 }
 
-// readTokenUserIDs returns a paginated list of User IDs for which tokens exist. This endpoint is
-// only available to administrators. It's useful for paging through tokens by user.
+// readTokenIDs returns a paginated list of Token/User ID pairs.
+// This endpoint is only available to administrators. It's useful for paging through tokens.
 //
-// @Description List User IDs for which tokens exist
-// @Description List User IDs for which tokens exist. This is useful for paging through tokens by user.
+// @Description List Token/User ID pairs
+// @Description List Token/User ID pairs. This is useful for paging through tokens.
 // @Tags Token
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
+// @Param sorted query bool false "Sort by User ID? (not paginated; default: false)"
 // @Param reverse query bool false "Reverse Order (default: false)"
-// @Param limit query int false "Limit (default: 1000)"
+// @Param limit query int false "Limit (default: all)"
 // @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
-// @Success 200 {array} string "Paginated User IDs"
+// @Success 200 {array} v.TextValue "Token/User ID pairs"
 // @Failure 400 {object} APIEvent "Bad Request (invalid query parameter)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
 // @Failure 500 {object} APIEvent "Internal Server Error"
-// @Router /v1/token_user_ids [get]
-func readTokenUserIDs(c *gin.Context) {
+// @Router /v1/token_ids [get]
+func readTokenIDs(c *gin.Context) {
 	// Parse query parameters, with defaults
 	reverse, limit, offset, err := paginationParams(c, false, 1000)
 	if err != nil {
 		abortWithError(c, http.StatusBadRequest, err)
 		return
 	}
-	// Read paginated User IDs for which Tokens exist
-	ids, err := api.TokenService.ReadUserIDs(c, reverse, limit, offset)
+	// Sorting query parameters
+	sortByValue, err := strconv.ParseBool(c.DefaultQuery("sorted", "false"))
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid parameter, sorted: %w", err))
+		return
+	}
+	all := sortByValue || c.Query("limit") == ""
+	// Read and return the Token/User ID pairs
+	var ids []v.TextValue
+	var errMessage string
+	if all {
+		errMessage = "read all token/user ID pairs"
+		ids, err = api.TokenService.ReadAllIDs(c, sortByValue)
+	} else {
+		errMessage = fmt.Sprintf("read %d token/user ID pairs", limit)
+		ids, err = api.TokenService.ReadIDs(c, reverse, limit, offset)
+	}
 	if err != nil {
 		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
-			EntityType: "Token",
+			EntityType: api.TokenService.EntityType,
 			LogLevel:   event.ERROR,
-			Message:    fmt.Errorf("read token user IDs: %w", err).Error(),
+			Message:    fmt.Errorf("%s: %w", errMessage, err).Error(),
 			URI:        c.Request.URL.String(),
 			Err:        err,
 		})
 		abortWithError(c, http.StatusInternalServerError, e)
 		return
 	}
-	// Return the IDs
 	c.JSON(http.StatusOK, ids)
+}
+
+// readTokenUsers returns a paginated list of User IDs and email addresses for which tokens exist.
+// This endpoint is only available to administrators. It's useful for paging through tokens by user.
+//
+// @Description List Users for which tokens exist
+// @Description List User IDs and email addresses for which tokens exist.
+// @Description This is useful for paging through tokens by user.
+// @Tags Token
+// @Produce json
+// @Param authorization header string true "OAuth Bearer Token (Administrator)"
+// @Param search query string false "Search Terms, separated by spaces"
+// @Param any query bool false "Any Match? (default: false; all search terms must match)"
+// @Param sorted query bool false "Sort by Email? (not paginated; default: false)"
+// @Param reverse query bool false "Reverse Order (default: false)"
+// @Param limit query int false "Limit (default: all)"
+// @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
+// @Success 200 {array} v.TextValue "User IDs and Email Addresses"
+// @Failure 400 {object} APIEvent "Bad Request (invalid query parameter)"
+// @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
+// @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
+// @Failure 500 {object} APIEvent "Internal Server Error"
+// @Router /v1/token_users [get]
+func readTokenUsers(c *gin.Context) {
+	// Parse query parameters, with defaults
+	reverse, limit, offset, err := paginationParams(c, false, 1000)
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, err)
+		return
+	}
+	// Search query parameters
+	search := c.Query("search")
+	anyMatch, err := strconv.ParseBool(c.DefaultQuery("any", "false"))
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid parameter, any: %w", err))
+		return
+	}
+	// Sorting query parameters
+	sortByValue, err := strconv.ParseBool(c.DefaultQuery("sorted", "false"))
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid parameter, sorted: %w", err))
+		return
+	}
+	all := sortByValue || c.Query("limit") == ""
+	// Read and return the User IDs and Email Addresses
+	var users []v.TextValue
+	var errMessage string
+	if search != "" {
+		errMessage = fmt.Sprintf("search (%s) token user email addresses", search)
+		users, err = api.TokenService.FilterUsers(c, search, anyMatch)
+	} else if all {
+		errMessage = "read all token users"
+		users, err = api.TokenService.ReadAllUsers(c, sortByValue)
+	} else {
+		errMessage = fmt.Sprintf("read %d token users", limit)
+		users, err = api.TokenService.ReadUsers(c, reverse, limit, offset)
+	}
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityType: api.TokenService.EntityType,
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("%s: %w", errMessage, err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	c.JSON(http.StatusOK, users)
 }

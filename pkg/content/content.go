@@ -1,10 +1,12 @@
 package content
 
 import (
-	"github.com/voxtechnica/tuid-go"
-	"github.com/voxtechnica/versionary"
 	"strings"
 	"time"
+	"versionary-api/pkg/ref"
+
+	"github.com/voxtechnica/tuid-go"
+	"github.com/voxtechnica/versionary"
 )
 
 // Content is a piece of content of a specified type (e.g. book, chapter, etc.)
@@ -15,6 +17,7 @@ type Content struct {
 	VersionID    string    `json:"versionId"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 	EditorID     string    `json:"editorId,omitempty"`
+	EditorName   string    `json:"editorName,omitempty"`
 	Comment      string    `json:"comment,omitempty"`
 	WordCount    int       `json:"wordCount"`
 	ImageCount   int       `json:"imageCount"`
@@ -23,6 +26,12 @@ type Content struct {
 	Tags         []string  `json:"tags,omitempty"`
 	Authors      []Author  `json:"authors,omitempty"`
 	Content      Section   `json:"content,omitempty"`
+}
+
+// RefID returns the Reference ID of this entity.
+func (c Content) RefID() ref.RefID {
+	r, _ := ref.NewRefID("Content", c.ID, c.VersionID)
+	return r
 }
 
 // Title returns the title of the Content.

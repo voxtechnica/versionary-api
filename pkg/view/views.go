@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"versionary-api/pkg/util"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/voxtechnica/tuid-go"
@@ -82,6 +83,24 @@ type Service struct {
 	Table      v.TableReadWriter[View]
 }
 
+// NewService creates a new View service backed by a Versionary table for the specified environment.
+func NewService(dbClient *dynamodb.Client, env string) Service {
+	table := NewTable(dbClient, env)
+	return Service{
+		EntityType: table.EntityType,
+		Table:      table,
+	}
+}
+
+// NewMockService creates a new View service backed by an in-memory table for testing purposes.
+func NewMockService(env string) Service {
+	table := NewMemTable(NewTable(nil, env))
+	return Service{
+		EntityType: table.TableName,
+		Table:      table,
+	}
+}
+
 //------------------------------------------------------------------------------
 // View Versions
 //------------------------------------------------------------------------------
@@ -106,8 +125,8 @@ func (s Service) Create(ctx context.Context, view View) (View, []string, error) 
 
 // Write a View to the View table. This method assumes that the View has all the required fields.
 // It would most likely be used for "refreshing" the index rows in the View table.
-func (s Service) Write(ctx context.Context, o View) (View, error) {
-	return o, s.Table.WriteEntity(ctx, o)
+func (s Service) Write(ctx context.Context, view View) (View, error) {
+	return view, s.Table.WriteEntity(ctx, view)
 }
 
 // Delete a View from the View table. The deleted View is returned.
@@ -188,13 +207,13 @@ func (s Service) ReadAllViewsByDateAsJSON(ctx context.Context, date string) ([]b
 // CountViewsByDate returns a ViewCount for Views in the View table on the specified Date.
 func (s Service) CountViewsByDate(ctx context.Context, date string) (Count, error) {
 	c := Count{}
-	if date == "" || !dateRegex.MatchString(date) {
+	if !util.IsValidDate(date) {
 		return c, fmt.Errorf("count views by date: invalid date: %s", date)
 
 	}
 	c.Date = date
 	limit := 10000
-	offset := "-"
+	offset := "-" // before numbers
 	views, err := s.ReadViewsByDate(ctx, date, false, limit, offset)
 	if err != nil {
 		return c, fmt.Errorf("count views by date %s: %w", date, err)

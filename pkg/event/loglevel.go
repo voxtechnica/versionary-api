@@ -39,3 +39,8 @@ func (l LogLevel) IsValid() bool {
 	}
 	return false
 }
+
+// String returns the string representation of the LogLevel
+func (l LogLevel) String() string {
+	return string(l)
+}

@@ -4,18 +4,24 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"versionary-api/pkg/util"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
 )
 
+//==============================================================================
+// Organization Table
+//==============================================================================
+
 // rowOrganizations is a TableRow definition for Organization versions.
 var rowOrganizations = v.TableRow[Organization]{
 	RowName:      "organizations_version",
 	PartKeyName:  "id",
 	PartKeyValue: func(o Organization) string { return o.ID },
-	SortKeyName:  "update_id",
+	PartKeyLabel: func(o Organization) string { return o.Name },
+	SortKeyName:  "version_id",
 	SortKeyValue: func(o Organization) string { return o.VersionID },
 	JsonValue:    func(o Organization) []byte { return o.CompressedJSON() },
 }
@@ -52,15 +58,37 @@ func NewMemTable(table v.Table[Organization]) v.MemTable[Organization] {
 	return v.NewMemTable(table)
 }
 
+//==============================================================================
+// Organization Service
+//==============================================================================
+
 // Service is used to manage Organizations in a DynamoDB table.
 type Service struct {
 	EntityType string
 	Table      v.TableReadWriter[Organization]
 }
 
-//==============================================================================
+// NewService creates a new Organization service backed by a Versionary Table for the specified environment.
+func NewService(dbClient *dynamodb.Client, env string) Service {
+	table := NewTable(dbClient, env)
+	return Service{
+		EntityType: table.EntityType,
+		Table:      table,
+	}
+}
+
+// NewMockService creates a new Organization service backed by an in-memory table for testing purposes.
+func NewMockService(env string) Service {
+	table := NewMemTable(NewTable(nil, env))
+	return Service{
+		EntityType: table.TableName,
+		Table:      table,
+	}
+}
+
+//------------------------------------------------------------------------------
 // Organization Versions
-//==============================================================================
+//------------------------------------------------------------------------------
 
 // Create an Organization in the Organization table.
 func (s Service) Create(ctx context.Context, o Organization) (Organization, []string, error) {
@@ -106,6 +134,12 @@ func (s Service) Write(ctx context.Context, o Organization) (Organization, error
 // Delete an Organization from the Organization table. The deleted Organization is returned.
 func (s Service) Delete(ctx context.Context, id string) (Organization, error) {
 	return s.Table.DeleteEntityWithID(ctx, id)
+}
+
+// DeleteVersion deletes a specified Organization version from the Organization table.
+// The deleted Organization version is returned.
+func (s Service) DeleteVersion(ctx context.Context, id, versionID string) (Organization, error) {
+	return s.Table.DeleteEntityVersionWithID(ctx, id, versionID)
 }
 
 // Exists checks if an Organization exists in the Organization table.
@@ -162,10 +196,41 @@ func (s Service) ReadAllVersionsAsJSON(ctx context.Context, id string) ([]byte, 
 	return s.Table.ReadAllEntityVersionsAsJSON(ctx, id)
 }
 
-// ReadOrganizationIDs returns a paginated list of Organization IDs in the Organization table.
+// ReadIDs returns a paginated list of Organization IDs in the Organization table.
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
-func (s Service) ReadOrganizationIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
+func (s Service) ReadIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
 	return s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
+}
+
+// ReadAllIDs returns all Organization IDs in the Organization table.
+// Caution: this may be a LOT of data!
+func (s Service) ReadAllIDs(ctx context.Context) ([]string, error) {
+	return s.Table.ReadAllEntityIDs(ctx)
+}
+
+// ReadNames returns a paginated list of Organization IDs and Names in the Organization table.
+// Sorting is alphabetical (or reverse). The offset is the last ID returned in a previous request.
+func (s Service) ReadNames(ctx context.Context, reverse bool, limit int, offset string) ([]v.TextValue, error) {
+	return s.Table.ReadEntityLabels(ctx, reverse, limit, offset)
+}
+
+// ReadAllNames returns all Organization IDs and Names in the Organization table.
+// Caution: this may be a LOT of data!
+func (s Service) ReadAllNames(ctx context.Context, sortByValue bool) ([]v.TextValue, error) {
+	return s.Table.ReadAllEntityLabels(ctx, sortByValue)
+}
+
+// FilterNames returns a filtered list of Organization IDs and Names in the Organization table.
+// The case-insensitive contains query is split into words, and the words are compared with the value in the TextValue.
+// If anyMatch is true, then a TextValue is included in the results if any of the words are found (OR filter).
+// If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
+// The filtered results are sorted alphabetically by value, not by ID.
+func (s Service) FilterNames(ctx context.Context, contains string, anyMatch bool) ([]v.TextValue, error) {
+	filter, err := util.ContainsFilter(contains, anyMatch)
+	if err != nil {
+		return []v.TextValue{}, err
+	}
+	return s.Table.FilterEntityLabels(ctx, filter)
 }
 
 // ReadOrganizations returns a paginated list of Organizations in the Organization table.
@@ -180,9 +245,9 @@ func (s Service) ReadOrganizations(ctx context.Context, reverse bool, limit int,
 	return s.Table.ReadEntities(ctx, ids)
 }
 
-//==============================================================================
+//------------------------------------------------------------------------------
 // Organizations by Status
-//==============================================================================
+//------------------------------------------------------------------------------
 
 // ReadStatuses returns a paginated Status list for which there are Organizations in the Organization table.
 // Sorting is alphabetical (or reverse). The offset is the last Status returned in a previous request.

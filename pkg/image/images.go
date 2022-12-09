@@ -18,6 +18,7 @@ import (
 	"time"
 
 	b "versionary-api/pkg/bucket"
+	"versionary-api/pkg/util"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -38,31 +39,10 @@ var rowImages = v.TableRow[Image]{
 	RowName:      "images_version",
 	PartKeyName:  "id",
 	PartKeyValue: func(i Image) string { return i.ID },
-	SortKeyName:  "update_id",
+	PartKeyLabel: func(i Image) string { return i.Label() },
+	SortKeyName:  "version_id",
 	SortKeyValue: func(i Image) string { return i.VersionID },
 	JsonValue:    func(i Image) []byte { return i.CompressedJSON() },
-}
-
-// rowImageLabels is a TableRow definition for Image IDs and associated text labels.
-// This is used for searching for Images by label.
-var rowImageLabels = v.TableRow[Image]{
-	RowName:      "image_labels",
-	PartKeyName:  "type",
-	PartKeyValue: func(i Image) string { return i.Type() },
-	SortKeyName:  "id",
-	SortKeyValue: func(i Image) string { return i.ID },
-	TextValue:    func(i Image) string { return i.Label() },
-}
-
-// rowImageHashes is a TableRow definition for Image IDs and associated perceptual hashes.
-// This is used for identifying similar images.
-var rowImageHashes = v.TableRow[Image]{
-	RowName:      "image_hashes",
-	PartKeyName:  "type",
-	PartKeyValue: func(i Image) string { return i.Type() },
-	SortKeyName:  "id",
-	SortKeyValue: func(i Image) string { return i.ID },
-	TextValue:    func(i Image) string { return i.PHash },
 }
 
 // rowImagesStatus is a TableRow definition for searching/browsing Images by status.
@@ -85,6 +65,17 @@ var rowImagesTag = v.TableRow[Image]{
 	JsonValue:     func(i Image) []byte { return i.CompressedJSON() },
 }
 
+// rowImageHashes is a TableRow definition for Image IDs and associated perceptual hashes.
+// This is used for identifying similar images.
+var rowImageHashes = v.TableRow[Image]{
+	RowName:      "image_hashes",
+	PartKeyName:  "type",
+	PartKeyValue: func(i Image) string { return i.Type() },
+	SortKeyName:  "id",
+	SortKeyValue: func(i Image) string { return i.ID },
+	TextValue:    func(i Image) string { return i.PHash },
+}
+
 // NewTable instantiates a new DynamoDB Image table.
 func NewTable(dbClient *dynamodb.Client, env string) v.Table[Image] {
 	if env == "" {
@@ -97,10 +88,9 @@ func NewTable(dbClient *dynamodb.Client, env string) v.Table[Image] {
 		TTL:        false,
 		EntityRow:  rowImages,
 		IndexRows: map[string]v.TableRow[Image]{
-			rowImageLabels.RowName:  rowImageLabels,
-			rowImageHashes.RowName:  rowImageHashes,
 			rowImagesStatus.RowName: rowImagesStatus,
 			rowImagesTag.RowName:    rowImagesTag,
+			rowImageHashes.RowName:  rowImageHashes,
 		},
 	}
 }
@@ -141,6 +131,28 @@ type Service struct {
 	EntityType string
 	Bucket     b.BucketReadWriter
 	Table      v.TableReadWriter[Image]
+}
+
+// NewService instantiates a new Image service, backed by DynamoDB and S3.
+func NewService(dbClient *dynamodb.Client, s3Client *s3.Client, env string) Service {
+	bucket := NewBucket(s3Client, env)
+	table := NewTable(dbClient, env)
+	return Service{
+		EntityType: table.EntityType,
+		Bucket:     bucket,
+		Table:      table,
+	}
+}
+
+// NewMockService instantiates a new Image service with in-memory storage for testing purposes.
+func NewMockService(env string) Service {
+	bucket := NewMemBucket(NewBucket(nil, env))
+	table := NewMemTable(NewTable(nil, env))
+	return Service{
+		EntityType: table.EntityType,
+		Bucket:     bucket,
+		Table:      table,
+	}
 }
 
 // FetchSourceURI fetches the source image from the given URI and returns the image blob.
@@ -406,6 +418,12 @@ func (s Service) Delete(ctx context.Context, id string) (Image, error) {
 	return i, s.Bucket.DeleteFile(ctx, i.FileName)
 }
 
+// DeleteVersion deletes a specific version of an Image from the Image table. The deleted Image is returned.
+// Note: DeleteVersion does not delete the image file from the S3 bucket.
+func (s Service) DeleteVersion(ctx context.Context, id string, versionid string) (Image, error) {
+	return s.Table.DeleteEntityVersionWithID(ctx, id, versionid)
+}
+
 // Exists checks if an Image exists in the Image table.
 func (s Service) Exists(ctx context.Context, id string) bool {
 	return s.Table.EntityExists(ctx, id)
@@ -573,13 +591,13 @@ func (s Service) ReadImageMap(ctx context.Context, ids []string) map[string]Imag
 
 // ReadImageLabels returns a paginated list of Image IDs with associated labels.
 func (s Service) ReadImageLabels(ctx context.Context, reverse bool, limit int, offset string) ([]v.TextValue, error) {
-	return s.Table.ReadTextValues(ctx, rowImageLabels, s.EntityType, reverse, limit, offset)
+	return s.Table.ReadEntityLabels(ctx, reverse, limit, offset)
 }
 
 // ReadAllImageLabels returns all Image labels in the Image table, optionally
 // sorted by ascending key (Image ID) or value (Label).
 func (s Service) ReadAllImageLabels(ctx context.Context, sortByValue bool) ([]v.TextValue, error) {
-	return s.Table.ReadAllTextValues(ctx, rowImageLabels, s.EntityType, sortByValue)
+	return s.Table.ReadAllEntityLabels(ctx, sortByValue)
 }
 
 // FilterImageLabels returns a filtered list of Image IDs with associated labels.
@@ -587,12 +605,79 @@ func (s Service) ReadAllImageLabels(ctx context.Context, sortByValue bool) ([]v.
 // The contains query string is split into words, and the words are compared with the Image label.
 // If anyMatch is true, then an Image label is included if any of the words are found (an OR filter).
 // If anyMatch is false, then the Image label must contain all the words in the query string (an AND filter).
+// The filtered results are sorted alphabetically by label, not by ID.
 func (s Service) FilterImageLabels(ctx context.Context, contains string, anyMatch bool) ([]v.TextValue, error) {
-	imageLabels, err := s.ReadAllImageLabels(ctx, false)
+	filter, err := util.ContainsFilter(contains, anyMatch)
 	if err != nil {
-		return imageLabels, fmt.Errorf("filter image labels: %w", err)
+		return []v.TextValue{}, err
 	}
-	return filterTextValues(imageLabels, contains, anyMatch), nil
+	return s.Table.FilterEntityLabels(ctx, filter)
+}
+
+//------------------------------------------------------------------------------
+// Images by Tag
+//------------------------------------------------------------------------------
+
+// ReadAllTags returns a complete, alphabetical Tag list for which there are Images in the Image table.
+func (s Service) ReadAllTags(ctx context.Context) ([]string, error) {
+	return s.Table.ReadAllPartKeyValues(ctx, rowImagesTag)
+}
+
+// ReadImagesByTag returns paginated Images by Tag. Sorting is chronological (or reverse).
+// The offset is the ID of the last Image returned in a previous request.
+func (s Service) ReadImagesByTag(ctx context.Context, tag string, reverse bool, limit int, offset string) ([]Image, error) {
+	return s.Table.ReadEntitiesFromRow(ctx, rowImagesTag, tag, reverse, limit, offset)
+}
+
+// ReadImagesByTagAsJSON returns paginated JSON Images by Tag. Sorting is chronological (or reverse).
+// The offset is the ID of the last Image returned in a previous request.
+func (s Service) ReadImagesByTagAsJSON(ctx context.Context, tag string, reverse bool, limit int, offset string) ([]byte, error) {
+	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowImagesTag, tag, reverse, limit, offset)
+}
+
+// ReadAllImagesByTag returns the complete list of Images, sorted chronologically by CreatedAt timestamp.
+// Caution: this may be a LOT of data!
+func (s Service) ReadAllImagesByTag(ctx context.Context, tag string) ([]Image, error) {
+	return s.Table.ReadAllEntitiesFromRow(ctx, rowImagesTag, tag)
+}
+
+// ReadAllImagesByTagAsJSON returns the complete list of Images, serialized as JSON.
+// Caution: this may be a LOT of data!
+func (s Service) ReadAllImagesByTagAsJSON(ctx context.Context, tag string) ([]byte, error) {
+	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowImagesTag, tag)
+}
+
+//------------------------------------------------------------------------------
+// Images by Status
+//------------------------------------------------------------------------------
+
+// ReadAllStatuses returns a complete, alphabetical Status list for which there are Images in the Image table.
+func (s Service) ReadAllStatuses(ctx context.Context) ([]string, error) {
+	return s.Table.ReadAllPartKeyValues(ctx, rowImagesStatus)
+}
+
+// ReadImagesByStatus returns paginated Images by Status. Sorting is chronological (or reverse).
+// The offset is the ID of the last Image returned in a previous request.
+func (s Service) ReadImagesByStatus(ctx context.Context, status string, reverse bool, limit int, offset string) ([]Image, error) {
+	return s.Table.ReadEntitiesFromRow(ctx, rowImagesStatus, status, reverse, limit, offset)
+}
+
+// ReadImagesByStatusAsJSON returns paginated JSON Images by Status. Sorting is chronological (or reverse).
+// The offset is the ID of the last Image returned in a previous request.
+func (s Service) ReadImagesByStatusAsJSON(ctx context.Context, status string, reverse bool, limit int, offset string) ([]byte, error) {
+	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowImagesStatus, status, reverse, limit, offset)
+}
+
+// ReadAllImagesByStatus returns the complete list of Images, sorted chronologically by CreatedAt timestamp.
+// Caution: this may be a LOT of data!
+func (s Service) ReadAllImagesByStatus(ctx context.Context, status string) ([]Image, error) {
+	return s.Table.ReadAllEntitiesFromRow(ctx, rowImagesStatus, status)
+}
+
+// ReadAllImagesByStatusAsJSON returns the complete list of Images, serialized as JSON.
+// Caution: this may be a LOT of data!
+func (s Service) ReadAllImagesByStatusAsJSON(ctx context.Context, status string) ([]byte, error) {
+	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowImagesStatus, status)
 }
 
 //------------------------------------------------------------------------------
@@ -673,76 +758,6 @@ func (s Service) FindSimilarImages(ctx context.Context, pHash string, maxDistanc
 	return results, nil
 }
 
-//------------------------------------------------------------------------------
-// Images by Tag
-//------------------------------------------------------------------------------
-
-// ReadAllTags returns a complete, alphabetical Tag list for which there are Images in the Image table.
-func (s Service) ReadAllTags(ctx context.Context) ([]string, error) {
-	return s.Table.ReadAllPartKeyValues(ctx, rowImagesTag)
-}
-
-// ReadImagesByTag returns paginated Images by Tag. Sorting is chronological (or reverse).
-// The offset is the ID of the last Image returned in a previous request.
-func (s Service) ReadImagesByTag(ctx context.Context, tag string, reverse bool, limit int, offset string) ([]Image, error) {
-	return s.Table.ReadEntitiesFromRow(ctx, rowImagesTag, tag, reverse, limit, offset)
-}
-
-// ReadImagesByTagAsJSON returns paginated JSON Images by Tag. Sorting is chronological (or reverse).
-// The offset is the ID of the last Image returned in a previous request.
-func (s Service) ReadImagesByTagAsJSON(ctx context.Context, tag string, reverse bool, limit int, offset string) ([]byte, error) {
-	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowImagesTag, tag, reverse, limit, offset)
-}
-
-// ReadAllImagesByTag returns the complete list of Images, sorted chronologically by CreatedAt timestamp.
-// Caution: this may be a LOT of data!
-func (s Service) ReadAllImagesByTag(ctx context.Context, tag string) ([]Image, error) {
-	return s.Table.ReadAllEntitiesFromRow(ctx, rowImagesTag, tag)
-}
-
-// ReadAllImagesByTagAsJSON returns the complete list of Images, serialized as JSON.
-// Caution: this may be a LOT of data!
-func (s Service) ReadAllImagesByTagAsJSON(ctx context.Context, tag string) ([]byte, error) {
-	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowImagesTag, tag)
-}
-
-//------------------------------------------------------------------------------
-// Images by Status
-//------------------------------------------------------------------------------
-
-// ReadAllStatuses returns a complete, alphabetical Status list for which there are Images in the Image table.
-func (s Service) ReadAllStatuses(ctx context.Context) ([]string, error) {
-	return s.Table.ReadAllPartKeyValues(ctx, rowImagesStatus)
-}
-
-// ReadImagesByStatus returns paginated Images by Status. Sorting is chronological (or reverse).
-// The offset is the ID of the last Image returned in a previous request.
-func (s Service) ReadImagesByStatus(ctx context.Context, status string, reverse bool, limit int, offset string) ([]Image, error) {
-	return s.Table.ReadEntitiesFromRow(ctx, rowImagesStatus, status, reverse, limit, offset)
-}
-
-// ReadImagesByStatusAsJSON returns paginated JSON Images by Status. Sorting is chronological (or reverse).
-// The offset is the ID of the last Image returned in a previous request.
-func (s Service) ReadImagesByStatusAsJSON(ctx context.Context, status string, reverse bool, limit int, offset string) ([]byte, error) {
-	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowImagesStatus, status, reverse, limit, offset)
-}
-
-// ReadAllImagesByStatus returns the complete list of Images, sorted chronologically by CreatedAt timestamp.
-// Caution: this may be a LOT of data!
-func (s Service) ReadAllImagesByStatus(ctx context.Context, status string) ([]Image, error) {
-	return s.Table.ReadAllEntitiesFromRow(ctx, rowImagesStatus, status)
-}
-
-// ReadAllImagesByStatusAsJSON returns the complete list of Images, serialized as JSON.
-// Caution: this may be a LOT of data!
-func (s Service) ReadAllImagesByStatusAsJSON(ctx context.Context, status string) ([]byte, error) {
-	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowImagesStatus, status)
-}
-
-//==============================================================================
-// Miscellaneous
-//==============================================================================
-
 // PHashDistance returns the number of bits that are different between two perceptual hash values.
 func PHashDistance(h1, h2 string) (int, error) {
 	if h1 == "" || h2 == "" {
@@ -760,50 +775,4 @@ func PHashDistance(h1, h2 string) (int, error) {
 		return 100, fmt.Errorf("image distance: error parsing pHash %s: %w", h2, err)
 	}
 	return phash.Distance(pHash1, pHash2), nil
-}
-
-// filterTextValues filters a slice of TextValues using a case-insensitive query string.
-// The query string is split into words, and the words are compared with the value in the TextValue.
-// If anyMatch is true, then a TextValue is included if any of the words are found (OR filter).
-// If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
-// The filtered results are sorted alphabetically by value, not by ID.
-func filterTextValues(textValues []v.TextValue, contains string, anyMatch bool) []v.TextValue {
-	var filtered []v.TextValue
-	terms := strings.Fields(strings.ToLower(contains))
-	if len(terms) == 0 {
-		return filtered
-	}
-	for _, tv := range textValues {
-		if anyMatch {
-			if containsAny(strings.ToLower(tv.Value), terms) {
-				filtered = append(filtered, tv)
-			}
-		} else {
-			if containsAll(strings.ToLower(tv.Value), terms) {
-				filtered = append(filtered, tv)
-			}
-		}
-	}
-	sort.Slice(filtered, func(i, j int) bool {
-		return filtered[i].Value < filtered[j].Value
-	})
-	return filtered
-}
-
-func containsAny(text string, terms []string) bool {
-	for _, term := range terms {
-		if strings.Contains(text, term) {
-			return true
-		}
-	}
-	return false
-}
-
-func containsAll(text string, terms []string) bool {
-	for _, term := range terms {
-		if !strings.Contains(text, term) {
-			return false
-		}
-	}
-	return true
 }

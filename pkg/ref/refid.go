@@ -2,6 +2,7 @@ package ref
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/voxtechnica/tuid-go"
@@ -9,9 +10,9 @@ import (
 
 // RefID represents a reference to a specific entity. If the VersionID is empty, the
 // reference is to the latest version of the entity. The segments are hyphenated, as
-// in "Chapter-9Jbuygs7UM87hafJ" or "Chapter-9Jbuygs7UM87hafJ-9Jbv7xzh2rF9DClo".
+// in "Content-9Jbuygs7UM87hafJ" or "Content-9Jbuygs7UM87hafJ-9Jbv7xzh2rF9DClo".
 type RefID struct {
-	EntityType string `json:"entityType"` // Entity type (e.g. "Chapter")
+	EntityType string `json:"entityType"` // Entity type (e.g. "Content")
 	EntityID   string `json:"entityId"`   // Entity ID (a TUID)
 	VersionID  string `json:"versionId"`  // Version ID (a TUID; optional)
 }
@@ -36,6 +37,28 @@ func (r RefID) String() string {
 		return r.EntityType + "-" + r.EntityID
 	}
 	return r.EntityType + "-" + r.EntityID + "-" + r.VersionID
+}
+
+// NewRefID creates a new RefID from the given entity type and ID. If the version ID is
+// empty, the reference is to the latest (or only) version of the entity.
+func NewRefID(entityType, entityID, versionID string) (RefID, error) {
+	var r RefID
+	if entityType == "" || entityID == "" {
+		return r, errors.New("entity type is required")
+	}
+	r.EntityType = entityType
+	if entityID == "" {
+		return r, errors.New("entity ID is required")
+	}
+	if !tuid.IsValid(tuid.TUID(entityID)) {
+		return r, fmt.Errorf("entity ID %s is invalid", entityID)
+	}
+	r.EntityID = entityID
+	if versionID != "" && !tuid.IsValid(tuid.TUID(versionID)) {
+		return r, fmt.Errorf("version ID %s is invalid", versionID)
+	}
+	r.VersionID = versionID
+	return r, nil
 }
 
 // Parse parses a string representation of a RefID.

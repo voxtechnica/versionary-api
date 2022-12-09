@@ -6,6 +6,7 @@ import (
 	"net/mail"
 	"strings"
 	"time"
+	"versionary-api/pkg/ref"
 
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
@@ -35,6 +36,12 @@ type User struct {
 // Type returns the entity type of the User.
 func (u User) Type() string {
 	return "User"
+}
+
+// RefID returns the Reference ID of the entity.
+func (u User) RefID() ref.RefID {
+	r, _ := ref.NewRefID(u.Type(), u.ID, u.VersionID)
+	return r
 }
 
 // CompressedJSON returns a compressed JSON representation of the User.

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +13,7 @@ import (
 
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/org"
+	"versionary-api/pkg/ref"
 )
 
 // registerOrganizationRoutes initializes the Organization routes.
@@ -25,6 +27,8 @@ func registerOrganizationRoutes(r *gin.Engine) {
 	r.HEAD("/v1/organizations/:id/versions/:versionid", existsOrganizationVersion)
 	r.PUT("/v1/organizations/:id", roleAuthorizer("admin"), updateOrganization)
 	r.DELETE("/v1/organizations/:id", roleAuthorizer("admin"), deleteOrganization)
+	r.DELETE("/v1/organizations/:id/versions/:versionid", roleAuthorizer("admin"), deleteOrganizationVersion)
+	r.GET("/v1/organization_names", roleAuthorizer("admin"), readOrganizationNames)
 	r.GET("/v1/organization_statuses", roleAuthorizer("admin"), readOrganizationStatuses)
 }
 
@@ -441,6 +445,132 @@ func deleteOrganization(c *gin.Context) {
 	})
 	// Return the deleted organization
 	c.JSON(http.StatusOK, o)
+}
+
+// deleteOrganizationVersion deletes the specified Organization version.
+//
+// @Description Delete Organization Version
+// @Description Delete and return the specified Organization version.
+// @Tags Organization
+// @Produce json
+// @Param authorization header string true "OAuth Bearer Token (Administrator)"
+// @Param id path string true "Organization ID"
+// @Param versionid path string true "Organization Version ID"
+// @Success 200 {object} org.Organization "Organization version that was deleted"
+// @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
+// @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
+// @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
+// @Failure 404 {object} APIEvent "Not Found"
+// @Failure 500 {object} APIEvent "Internal Server Error"
+// @Router /v1/organizations/{id}/versions/{versionid} [delete]
+func deleteOrganizationVersion(c *gin.Context) {
+	// Validate the path parameter ID
+	id := c.Param("id")
+	versionid := c.Param("versionid")
+	refID, err := ref.NewRefID(api.OrgService.EntityType, id, versionid)
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %w", err))
+		return
+	}
+	// Delete the specified Organization version
+	d, err := api.OrgService.DeleteVersion(c, id, versionid)
+	if err != nil && errors.Is(err, v.ErrNotFound) {
+		abortWithError(c, http.StatusNotFound, fmt.Errorf("not found: %s", refID))
+		return
+	}
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityID:   id,
+			EntityType: api.OrgService.EntityType,
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("delete %s: %w", refID, err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	// Log the deletion
+	_, _, _ = api.EventService.Create(c, event.Event{
+		UserID:     contextUserID(c),
+		EntityID:   d.ID,
+		EntityType: d.Type(),
+		LogLevel:   event.INFO,
+		Message:    "deleted " + d.RefID().String(),
+		URI:        c.Request.URL.String(),
+	})
+	// Return the deleted organization
+	c.JSON(http.StatusOK, d)
+}
+
+// readOrganizationNames returns a list of Organization IDs and Names.
+//
+// @Description List Organization IDs and Names
+// @Description List Organization IDs and Names, paging with reverse, limit, and offset.
+// @Description Optionally, filter results with search terms.
+// @Tags Organization
+// @Produce json
+// @Param authorization header string true "OAuth Bearer Token (Administrator)"
+// @Param search query string false "Search Terms, separated by spaces"
+// @Param any query bool false "Any Match? (default: false; all search terms must match)"
+// @Param sorted query bool false "Sort by Name? (not paginated; default: false)"
+// @Param reverse query bool false "Reverse Order (default: false)"
+// @Param limit query int false "Limit (omit for all)"
+// @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
+// @Success 200 {array} v.TextValue "Organization IDs and Names"
+// @Failure 400 {object} APIEvent "Bad Request (invalid parameter)"
+// @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
+// @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
+// @Failure 500 {object} APIEvent "Internal Server Error"
+// @Router /v1/organization_names [get]
+func readOrganizationNames(c *gin.Context) {
+	// Parse query parameters, with defaults
+	reverse, limit, offset, err := paginationParams(c, false, 1000)
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, err)
+		return
+	}
+	// Search query parameters
+	search := c.Query("search")
+	anyMatch, err := strconv.ParseBool(c.DefaultQuery("any", "false"))
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid parameter, any: %w", err))
+		return
+	}
+	// Sorting query parameters
+	sortByValue, err := strconv.ParseBool(c.DefaultQuery("sorted", "false"))
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid parameter, sorted: %w", err))
+		return
+	}
+	all := sortByValue || c.Query("limit") == ""
+	// Read and return the Organization IDs and Names
+	var names []v.TextValue
+	var errMessage string
+	if search != "" {
+		errMessage = fmt.Sprintf("search (%s) organization names", search)
+		names, err = api.OrgService.FilterNames(c, search, anyMatch)
+	} else if all {
+		errMessage = "read all organization names"
+		names, err = api.OrgService.ReadAllNames(c, sortByValue)
+	} else {
+		errMessage = fmt.Sprintf("read %d organization names", limit)
+		names, err = api.OrgService.ReadNames(c, reverse, limit, offset)
+	}
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityType: api.OrgService.EntityType,
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("%s: %w", errMessage, err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	c.JSON(http.StatusOK, names)
 }
 
 // readOrganizationStatuses returns a list of status codes for which organizations exist.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/mail"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -12,6 +13,7 @@ import (
 	v "github.com/voxtechnica/versionary"
 
 	"versionary-api/pkg/event"
+	"versionary-api/pkg/ref"
 	"versionary-api/pkg/user"
 )
 
@@ -26,8 +28,11 @@ func registerUserRoutes(r *gin.Engine) {
 	r.HEAD("/v1/users/:id/versions/:versionid", existsUserVersion)
 	r.PUT("/v1/users/:id", updateUser)
 	r.DELETE("/v1/users", deleteUser)
+	r.DELETE("/v1/users/:id/versions/:versionid", roleAuthorizer("admin"), deleteUserVersion)
+	r.GET("/v1/user_ids", readUserIDs)
+	r.GET("/v1/user_names", roleAuthorizer("admin"), readUserNames)
 	r.GET("/v1/user_emails", roleAuthorizer("admin"), readUserEmails)
-	r.GET("/v1/user_org_ids", roleAuthorizer("admin"), readUserOrgIDs)
+	r.GET("/v1/user_orgs", roleAuthorizer("admin"), readUserOrgs)
 	r.GET("/v1/user_roles", roleAuthorizer("admin"), readUserRoles)
 	r.GET("/v1/user_statuses", roleAuthorizer("admin"), readUserStatuses)
 }
@@ -619,6 +624,175 @@ func deleteUser(c *gin.Context) {
 	c.JSON(http.StatusOK, u)
 }
 
+// deleteUserVersion deletes the specified User version.
+//
+// @Description Delete User Version
+// @Description Delete and return the specified User Version.
+// @Tags User
+// @Produce json
+// @Param authorization header string true "OAuth Bearer Token (Administrator)"
+// @Param id path string true "User ID"
+// @Param versionid path string true "User Version ID"
+// @Success 200 {object} user.User "User version that was deleted"
+// @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
+// @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
+// @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
+// @Failure 404 {object} APIEvent "Not Found"
+// @Failure 500 {object} APIEvent "Internal Server Error"
+// @Router /v1/users/{id}/versions/{versionid} [delete]
+func deleteUserVersion(c *gin.Context) {
+	// Validate the path parameter ID
+	id := c.Param("id")
+	versionid := c.Param("versionid")
+	refID, err := ref.NewRefID(api.UserService.EntityType, id, versionid)
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %w", err))
+		return
+	}
+	// Delete the specified User version
+	d, err := api.UserService.DeleteVersion(c, id, versionid)
+	if err != nil && errors.Is(err, v.ErrNotFound) {
+		abortWithError(c, http.StatusNotFound, fmt.Errorf("not found: %s", refID))
+		return
+	}
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityID:   id,
+			EntityType: api.UserService.EntityType,
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("delete %s: %w", refID, err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	// Log the deletion
+	_, _, _ = api.EventService.Create(c, event.Event{
+		UserID:     contextUserID(c),
+		EntityID:   d.ID,
+		EntityType: d.Type(),
+		LogLevel:   event.INFO,
+		Message:    "deleted " + d.RefID().String(),
+		URI:        c.Request.URL.String(),
+	})
+	// Return the deleted User
+	c.JSON(http.StatusOK, d)
+}
+
+// readUserIDs returns a list of User IDs for a given email address.
+// It's primary function is to check for duplicate email addresses.
+//
+// @Description List User IDs for Email Address
+// @Description List User IDs for a given email address.
+// @Tags User
+// @Produce json
+// @Param email query string true "Email Address"
+// @Success 200 {array} string "List of User IDs"
+// @Failure 400 {object} APIEvent "Bad Request (invalid query parameter email)"
+// @Failure 500 {object} APIEvent "Internal Server Error"
+// @Router /v1/user_ids [get]
+func readUserIDs(c *gin.Context) {
+	// Validate the query parameter email
+	email := c.Query("email")
+	if email == "" {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: missing required query parameter: email"))
+		return
+	}
+	_, err := mail.ParseAddress(email)
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid query parameter email: %w", err))
+		return
+	}
+	// Get the User IDs
+	ids, err := api.UserService.ReadUserIDsByEmail(c, email)
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityType: api.UserService.EntityType,
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("read User IDs for email %s: %w", email, err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	// Return the User IDs
+	c.JSON(http.StatusOK, ids)
+}
+
+// readUserNames returns a list of User IDs and Names.
+// A "Name" is an RFC 5322 email address (e.g. "Given Family <given.family@example.com>").
+//
+// @Description List User IDs and Names
+// @Description List User IDs and Names, paging with reverse, limit, and offset.
+// @Description Optionally, filter results with search terms.
+// @Tags User
+// @Produce json
+// @Param authorization header string true "OAuth Bearer Token (Administrator)"
+// @Param search query string false "Search Terms, separated by spaces"
+// @Param any query bool false "Any Match? (default: false; all search terms must match)"
+// @Param sorted query bool false "Sort by Name/Email? (not paginated; default: false)"
+// @Param reverse query bool false "Reverse Order (default: false)"
+// @Param limit query int false "Limit (omit for all)"
+// @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
+// @Success 200 {array} v.TextValue "User IDs and Names/Emails"
+// @Failure 400 {object} APIEvent "Bad Request (invalid parameter)"
+// @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
+// @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
+// @Failure 500 {object} APIEvent "Internal Server Error"
+// @Router /v1/user_names [get]
+func readUserNames(c *gin.Context) {
+	// Parse query parameters, with defaults
+	reverse, limit, offset, err := paginationParams(c, false, 1000)
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, err)
+		return
+	}
+	// Search query parameters
+	search := c.Query("search")
+	anyMatch, err := strconv.ParseBool(c.DefaultQuery("any", "false"))
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid parameter, any: %w", err))
+		return
+	}
+	// Sorting query parameters
+	sortByValue, err := strconv.ParseBool(c.DefaultQuery("sorted", "false"))
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid parameter, sorted: %w", err))
+		return
+	}
+	all := sortByValue || c.Query("limit") == ""
+	// Read and return the User IDs and Names/Emails
+	var names []v.TextValue
+	var errMessage string
+	if search != "" {
+		errMessage = fmt.Sprintf("search (%s) user names", search)
+		names, err = api.UserService.FilterNames(c, search, anyMatch)
+	} else if all {
+		errMessage = "read all user names"
+		names, err = api.UserService.ReadAllNames(c, sortByValue)
+	} else {
+		errMessage = fmt.Sprintf("read %d user names", limit)
+		names, err = api.UserService.ReadNames(c, reverse, limit, offset)
+	}
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityType: api.UserService.EntityType,
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("%s: %w", errMessage, err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	c.JSON(http.StatusOK, names)
+}
+
 // readUserEmails returns a list of email addresses for which users exist.
 //
 // @Description List User Email Addresses
@@ -658,34 +832,60 @@ func readUserEmails(c *gin.Context) {
 	c.JSON(http.StatusOK, emails)
 }
 
-// readUserOrgIDs returns a list of Organization IDs for which users exist.
+// readUserOrgs returns a list of Organization ID/Name pairs for which users exist.
 // It's useful for paging through users by organization.
 //
-// @Description List User Organization IDs
-// @Description Get a list of Organization IDs for which users exist.
+// @Description List User Organization ID/Name pairs
+// @Description Get a list of Organization ID/Name pairs for which users exist.
 // @Tags User
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
-// @Success 200 {array} string "Organization IDs"
+// @Param sorted query bool false "Sort by Organization Name? (not paginated; default: false)"
+// @Param reverse query bool false "Reverse Order (default: false)"
+// @Param limit query int false "Limit (omit for all)"
+// @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
+// @Success 200 {array} v.TextValue "Organization ID/Name pairs"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
 // @Failure 500 {object} APIEvent "Internal Server Error"
-// @Router /v1/user_org_ids [get]
-func readUserOrgIDs(c *gin.Context) {
-	ids, err := api.UserService.ReadAllOrgIDs(c)
+// @Router /v1/user_orgs [get]
+func readUserOrgs(c *gin.Context) {
+	// Parse query parameters, with defaults
+	reverse, limit, offset, err := paginationParams(c, false, 1000)
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, err)
+		return
+	}
+	// Sorting query parameters
+	sortByValue, err := strconv.ParseBool(c.DefaultQuery("sorted", "false"))
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid parameter, sorted: %w", err))
+		return
+	}
+	all := sortByValue || c.Query("limit") == ""
+	// Read and return the Organization IDs and Names
+	var orgs []v.TextValue
+	var errMessage string
+	if all {
+		errMessage = "read all user organizations"
+		orgs, err = api.UserService.ReadAllOrgs(c, sortByValue)
+	} else {
+		errMessage = fmt.Sprintf("read %d user organizations", limit)
+		orgs, err = api.UserService.ReadOrgs(c, reverse, limit, offset)
+	}
 	if err != nil {
 		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
-			EntityType: "User",
+			EntityType: api.UserService.EntityType,
 			LogLevel:   event.ERROR,
-			Message:    fmt.Errorf("read user organization ids: %w", err).Error(),
+			Message:    fmt.Errorf("%s: %w", errMessage, err).Error(),
 			URI:        c.Request.URL.String(),
 			Err:        err,
 		})
 		abortWithError(c, http.StatusInternalServerError, e)
 		return
 	}
-	c.JSON(http.StatusOK, ids)
+	c.JSON(http.StatusOK, orgs)
 }
 
 // readUserRoles returns a list of roles for which users exist.

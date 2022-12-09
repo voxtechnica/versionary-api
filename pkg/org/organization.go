@@ -3,9 +3,10 @@ package org
 import (
 	"strings"
 	"time"
+	"versionary-api/pkg/ref"
 
 	"github.com/voxtechnica/tuid-go"
-	v "github.com/voxtechnica/versionary"
+	"github.com/voxtechnica/versionary"
 )
 
 type Organization struct {
@@ -22,9 +23,15 @@ func (o Organization) Type() string {
 	return "Organization"
 }
 
+// RefID returns the Reference ID of the entity.
+func (o Organization) RefID() ref.RefID {
+	r, _ := ref.NewRefID(o.Type(), o.ID, o.VersionID)
+	return r
+}
+
 // CompressedJSON returns a compressed JSON representation of the Organization.
 func (o Organization) CompressedJSON() []byte {
-	j, err := v.ToCompressedJSON(o)
+	j, err := versionary.ToCompressedJSON(o)
 	if err != nil {
 		return nil
 	}
@@ -52,7 +59,7 @@ func (o Organization) Validate() []string {
 		problems = append(problems, "Name is missing")
 	}
 	if o.Status == "" || !o.Status.IsValid() {
-		statuses := v.Map(Statuses, func(s Status) string { return string(s) })
+		statuses := versionary.Map(Statuses, func(s Status) string { return string(s) })
 		expected := strings.Join(statuses, ", ")
 		problems = append(problems, "Status is missing or invalid. Expecting: "+expected)
 	}

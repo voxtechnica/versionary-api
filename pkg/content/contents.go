@@ -3,11 +3,12 @@ package content
 import (
 	"context"
 	"fmt"
+	"strings"
+	"versionary-api/pkg/util"
+
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
-	"sort"
-	"strings"
 )
 
 //==============================================================================
@@ -19,7 +20,8 @@ var rowContents = v.TableRow[Content]{
 	RowName:      "contents_version",
 	PartKeyName:  "id",
 	PartKeyValue: func(c Content) string { return c.ID },
-	SortKeyName:  "update_id",
+	PartKeyLabel: func(c Content) string { return c.Title() },
+	SortKeyName:  "version_id",
 	SortKeyValue: func(c Content) string { return c.VersionID },
 	JsonValue:    func(c Content) []byte { return c.CompressedJSON() },
 }
@@ -37,11 +39,22 @@ var rowContentTitlesType = v.TableRow[Content]{
 // rowContentTitlesAuthor is a TableRow definition for searching/browsing Content titles by Author
 var rowContentTitlesAuthor = v.TableRow[Content]{
 	RowName:       "content_titles_author",
-	PartKeyName:   "type",
+	PartKeyName:   "author",
 	PartKeyValues: func(c Content) []string { return c.AuthorNames() },
 	SortKeyName:   "id",
 	SortKeyValue:  func(c Content) string { return c.ID },
 	TextValue:     func(c Content) string { return c.Title() },
+}
+
+// rowContentTitlesEditor is a TableRow definition for searching/browsing Content titles by Editor
+var rowContentTitlesEditor = v.TableRow[Content]{
+	RowName:      "content_titles_editor",
+	PartKeyName:  "editor_id",
+	PartKeyValue: func(c Content) string { return c.EditorID },
+	PartKeyLabel: func(c Content) string { return c.EditorName },
+	SortKeyName:  "id",
+	SortKeyValue: func(c Content) string { return c.ID },
+	TextValue:    func(c Content) string { return c.Title() },
 }
 
 // rowContentTitlesTag is a TableRow definition for searching/browsing Content titles by Tag.
@@ -68,6 +81,7 @@ func NewTable(dbClient *dynamodb.Client, env string) v.Table[Content] {
 		IndexRows: map[string]v.TableRow[Content]{
 			rowContentTitlesType.RowName:   rowContentTitlesType,
 			rowContentTitlesAuthor.RowName: rowContentTitlesAuthor,
+			rowContentTitlesEditor.RowName: rowContentTitlesEditor,
 			rowContentTitlesTag.RowName:    rowContentTitlesTag,
 		},
 	}
@@ -86,6 +100,37 @@ func NewMemTable(table v.Table[Content]) v.MemTable[Content] {
 type Service struct {
 	EntityType string
 	Table      v.TableReadWriter[Content]
+}
+
+// NewService creates a new Content service backed by a Versionary Table for the specified environment.
+func NewService(dbClient *dynamodb.Client, env string) Service {
+	table := NewTable(dbClient, env)
+	return Service{
+		EntityType: table.TableName,
+		Table:      table,
+	}
+}
+
+// NewMockService creates a new Content service backed by an in-memory table for testing purposes.
+func NewMockService(env string) Service {
+	table := NewMemTable(NewTable(nil, env))
+	return Service{
+		EntityType: table.TableName,
+		Table:      table,
+	}
+}
+
+// filterTitles returns a filtered list of Content IDs and Titles for a specified row and partition key value.
+// The case-insensitive contains query is split into words, and the words are compared with the value in the TextValue.
+// If anyMatch is true, then a TextValue is included in the results if any of the words are found (OR filter).
+// If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
+// The filtered results are sorted alphabetically by value, not by ID.
+func (s Service) filterTitles(ctx context.Context, row v.TableRow[Content], key string, contains string, anyMatch bool) ([]v.TextValue, error) {
+	filter, err := util.ContainsFilter(contains, anyMatch)
+	if err != nil {
+		return []v.TextValue{}, err
+	}
+	return s.Table.FilterTextValues(ctx, row, key, filter)
 }
 
 //------------------------------------------------------------------------------
@@ -143,6 +188,11 @@ func (s Service) Write(ctx context.Context, c Content) (Content, error) {
 // Delete a Content from the Content table. The deleted Content is returned.
 func (s Service) Delete(ctx context.Context, id string) (Content, error) {
 	return s.Table.DeleteEntityWithID(ctx, id)
+}
+
+// Delete a Content Version from the Content table. The deleted Content is returned.
+func (s Service) DeleteVersion(ctx context.Context, id string, versionID string) (Content, error) {
+	return s.Table.DeleteEntityVersionWithID(ctx, id, versionID)
 }
 
 // Exists checks if a Content exists in the Content table.
@@ -211,6 +261,31 @@ func (s Service) ReadAllContentIDs(ctx context.Context) ([]string, error) {
 	return s.Table.ReadAllEntityIDs(ctx)
 }
 
+// ReadTitles returns a paginated list of Content IDs and titles in the Content table.
+// Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
+func (s Service) ReadTitles(ctx context.Context, reverse bool, limit int, offset string) ([]v.TextValue, error) {
+	return s.Table.ReadEntityLabels(ctx, reverse, limit, offset)
+}
+
+// ReadAllTitles returns all Content IDs and titles in the Content table.
+// Caution: this may be a LOT of data!
+func (s Service) ReadAllTitles(ctx context.Context, sortByValue bool) ([]v.TextValue, error) {
+	return s.Table.ReadAllEntityLabels(ctx, sortByValue)
+}
+
+// FilterTitles returns a filtered list of Content IDs and titles in the Content table.
+// The case-insensitive contains query is split into words, and the words are compared with the value in the TextValue.
+// If anyMatch is true, then a TextValue is included in the results if any of the words are found (OR filter).
+// If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
+// The filtered results are sorted alphabetically by value, not by ID.
+func (s Service) FilterTitles(ctx context.Context, contains string, anyMatch bool) ([]v.TextValue, error) {
+	filter, err := util.ContainsFilter(contains, anyMatch)
+	if err != nil {
+		return []v.TextValue{}, err
+	}
+	return s.Table.FilterEntityLabels(ctx, filter)
+}
+
 // ReadContents returns a paginated list of Contents in the Content table.
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
 // Note that this is a best-effort attempt to return the requested Contents, retrieved individually, in parallel.
@@ -243,12 +318,12 @@ func (s Service) ReadAllTitlesByType(ctx context.Context, t string, sortByValue 
 }
 
 // FilterTitlesByType returns a filtered list of Content IDs and Titles for a given Content type.
+// The case-insensitive contains query is split into words, and the words are compared with the value in the TextValue.
+// If anyMatch is true, then a TextValue is included in the results if any of the words are found (OR filter).
+// If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
+// The filtered results are sorted alphabetically by value, not by ID.
 func (s Service) FilterTitlesByType(ctx context.Context, t string, contains string, anyMatch bool) ([]v.TextValue, error) {
-	titles, err := s.ReadAllTitlesByType(ctx, t, false)
-	if err != nil {
-		return titles, fmt.Errorf("filter content titles by type: %w", err)
-	}
-	return filterTextValues(titles, contains, anyMatch), nil
+	return s.filterTitles(ctx, rowContentTitlesType, t, contains, anyMatch)
 }
 
 //------------------------------------------------------------------------------
@@ -271,12 +346,58 @@ func (s Service) ReadAllTitlesByAuthor(ctx context.Context, a string, sortByValu
 }
 
 // FilterTitlesByAuthor returns a filtered list of Content IDs and Titles for a given Content author.
-func (s Service) FilterTitlesByAuthor(ctx context.Context, t string, contains string, anyMatch bool) ([]v.TextValue, error) {
-	titles, err := s.ReadAllTitlesByAuthor(ctx, t, false)
+// The case-insensitive contains query is split into words, and the words are compared with the value in the TextValue.
+// If anyMatch is true, then a TextValue is included in the results if any of the words are found (OR filter).
+// If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
+// The filtered results are sorted alphabetically by value, not by ID.
+func (s Service) FilterTitlesByAuthor(ctx context.Context, a string, contains string, anyMatch bool) ([]v.TextValue, error) {
+	return s.filterTitles(ctx, rowContentTitlesAuthor, a, contains, anyMatch)
+}
+
+//------------------------------------------------------------------------------
+// Content Titles by Editor
+//------------------------------------------------------------------------------
+
+// ReadAllEditorIDs returns all Content editor IDs in the Content table.
+func (s Service) ReadAllEditorIDs(ctx context.Context) ([]string, error) {
+	return s.Table.ReadAllPartKeyValues(ctx, rowContentTitlesEditor)
+}
+
+// ReadAllEditorNames returns all Content editors (userID and name) in the Content table.
+func (s Service) ReadAllEditorNames(ctx context.Context, sortByValue bool) ([]v.TextValue, error) {
+	return s.Table.ReadAllPartKeyLabels(ctx, rowContentTitlesEditor, sortByValue)
+}
+
+// FilterEditorNames returns a filtered list of Content editor IDs and names.
+// The case-insensitive contains query is split into words, and the words are compared with the value in the TextValue.
+// If anyMatch is true, then a TextValue is included in the results if any of the words are found (OR filter).
+// If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
+// The filtered results are sorted alphabetically by value, not by ID.
+func (s Service) FilterEditorNames(ctx context.Context, contains string, anyMatch bool) ([]v.TextValue, error) {
+	filter, err := util.ContainsFilter(contains, anyMatch)
 	if err != nil {
-		return titles, fmt.Errorf("filter content titles by author: %w", err)
+		return []v.TextValue{}, err
 	}
-	return filterTextValues(titles, contains, anyMatch), nil
+	return s.Table.FilterPartKeyLabels(ctx, rowContentTitlesEditor, filter)
+}
+
+// ReadTitlesByEditorID returns a paginated list of Content IDs and Titles for a given Content editor.
+func (s Service) ReadTitlesByEditorID(ctx context.Context, editorID string, reverse bool, limit int, offset string) ([]v.TextValue, error) {
+	return s.Table.ReadTextValues(ctx, rowContentTitlesEditor, editorID, reverse, limit, offset)
+}
+
+// ReadAllTitlesByEditorID returns all Content IDs and Titles for a given Content editor.
+func (s Service) ReadAllTitlesByEditorID(ctx context.Context, editorID string, sortByValue bool) ([]v.TextValue, error) {
+	return s.Table.ReadAllTextValues(ctx, rowContentTitlesEditor, editorID, sortByValue)
+}
+
+// FilterTitlesByEditorID returns a filtered list of Content IDs and Titles for a given Content editor.
+// The case-insensitive contains query is split into words, and the words are compared with the value in the TextValue.
+// If anyMatch is true, then a TextValue is included in the results if any of the words are found (OR filter).
+// If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
+// The filtered results are sorted alphabetically by value, not by ID.
+func (s Service) FilterTitlesByEditorID(ctx context.Context, editorID string, contains string, anyMatch bool) ([]v.TextValue, error) {
+	return s.filterTitles(ctx, rowContentTitlesEditor, editorID, contains, anyMatch)
 }
 
 //------------------------------------------------------------------------------
@@ -289,70 +410,20 @@ func (s Service) ReadAllTags(ctx context.Context) ([]string, error) {
 }
 
 // ReadTitlesByTag returns a paginated list of Content IDs and Titles for a given Content tag.
-func (s Service) ReadTitlesByTag(ctx context.Context, t string, reverse bool, limit int, offset string) ([]v.TextValue, error) {
-	return s.Table.ReadTextValues(ctx, rowContentTitlesTag, t, reverse, limit, offset)
+func (s Service) ReadTitlesByTag(ctx context.Context, tag string, reverse bool, limit int, offset string) ([]v.TextValue, error) {
+	return s.Table.ReadTextValues(ctx, rowContentTitlesTag, tag, reverse, limit, offset)
 }
 
 // ReadAllTitlesByTag returns all Content IDs and Titles for a given Content tag.
-func (s Service) ReadAllTitlesByTag(ctx context.Context, t string, sortByValue bool) ([]v.TextValue, error) {
-	return s.Table.ReadAllTextValues(ctx, rowContentTitlesTag, t, sortByValue)
+func (s Service) ReadAllTitlesByTag(ctx context.Context, tag string, sortByValue bool) ([]v.TextValue, error) {
+	return s.Table.ReadAllTextValues(ctx, rowContentTitlesTag, tag, sortByValue)
 }
 
 // FilterTitlesByTag returns a filtered list of Content IDs and Titles for a given Content tag.
-func (s Service) FilterTitlesByTag(ctx context.Context, t string, contains string, anyMatch bool) ([]v.TextValue, error) {
-	titles, err := s.ReadAllTitlesByTag(ctx, t, false)
-	if err != nil {
-		return titles, fmt.Errorf("filter content titles by tag: %w", err)
-	}
-	return filterTextValues(titles, contains, anyMatch), nil
-}
-
-//==============================================================================
-// Miscellaneous
-//==============================================================================
-
-// filterTextValues filters a slice of TextValues using a case-insensitive query string.
-// The query string is split into words, and the words are compared with the value in the TextValue.
-// If anyMatch is true, then a TextValue is included if any of the words are found (OR filter).
+// The case-insensitive contains query is split into words, and the words are compared with the value in the TextValue.
+// If anyMatch is true, then a TextValue is included in the results if any of the words are found (OR filter).
 // If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
 // The filtered results are sorted alphabetically by value, not by ID.
-func filterTextValues(textValues []v.TextValue, contains string, anyMatch bool) []v.TextValue {
-	var filtered []v.TextValue
-	terms := strings.Fields(strings.ToLower(contains))
-	if len(terms) == 0 {
-		return filtered
-	}
-	for _, tv := range textValues {
-		if anyMatch {
-			if containsAny(strings.ToLower(tv.Value), terms) {
-				filtered = append(filtered, tv)
-			}
-		} else {
-			if containsAll(strings.ToLower(tv.Value), terms) {
-				filtered = append(filtered, tv)
-			}
-		}
-	}
-	sort.Slice(filtered, func(i, j int) bool {
-		return filtered[i].Value < filtered[j].Value
-	})
-	return filtered
-}
-
-func containsAny(text string, terms []string) bool {
-	for _, term := range terms {
-		if strings.Contains(text, term) {
-			return true
-		}
-	}
-	return false
-}
-
-func containsAll(text string, terms []string) bool {
-	for _, term := range terms {
-		if !strings.Contains(text, term) {
-			return false
-		}
-	}
-	return true
+func (s Service) FilterTitlesByTag(ctx context.Context, tag string, contains string, anyMatch bool) ([]v.TextValue, error) {
+	return s.filterTitles(ctx, rowContentTitlesTag, tag, contains, anyMatch)
 }

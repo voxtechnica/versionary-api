@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/voxtechnica/tuid-go"
@@ -11,6 +12,8 @@ import (
 
 	"versionary-api/pkg/device"
 	"versionary-api/pkg/event"
+	"versionary-api/pkg/ref"
+	"versionary-api/pkg/util"
 )
 
 // registerDeviceRoutes initializes the Device routes.
@@ -18,12 +21,14 @@ func registerDeviceRoutes(r *gin.Engine) {
 	r.POST("/v1/devices", createDevice)
 	r.PUT("/v1/devices/:id", updateDevice)
 	r.DELETE("/v1/devices/:id", roleAuthorizer("admin"), deleteDevice)
+	r.DELETE("/v1/devices/:id/versions/:versionid", roleAuthorizer("admin"), deleteDeviceVersion)
 	r.GET("/v1/devices", roleAuthorizer("admin"), readDevices)
 	r.GET("/v1/devices/:id", readDevice)
 	r.HEAD("/v1/devices/:id", existsDevice)
 	r.GET("/v1/devices/:id/versions", roleAuthorizer("admin"), readDeviceVersions)
 	r.GET("/v1/devices/:id/versions/:versionid", readDeviceVersion)
 	r.HEAD("/v1/devices/:id/versions/:versionid", existsDeviceVersion)
+	r.GET("/v1/device_agents", roleAuthorizer("admin"), readDeviceAgents)
 	r.GET("/v1/device_dates", roleAuthorizer("admin"), readDeviceDates)
 	r.GET("/v1/device_user_ids", roleAuthorizer("admin"), readDeviceUserIDs)
 	r.GET("/v1/device_counts", roleAuthorizer("admin"), readDeviceCounts)
@@ -194,6 +199,63 @@ func deleteDevice(c *gin.Context) {
 	c.JSON(http.StatusOK, d)
 }
 
+// deleteDeviceVersion deletes the specified Device version.
+//
+// @Description Delete Device Version
+// @Description Delete and return the specified Device Version.
+// @Tags Device
+// @Produce json
+// @Param authorization header string true "OAuth Bearer Token (Administrator)"
+// @Param id path string true "Device ID"
+// @Param versionid path string true "Device Version ID"
+// @Success 200 {object} device.Device "Device version that was deleted"
+// @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
+// @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
+// @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
+// @Failure 404 {object} APIEvent "Not Found"
+// @Failure 500 {object} APIEvent "Internal Server Error"
+// @Router /v1/devices/{id}/versions/{versionid} [delete]
+func deleteDeviceVersion(c *gin.Context) {
+	// Validate the path parameter ID
+	id := c.Param("id")
+	versionid := c.Param("versionid")
+	refID, err := ref.NewRefID(api.DeviceService.EntityType, id, versionid)
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %w", err))
+		return
+	}
+	// Delete the specified Device version
+	d, err := api.DeviceService.DeleteVersion(c, id, versionid)
+	if err != nil && errors.Is(err, v.ErrNotFound) {
+		abortWithError(c, http.StatusNotFound, fmt.Errorf("not found: %s", refID))
+		return
+	}
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityID:   id,
+			EntityType: api.DeviceService.EntityType,
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("delete %s: %w", refID, err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	// Log the deletion
+	_, _, _ = api.EventService.Create(c, event.Event{
+		UserID:     contextUserID(c),
+		EntityID:   d.ID,
+		EntityType: d.Type(),
+		LogLevel:   event.INFO,
+		Message:    "deleted " + d.RefID().String(),
+		URI:        c.Request.URL.String(),
+	})
+	// Return the deleted device
+	c.JSON(http.StatusOK, d)
+}
+
 // readDevices returns a paginated list of Devices.
 //
 // @Description List Devices
@@ -220,7 +282,7 @@ func readDevices(c *gin.Context) {
 		return
 	}
 	date := c.Query("date")
-	if date != "" && !device.IsValidDate(date) {
+	if !util.IsValidDate(date) {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid date: %s", date))
 		return
 	}
@@ -454,6 +516,75 @@ func existsDeviceVersion(c *gin.Context) {
 	}
 }
 
+// readDeviceAgents returns a list of Device IDs and UserAgents.
+//
+// @Description List Device IDs and UserAgents
+// @Description List Device IDs and UserAgents, paging with reverse, limit, and offset.
+// @Description Optionally, filter results with search terms.
+// @Tags Device
+// @Produce json
+// @Param authorization header string true "OAuth Bearer Token (Administrator)"
+// @Param search query string false "Search Terms, separated by spaces"
+// @Param any query bool false "Any Match? (default: false; all search terms must match)"
+// @Param sorted query bool false "Sort by UserAgent? (not paginated; default: false)"
+// @Param reverse query bool false "Reverse Order (default: false)"
+// @Param limit query int false "Limit (omit for all)"
+// @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
+// @Success 200 {array} v.TextValue "Device IDs and UserAgents"
+// @Failure 400 {object} APIEvent "Bad Request (invalid parameter)"
+// @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
+// @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
+// @Failure 500 {object} APIEvent "Internal Server Error"
+// @Router /v1/device_agents [get]
+func readDeviceAgents(c *gin.Context) {
+	// Parse query parameters, with defaults
+	reverse, limit, offset, err := paginationParams(c, false, 1000)
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, err)
+		return
+	}
+	// Search query parameters
+	search := c.Query("search")
+	anyMatch, err := strconv.ParseBool(c.DefaultQuery("any", "false"))
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid parameter, any: %w", err))
+		return
+	}
+	// Sorting query parameters
+	sortByValue, err := strconv.ParseBool(c.DefaultQuery("sorted", "false"))
+	if err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid parameter, sorted: %w", err))
+		return
+	}
+	all := sortByValue || c.Query("limit") == ""
+	// Read and return the Device IDs and UserAgents
+	var agents []v.TextValue
+	var errMessage string
+	if search != "" {
+		errMessage = fmt.Sprintf("search (%s) device agents", search)
+		agents, err = api.DeviceService.FilterUserAgents(c, search, anyMatch)
+	} else if all {
+		errMessage = "read all device agents"
+		agents, err = api.DeviceService.ReadAllUserAgents(c, sortByValue)
+	} else {
+		errMessage = fmt.Sprintf("read %d device agents", limit)
+		agents, err = api.DeviceService.ReadUserAgents(c, reverse, limit, offset)
+	}
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityType: api.DeviceService.EntityType,
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("%s: %w", errMessage, err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	c.JSON(http.StatusOK, agents)
+}
+
 // readDeviceDates returns a list of dates for which devices exist.
 // It's useful for paging through devices by date.
 //
@@ -583,7 +714,7 @@ func readDeviceCounts(c *gin.Context) {
 func readDeviceCount(c *gin.Context) {
 	// Validate the path parameter date (YYYY-MM-DD)
 	date := c.Param("date")
-	if !device.IsValidDate(date) {
+	if !util.IsValidDate(date) {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter date: %s", date))
 		return
 	}
@@ -620,7 +751,7 @@ func readDeviceCount(c *gin.Context) {
 // @Router /v1/device_counts/{date} [head]
 func existsDeviceCount(c *gin.Context) {
 	date := c.Param("date")
-	if !device.IsValidDate(date) {
+	if !util.IsValidDate(date) {
 		c.Status(http.StatusBadRequest)
 	} else if !api.DeviceCountService.Exists(c, date) {
 		c.Status(http.StatusNotFound)
@@ -646,7 +777,7 @@ func existsDeviceCount(c *gin.Context) {
 func updateDeviceCount(c *gin.Context) {
 	// Validate the path parameter date (YYYY-MM-DD)
 	date := c.Param("date")
-	if !device.IsValidDate(date) {
+	if !util.IsValidDate(date) {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter date: %s", date))
 		return
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"versionary-api/pkg/util"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/voxtechnica/tuid-go"
@@ -20,6 +21,7 @@ var rowEvents = v.TableRow[Event]{
 	PartKeyName:   "id",
 	PartKeyValue:  func(e Event) string { return e.ID },
 	PartKeyValues: nil,
+	PartKeyLabel:  func(e Event) string { return e.LogMessage() },
 	SortKeyName:   "id",
 	SortKeyValue:  func(e Event) string { return e.ID },
 	JsonValue:     func(e Event) []byte { return e.CompressedJSON() },
@@ -119,6 +121,24 @@ type Service struct {
 	Table      v.TableReadWriter[Event]
 }
 
+// NewService creates a new Event service backed by a Versionary Table for the specified environment.
+func NewService(dbClient *dynamodb.Client, env string) Service {
+	table := NewTable(dbClient, env)
+	return Service{
+		EntityType: table.TableName,
+		Table:      table,
+	}
+}
+
+// NewMockService creates a new Event service backed by an in-memory table for testing purposes.
+func NewMockService(env string) Service {
+	table := NewMemTable(NewTable(nil, env))
+	return Service{
+		EntityType: table.TableName,
+		Table:      table,
+	}
+}
+
 //------------------------------------------------------------------------------
 // Event Versions
 //------------------------------------------------------------------------------
@@ -170,6 +190,25 @@ func (s Service) ReadAsJSON(ctx context.Context, id string) ([]byte, error) {
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
 func (s Service) ReadEventIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
 	return s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
+}
+
+// ReadMessages returns a paginated list of Event IDs and log messages in the Event log.
+// Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
+func (s Service) ReadMessages(ctx context.Context, reverse bool, limit int, offset string) ([]v.TextValue, error) {
+	return s.Table.ReadEntityLabels(ctx, reverse, limit, offset)
+}
+
+// FilterMessages returns a filtered list of Event IDs and log messages in the Event log.
+// The case-insensitive contains query is split into words, and the words are compared with the value in the TextValue.
+// If anyMatch is true, then a TextValue is included in the results if any of the words are found (OR filter).
+// If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
+// The filtered results are sorted alphabetically by value, not by ID.
+func (s Service) FilterMessages(ctx context.Context, contains string, anyMatch bool) ([]v.TextValue, error) {
+	filter, err := util.ContainsFilter(contains, anyMatch)
+	if err != nil {
+		return []v.TextValue{}, err
+	}
+	return s.Table.FilterEntityLabels(ctx, filter)
 }
 
 // ReadEvents returns a paginated list of Events in the Event log.

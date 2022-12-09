@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"versionary-api/pkg/bucket"
 	"versionary-api/pkg/policy"
-
-	b "versionary-api/pkg/bucket"
+	"versionary-api/pkg/ref"
 
 	"github.com/voxtechnica/tuid-go"
-	v "github.com/voxtechnica/versionary"
+	"github.com/voxtechnica/versionary"
 )
 
 // Image provides metadata about an image file in the S3 object store.
@@ -40,6 +40,12 @@ func (i Image) Type() string {
 	return "Image"
 }
 
+// RefID returns the Reference ID of the entity.
+func (i Image) RefID() ref.RefID {
+	r, _ := ref.NewRefID(i.Type(), i.ID, i.VersionID)
+	return r
+}
+
 // Label returns a text label for the Image.
 func (i Image) Label() string {
 	if i.Title != "" {
@@ -60,8 +66,8 @@ func (i Image) FileExt() string {
 }
 
 // FileInfo returns a FileInfo for the Image.
-func (i Image) FileInfo() b.FileInfo {
-	return b.FileInfo{
+func (i Image) FileInfo() bucket.FileInfo {
+	return bucket.FileInfo{
 		FileName:      i.FileName,
 		ContentType:   i.MediaType.String(),
 		ContentLength: i.FileSize,
@@ -77,7 +83,7 @@ func (i Image) String() string {
 
 // CompressedJSON returns a compressed JSON representation of the Image.
 func (i Image) CompressedJSON() []byte {
-	j, err := v.ToCompressedJSON(i)
+	j, err := versionary.ToCompressedJSON(i)
 	if err != nil {
 		return nil
 	}
@@ -116,7 +122,7 @@ func (i Image) Validate() []string {
 		problems = append(problems, "FileName is missing")
 	}
 	if !i.Status.IsValid() {
-		statuses := v.Map(Statuses, func(s Status) string { return string(s) })
+		statuses := versionary.Map(Statuses, func(s Status) string { return s.String() })
 		expected := strings.Join(statuses, ", ")
 		problems = append(problems, "Status is missing or invalid. Expected: "+expected)
 	}

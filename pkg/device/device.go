@@ -2,10 +2,11 @@ package device
 
 import (
 	"time"
+	"versionary-api/pkg/ref"
 
 	"github.com/voxtechnica/tuid-go"
 	ua "github.com/voxtechnica/user-agent"
-	v "github.com/voxtechnica/versionary"
+	"github.com/voxtechnica/versionary"
 )
 
 // A Device is based on a user's User-Agent header, which inspected to identify
@@ -26,6 +27,12 @@ func (d Device) Type() string {
 	return "Device"
 }
 
+// RefID returns the Reference ID of the entity.
+func (d Device) RefID() ref.RefID {
+	r, _ := ref.NewRefID(d.Type(), d.ID, d.VersionID)
+	return r
+}
+
 // LastSeenOn returns an ISO-8601 formatted string of the LastSeenAt time.
 func (d Device) LastSeenOn() string {
 	if d.LastSeenAt.IsZero() {
@@ -36,7 +43,7 @@ func (d Device) LastSeenOn() string {
 
 // CompressedJSON returns a compressed JSON representation of the Device.
 func (d Device) CompressedJSON() []byte {
-	j, err := v.ToCompressedJSON(d)
+	j, err := versionary.ToCompressedJSON(d)
 	if err != nil {
 		return nil
 	}

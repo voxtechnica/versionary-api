@@ -14,6 +14,7 @@ import (
 //==============================================================================
 
 // rowCountsDate is a TableRow definition for Device Counts, indexed by Date.
+// It's an EntityRow, but the "versions" are actually the counts for each day.
 var rowCountsDate = v.TableRow[Count]{
 	RowName:      "counts_date",
 	PartKeyName:  "type",
@@ -51,6 +52,28 @@ type CountService struct {
 	EntityType string
 	Table      v.TableReadWriter[Count]
 }
+
+// NewCountService creates a new Device Count service backed by a Versionary Table for the specified environment.
+func NewCountService(dbClient *dynamodb.Client, env string) CountService {
+	table := NewCountTable(dbClient, env)
+	return CountService{
+		EntityType: table.TableName,
+		Table:      table,
+	}
+}
+
+// NewMockCountService creates a new Device Count service backed by an in-memory table for testing purposes.
+func NewMockCountService(env string) CountService {
+	table := NewCountMemTable(NewCountTable(nil, env))
+	return CountService{
+		EntityType: table.TableName,
+		Table:      table,
+	}
+}
+
+//------------------------------------------------------------------------------
+// Device Counts
+//------------------------------------------------------------------------------
 
 // Write a Device Count to the database.
 func (s CountService) Write(ctx context.Context, dc Count) (Count, []string, error) {

@@ -5,18 +5,24 @@ import (
 	"fmt"
 	"strings"
 	"versionary-api/pkg/email"
+	"versionary-api/pkg/util"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
 )
 
+//==============================================================================
+// User Table
+//==============================================================================
+
 // rowUsers is a TableRow definition for User versions.
 var rowUsers = v.TableRow[User]{
 	RowName:      "users",
 	PartKeyName:  "id",
 	PartKeyValue: func(u User) string { return u.ID },
-	SortKeyName:  "update_id",
+	PartKeyLabel: func(u User) string { return u.String() }, // RFC 5322 email address
+	SortKeyName:  "version_id",
 	SortKeyValue: func(u User) string { return u.VersionID },
 	JsonValue:    func(u User) []byte { return u.CompressedJSON() },
 }
@@ -37,6 +43,7 @@ var rowUsersOrg = v.TableRow[User]{
 	RowName:      "users_org",
 	PartKeyName:  "org_id",
 	PartKeyValue: func(u User) string { return u.OrgID },
+	PartKeyLabel: func(u User) string { return u.OrgName },
 	SortKeyName:  "id",
 	SortKeyValue: func(u User) string { return u.ID },
 	JsonValue:    func(u User) []byte { return u.CompressedJSON() },
@@ -87,10 +94,32 @@ func NewMemTable(table v.Table[User]) v.MemTable[User] {
 	return v.NewMemTable(table)
 }
 
+//==============================================================================
+// User Service
+//==============================================================================
+
 // Service is used to manage Users in a DynamoDB table.
 type Service struct {
 	EntityType string
 	Table      v.TableReadWriter[User]
+}
+
+// NewService creates a new User service backed by a Versionary Table for the specified environment.
+func NewService(dbClient *dynamodb.Client, env string) Service {
+	table := NewTable(dbClient, env)
+	return Service{
+		EntityType: table.EntityType,
+		Table:      table,
+	}
+}
+
+// NewMockService creates a new User service backed by an in-memory table for testing purposes.
+func NewMockService(env string) Service {
+	table := NewMemTable(NewTable(nil, env))
+	return Service{
+		EntityType: table.EntityType,
+		Table:      table,
+	}
 }
 
 // duplicateEmail returns a non-empty list of User IDs if the specified email address is already in
@@ -100,18 +129,12 @@ func (s Service) duplicateEmail(ctx context.Context, email, id string) ([]string
 	if err != nil {
 		return nil, err
 	}
-	var duplicates []string
-	for _, i := range ids {
-		if i != id {
-			duplicates = append(duplicates, id)
-		}
-	}
-	return duplicates, nil
+	return v.Filter(ids, func(i string) bool { return i != id }), nil
 }
 
-//==============================================================================
+//------------------------------------------------------------------------------
 // User Versions
-//==============================================================================
+//------------------------------------------------------------------------------
 
 // Create a User in the User table.
 func (s Service) Create(ctx context.Context, u User) (User, []string, error) {
@@ -199,6 +222,11 @@ func (s Service) Delete(ctx context.Context, id string) (User, error) {
 	return s.Table.DeleteEntityWithID(ctx, id)
 }
 
+// DeleteVersion deletes a specified User version from the User table. The deleted User is returned.
+func (s Service) DeleteVersion(ctx context.Context, id, versionID string) (User, error) {
+	return s.Table.DeleteEntityVersionWithID(ctx, id, versionID)
+}
+
 // Exists checks if a User exists in the User table.
 func (s Service) Exists(ctx context.Context, id string) bool {
 	return s.Table.EntityExists(ctx, id)
@@ -256,10 +284,44 @@ func (s Service) ReadAllVersionsAsJSON(ctx context.Context, id string) ([]byte, 
 	return s.Table.ReadAllEntityVersionsAsJSON(ctx, id)
 }
 
-// ReadUserIDs returns a paginated list of User IDs in the User table.
+// ReadIDs returns a paginated list of User IDs in the User table.
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
-func (s Service) ReadUserIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
+func (s Service) ReadIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
 	return s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
+}
+
+// ReadAllIDs returns all User IDs in the User table.
+// Caution: this may be a LOT of data!
+func (s Service) ReadAllIDs(ctx context.Context) ([]string, error) {
+	return s.Table.ReadAllEntityIDs(ctx)
+}
+
+// ReadNames returns a paginated list of User IDs and Names in the User table.
+// A "Name" is an RFC 5322 email address (e.g. "Given Family <given.family@example.com>").
+// Sorting is alphabetical (or reverse). The offset is the last ID returned in a previous request.
+func (s Service) ReadNames(ctx context.Context, reverse bool, limit int, offset string) ([]v.TextValue, error) {
+	return s.Table.ReadEntityLabels(ctx, reverse, limit, offset)
+}
+
+// ReadAllNames returns all User IDs and Names in the User table.
+// A "Name" is an RFC 5322 email address (e.g. "Given Family <given.family@example.com>").
+// Caution: this may be a LOT of data!
+func (s Service) ReadAllNames(ctx context.Context, sortByValue bool) ([]v.TextValue, error) {
+	return s.Table.ReadAllEntityLabels(ctx, sortByValue)
+}
+
+// FilterNames returns a filtered list of User IDs and Names in the User table.
+// A "Name" is an RFC 5322 email address (e.g. "Given Family <given.family@example.com>").
+// The case-insensitive contains query is split into words, and the words are compared with the value in the TextValue.
+// If anyMatch is true, then a TextValue is included in the results if any of the words are found (OR filter).
+// If anyMatch is false, then the TextValue must contain all the words in the query string (AND filter).
+// The filtered results are sorted alphabetically by value, not by ID.
+func (s Service) FilterNames(ctx context.Context, contains string, anyMatch bool) ([]v.TextValue, error) {
+	filter, err := util.ContainsFilter(contains, anyMatch)
+	if err != nil {
+		return []v.TextValue{}, err
+	}
+	return s.Table.FilterEntityLabels(ctx, filter)
 }
 
 // ReadUsers returns a paginated list of Users in the User table.
@@ -274,9 +336,9 @@ func (s Service) ReadUsers(ctx context.Context, reverse bool, limit int, offset 
 	return s.Table.ReadEntities(ctx, ids)
 }
 
-//==============================================================================
+//------------------------------------------------------------------------------
 // Users by Email Address
-//==============================================================================
+//------------------------------------------------------------------------------
 
 // ReadEmailAddresses returns a paginated list of standardized email addresses from the User table.
 // Sorting is alphabetical (or reverse). The offset is the last email address returned in a previous request.
@@ -316,9 +378,21 @@ func (s Service) ReadUserIDsByEmail(ctx context.Context, email string) ([]string
 	return s.Table.ReadAllSortKeyValues(ctx, rowUsersEmail, StandardizeEmail(email))
 }
 
-//==============================================================================
+//------------------------------------------------------------------------------
 // Users by Organization
-//==============================================================================
+//------------------------------------------------------------------------------
+
+// ReadOrgs returns a paginated list of Organization IDs and names for which there are Users in the User table.
+// Sorting is alphabetical (or reverse). The offset is the last ID returned in a previous request.
+func (s Service) ReadOrgs(ctx context.Context, reverse bool, limit int, offset string) ([]v.TextValue, error) {
+	return s.Table.ReadPartKeyLabels(ctx, rowUsersOrg, reverse, limit, offset)
+}
+
+// ReadAllOrgs returns a complete, alphabetical list of Organization IDs and names for which there are Users in the User table.
+// Caution: this may be a LOT of data!
+func (s Service) ReadAllOrgs(ctx context.Context, sortByValue bool) ([]v.TextValue, error) {
+	return s.Table.ReadAllPartKeyLabels(ctx, rowUsersOrg, sortByValue)
+}
 
 // ReadOrgIDs returns a paginated list of Organization IDs for which there are Users in the User table.
 // Sorting is chronological (or reverse). The offset is the last ID returned in a previous request.
@@ -355,9 +429,9 @@ func (s Service) ReadAllUsersByOrgIDAsJSON(ctx context.Context, orgID string) ([
 	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowUsersOrg, orgID)
 }
 
-//==============================================================================
+//------------------------------------------------------------------------------
 // Users by Role
-//==============================================================================
+//------------------------------------------------------------------------------
 
 // ReadRoles returns a paginated list of Roles for which there are Users in the User table.
 // Sorting is alphabetical (or reverse). The offset is the last Role returned in a previous request.
@@ -394,9 +468,9 @@ func (s Service) ReadAllUsersByRoleAsJSON(ctx context.Context, role string) ([]b
 	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowUsersRole, role)
 }
 
-//==============================================================================
+//------------------------------------------------------------------------------
 // Users by Status
-//==============================================================================
+//------------------------------------------------------------------------------
 
 // ReadStatuses returns a paginated Status list for which there are Users in the User table.
 // Sorting is alphabetical (or reverse). The offset is the last Status returned in a previous request.
