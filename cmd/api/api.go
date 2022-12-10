@@ -16,11 +16,8 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	gin "github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/voxtechnica/tuid-go"
 
-	"versionary-api/cmd/api/docs"
 	"versionary-api/pkg/app"
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/token"
@@ -108,6 +105,8 @@ func main() {
 }
 
 // registerRoutes initializes all the API endpoints.
+// Placing these registrations in a separate function allows
+// them to be called from both the main and TestMain functions.
 func registerRoutes(r *gin.Engine) {
 	r.Use(bearerTokenHandler())
 	r.NoRoute(notFound)
@@ -122,26 +121,6 @@ func registerRoutes(r *gin.Engine) {
 	registerUserRoutes(r)
 	registerViewRoutes(r)
 	registerDiagRoutes(r)
-	initSwagger(r)
-}
-
-// initSwagger initializes the Swagger API documentation.
-//
-// @Description Show API documentation
-// @Description Show Swagger API documentation, generated from annotations in the running code.
-// @Tags Diagnostic
-// @Produce html
-// @Success 307 {string} string
-// @Router /docs [get]
-func initSwagger(r *gin.Engine) {
-	docs.SwaggerInfo.Title = "Versionary API"
-	docs.SwaggerInfo.Description = "Versionary API demonstrates a way to manage versioned entities in a database with a serverless architecture."
-	docs.SwaggerInfo.Version = gitHash
-	docs.SwaggerInfo.BasePath = "/"
-	r.GET("/docs", func(c *gin.Context) {
-		c.Redirect(http.StatusFound, "/swagger/index.html")
-	})
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
 
 // notFound handles a request for a non-existent API endpoint.
@@ -162,7 +141,7 @@ func abortWithError(c *gin.Context, code int, err error) {
 		c.AbortWithStatusJSON(code, APIEvent{
 			EventID:   e.ID,
 			CreatedAt: e.CreatedAt,
-			LogLevel:  string(e.LogLevel),
+			LogLevel:  e.LogLevel.String(),
 			Code:      code,
 			Message:   e.Message,
 			URI:       e.URI,

@@ -7,19 +7,43 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	user_agent "github.com/voxtechnica/user-agent"
 
+	"versionary-api/cmd/api/docs"
 	"versionary-api/pkg/token"
 	"versionary-api/pkg/user"
 )
 
 // registerDiagRoutes initializes the diagnostic routes.
 func registerDiagRoutes(r *gin.Engine) {
+	// Swagger 2.0 Meta Information
+	docs.SwaggerInfo.Title = api.Name
+	docs.SwaggerInfo.Description = api.Description
+	docs.SwaggerInfo.Version = api.GitHash
+	docs.SwaggerInfo.BasePath = "/"
+	r.GET("/docs", swaggerDocs)
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// Diagnostic routes
 	r.Any("/echo", roleAuthorizer("admin"), echoRequest)
 	r.GET("/user_agent", userAgent)
 	r.GET("/commit", commit)
 	r.GET("/about", about)
 	r.GET("/", about)
+}
+
+// swaggerDocs initializes Swagger and redirects to the Swagger API documentation.
+//
+// @Description Show API documentation
+// @Description Show Swagger API documentation, generated from annotations in the running code.
+// @Tags Diagnostic
+// @Produce html
+// @Success 307 {string} string
+// @Router /docs [get]
+func swaggerDocs(c *gin.Context) {
+	c.Redirect(http.StatusFound, "/swagger/index.html")
 }
 
 // about provides basic information about the API, including the operating environment and the current git commit.

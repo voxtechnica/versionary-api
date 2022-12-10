@@ -151,6 +151,7 @@ to deploy the code to that environment:
 
 1. Ensure that you have the desired git branch checked out locally, and that all tests pass.
 2. Run `make build` to build the `./api` and `./ops` commands for local use.
-3. Run `./ops table --env <env>` to create any missing DynamoDB tables in the environment.
-4. Run `make deploy env=[qa|staging|prod]` to build release artifacts and deploy the CloudFormation template.
-5. Test the updated code running in the specified environment.
+3. Run `./ops table check --env <env>` to create any missing DynamoDB tables in the environment.
+4. Run `./ops bucket check --env <env>` to create any missing S3 buckets in the environment.
+5. Run `make deploy env=[qa|staging|prod]` to build release artifacts and deploy the CloudFormation template.
+6. Test the updated code running in the specified environment.

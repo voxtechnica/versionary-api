@@ -1,4 +1,4 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: Versionary API and Lambda Function
 Parameters:
@@ -6,10 +6,9 @@ Parameters:
     Type: String
     Description: Operating Environment (dev, qa, staging, prod)
 Conditions:
-  ProductionBuild: !Equals [ !Ref "AWS::StackName", versionary-api-prod ]
-  NonProductionBuild: !Not [ !Condition ProductionBuild ]
+  ProductionBuild: !Equals [!Ref AWS::StackName, versionary-api-prod]
+  NonProductionBuild: !Not [!Condition ProductionBuild]
 Resources:
-
   ### Lambda Function
 
   LambdaServiceRole:
@@ -19,8 +18,7 @@ Resources:
         Version: 2012-10-17
         Statement:
           - Effect: Allow
-            Action:
-              sts:AssumeRole
+            Action: sts:AssumeRole
             Principal:
               Service:
                 - lambda.amazonaws.com
@@ -49,20 +47,20 @@ Resources:
       Handler: api
       Runtime: go1.x
       CodeUri: ./lambda.zip
-      Description: !Join [ '-' , [ "versionary-api", !Ref ENV ] ]
+      Description: !Join ["-", ["versionary-api", !Ref ENV]]
       MemorySize: 512
       Timeout: 30
       Role: !GetAtt LambdaServiceRole.Arn
       Environment:
         Variables:
           STAGE_NAME: !Ref ENV
-          SERVICE_NAME: "versionary-api"
+          SERVICE_NAME: versionary-api
 
   VersionaryAPILambdaArnParameter:
     DependsOn: VersionaryAPILambda
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Join [ '-' , [ "versionary/api-arn", !Ref ENV ] ]
+      Name: !Join ["-", ["/versionary/api-arn", !Ref ENV]]
       Description: Versionary API ARN
       Type: String
       Value: !GetAtt VersionaryAPILambda.Arn
@@ -72,7 +70,7 @@ Resources:
   VersionaryAPIHttpApi:
     Type: AWS::ApiGatewayV2::Api
     Properties:
-      Name: !Join [ '-' , [ "versionary-api", !Ref ENV ] ]
+      Name: !Join ["-", ["versionary-api", !Ref ENV]]
       Description: Versionary API
       ProtocolType: HTTP
 
@@ -85,7 +83,7 @@ Resources:
       IntegrationMethod: POST
       IntegrationType: AWS_PROXY
       IntegrationUri: !GetAtt VersionaryAPILambda.Arn
-      PayloadFormatVersion: '2.0'
+      PayloadFormatVersion: "2.0"
       TimeoutInMillis: 30000
 
   VersionaryAPIHttpApiRoute:
@@ -94,8 +92,8 @@ Resources:
       ApiId: !Ref VersionaryAPIHttpApi
       ApiKeyRequired: false
       AuthorizationType: NONE
-      RouteKey: 'ANY /{proxy+}'
-      Target: !Sub 'integrations/${VersionaryAPIHttpApiIntegration}'
+      RouteKey: "ANY /{proxy+}"
+      Target: !Sub "integrations/${VersionaryAPIHttpApiIntegration}"
 
   VersionaryAPIHttpApiStage:
     Type: AWS::ApiGatewayV2::Stage
@@ -103,7 +101,7 @@ Resources:
       ApiId: !Ref VersionaryAPIHttpApi
       AutoDeploy: true
       Description: Versionary API Default Stage
-      StageName: '$default'
+      StageName: "$default"
 
   VersionaryAPIHttpApiPermission:
     Type: AWS::Lambda::Permission
@@ -118,7 +116,7 @@ Resources:
   VersionaryAPIUrlParameter:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Join [ '-' , [ "versionary/api-url", !Ref ENV ] ]
+      Name: !Join ["-", ["/versionary/api-url", !Ref ENV]]
       Description: Versionary API URL
       Type: String
-      Value: !Sub 'https://${VersionaryAPIHttpApi}.execute-api.${AWS::Region}.amazonaws.com/'
+      Value: !Sub "https://${VersionaryAPIHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
