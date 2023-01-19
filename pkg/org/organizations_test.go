@@ -102,18 +102,22 @@ func TestCreateReadUpdateDelete(t *testing.T) {
 		}
 		// Update the organization
 		o.Status = ENABLED
-		oUpdated, err := service.Update(ctx, o)
+		oUpdated, _, err := service.Update(ctx, o)
 		if expect.NoError(err) {
 			// Verify that the version ID has changed
-			expect.NotEqual(o.ID, o.VersionID)
-			expect.NotEqual(o.Status, PENDING)
+			expect.NotEqual(oUpdated.ID, oUpdated.VersionID)
+			expect.NotEqual(oUpdated.Status, PENDING)
 		}
 		// Delete the organization
 		oDelete, err := service.Delete(ctx, o.ID)
 		if expect.NoError(err) {
 			// Check the organization
-			expect.Equal(o, oDelete)
+			expect.Equal(oUpdated, oDelete)
 		}
+		// Organization does not exist
+		oExist := service.Exists(ctx, o.ID)
+		expect.False(oExist)
+
 		// Read the organization
 		_, err = service.Read(ctx, o.ID)
 		expect.ErrorIs(err, v.ErrNotFound, "expected ErrNotFound")
