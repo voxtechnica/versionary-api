@@ -2,6 +2,7 @@ package org
 
 import (
 	"context"
+	"reflect"
 	"log"
 	"testing"
 	"time"
@@ -63,6 +64,8 @@ var (
 	}
 	knownOrgs = []Organization{o11, o20, o30}
 	knownIDs = []string{id1, id2, id3}
+	knownNames = []string{o11.Name, o20.Name, o30.Name}
+
 )
 
 func TestMain(m *testing.M) {
@@ -88,7 +91,14 @@ func TestCreateReadUpdateDelete(t *testing.T) {
 		Status: PENDING,
 	})
 	expect.Empty(problems)
+
 	if expect.NoError(err) {
+
+		// Organization exists in organization table
+		oExist := service.Exists(ctx, o.ID)
+		if expect.NoError(err) {
+			expect.True(oExist)
+		}
 		// Read the organization
 		oCheck, err := service.Read(ctx, o.ID)
 		if expect.NoError(err) {
@@ -115,7 +125,7 @@ func TestCreateReadUpdateDelete(t *testing.T) {
 			expect.Equal(oUpdated, oDelete)
 		}
 		// Organization does not exist
-		oExist := service.Exists(ctx, o.ID)
+		oExist = service.Exists(ctx, o.ID)
 		expect.False(oExist)
 
 		// Read the organization
@@ -123,3 +133,122 @@ func TestCreateReadUpdateDelete(t *testing.T) {
 		expect.ErrorIs(err, v.ErrNotFound, "expected ErrNotFound")
 	}
 }
+
+func TestReadIDs(t *testing.T) {
+	expect := assert.New(t)
+	ids, err := service.ReadIDs(ctx, false, 10, tuid.MinID)
+	if expect.NoError(err) {
+		expect.GreaterOrEqual(len(ids), 3)
+		expect.Subset(ids, knownIDs)
+	}
+}
+
+func TestReadAllIDs(t *testing.T) {
+	expect := assert.New(t)
+	allIDs, err := service.ReadAllIDs(ctx)
+	if expect.NoError(err) {
+		expect.Subset(allIDs, knownIDs)
+	}
+}
+
+func TestReadVersion(t *testing.T) {
+	expect := assert.New(t)
+	vExist, err := service.ReadVersion(ctx, id1, id1)
+	if expect.NoError(err) {
+		expect.Equal(o10, vExist)
+	}
+}
+
+func TestReadVersionAsJSON(t *testing.T) {
+	expect := assert.New(t)
+	vJSON, err := service.ReadVersionAsJSON(ctx, id2, id2)
+	if expect.NoError(err) {
+		expect.Contains(string(vJSON), id2)
+	}
+}
+
+func TestReadAllVersions(t *testing.T) {
+	expect := assert.New(t)
+	allVersions, err := service.ReadAllVersions(ctx, id2)
+	if expect.NoError(err) {
+		expect.Equal(o20, allVersions[0])
+	}
+}
+
+func TestReadAllVersionsAsJSON(t *testing.T) {
+	expect := assert.New(t)
+	versionsCheckJSON, err := service.ReadAllVersionsAsJSON(ctx, id3)
+	if expect.NoError(err) {
+		expect.Contains(string(versionsCheckJSON), id3)
+	}
+}
+
+// I don't fully believe in a reliability of this test
+// talk to Dave about it on a next meeting
+func TestReadNames(t *testing.T) {
+	expect := assert.New(t)
+	idsAndNames, err := service.ReadNames(ctx, false, 3, "") 
+	onlyNames := make([]string, 0, len(idsAndNames))
+
+	for _, kv := range idsAndNames {
+		onlyNames = append(onlyNames, kv.Value)
+	}
+	if expect.NoError(err) {
+		expect.Equal(onlyNames, knownNames)
+	}
+}
+
+func TestReadAllNames(t *testing.T) {
+	expect := assert.New(t)
+	idsAndNames, err := service.ReadAllNames(ctx, true) 
+
+	expectedNames := []v.TextValue{
+		{Value: o11.Name},
+		{Value: o20.Name},
+		{Value: o30.Name},
+	}
+
+	if expect.NoError(err) {
+		reflect.DeepEqual(idsAndNames, expectedNames)
+	}
+}
+
+func TestFilterNames(t *testing.T) {
+	expect := assert.New(t)
+	filteredName, err := service.FilterNames(ctx, "1.1", false)
+
+	expectedName := []v.TextValue{
+		{
+		Key: o11.ID,
+		Value: o11.Name,
+		},
+	}
+
+	if expect.NoError(err){
+		expect.Equal(filteredName, expectedName)
+	}
+}
+
+func TestReadStatuses(t *testing.T) {
+	expect := assert.New(t)
+	// Read all statuses
+	allStatuses := []string{"PENDING", "ENABLED", "DISABLED"}
+	statuses, err := service.ReadStatuses(ctx, false, 3, tuid.MinID)
+	if expect.NoError(err) {
+		expect.GreaterOrEqual(len(statuses), len(allStatuses))
+		expect.Subset(statuses, allStatuses)
+	}
+}
+
+func TestReadAllStatuses(t *testing.T) {
+	expect := assert.New(t)
+	// Read all statuses
+	allStatuses := []string{"PENDING", "ENABLED", "DISABLED"}
+	statuses, err := service.ReadAllStatuses(ctx)
+	if expect.NoError(err) {
+		expect.Subset(statuses, allStatuses)
+	}
+}
+
+
+
