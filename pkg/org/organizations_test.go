@@ -2,8 +2,8 @@ package org
 
 import (
 	"context"
-	"reflect"
 	"log"
+	"reflect"
 	"testing"
 	"time"
 
@@ -247,6 +247,43 @@ func TestReadAllStatuses(t *testing.T) {
 	statuses, err := service.ReadAllStatuses(ctx)
 	if expect.NoError(err) {
 		expect.Subset(statuses, allStatuses)
+	}
+}
+
+func TestReadOrganizationsByStatus(t *testing.T) {
+	expect := assert.New(t)
+	checkOrgs, err := service.ReadOrganizationsByStatus(ctx, "DISABLED", false, 1, "")
+	if expect.NoError(err){
+		expect.Equal(o30, checkOrgs[0])
+	}	
+}
+
+func TestReadOrganizationByStatusAsJSON(t *testing.T) {
+	expect := assert.New(t)
+	checkOrgs, err := service.ReadOrganizationsByStatusAsJSON(ctx, "PENDING", false, 1, "")
+	if expect.NoError(err){
+		expect.Contains(string(checkOrgs), o10.Status)
+	}
+}
+
+func TestReadAllOrganizationsByStatus(t *testing.T) {
+	expect := assert.New(t)
+	checkOrgs, err := service.ReadAllOrganizationsByStatus(ctx, "ENABLED")
+	if expect.NoError(err){		
+		for _, v := range checkOrgs {
+			if v.Status == o11.Status {
+				expect.Equal(v, o11)
+				break
+			}
+		}
+	}
+}
+
+func TestReadAllOrganizationsByStatusAsJSON(t *testing.T) {
+	expect := assert.New(t)
+	checkOrgs, err := service.ReadAllOrganizationsByStatusAsJSON(ctx, "DISABLED")
+	if expect.NoError(err){
+		expect.Contains(string(checkOrgs), o30.Status)
 	}
 }
 
