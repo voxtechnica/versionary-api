@@ -14,8 +14,8 @@ import (
 
 var (
 	// Organization Service
-	ctx      = context.Background()
-	service  = NewMockService("test")
+	ctx     = context.Background()
+	service = NewMockService("test")
 
 	// Known timestamps
 	t1 = time.Date(2022, time.April, 1, 12, 0, 0, 0, time.UTC)
@@ -31,41 +31,40 @@ var (
 
 	// Known Organizations
 	o10 = Organization{
-		ID:         id1,
-		VersionID:  id1,
-		CreatedAt:  t1,
-		UpdatedAt:  t1,
-		Name: "Test Organization 1",
-		Status: PENDING,
+		ID:        id1,
+		VersionID: id1,
+		CreatedAt: t1,
+		UpdatedAt: t1,
+		Name:      "Test Organization 1",
+		Status:    PENDING,
 	}
 	o20 = Organization{
-		ID:         id2,
-		VersionID:  id2,
-		CreatedAt:  t2,
-		UpdatedAt:  t2,
-		Name: "Test Organization 2",
-		Status: ENABLED,
+		ID:        id2,
+		VersionID: id2,
+		CreatedAt: t2,
+		UpdatedAt: t2,
+		Name:      "Test Organization 2",
+		Status:    ENABLED,
 	}
 	o30 = Organization{
-		ID:         id3,
-		VersionID:  id3,
-		CreatedAt:  t3,
-		UpdatedAt:  t3,
-		Name: "Test Organization 3",
-		Status: DISABLED,
+		ID:        id3,
+		VersionID: id3,
+		CreatedAt: t3,
+		UpdatedAt: t3,
+		Name:      "Test Organization 3",
+		Status:    DISABLED,
 	}
 	o11 = Organization{
-		ID:         id1,
-		VersionID:  id4,
-		CreatedAt:  t1,
-		UpdatedAt:  t4,
-		Name: "Test Organization 1.1",
-		Status: ENABLED,
+		ID:        id1,
+		VersionID: id4,
+		CreatedAt: t1,
+		UpdatedAt: t4,
+		Name:      "Test Organization 1.1",
+		Status:    ENABLED,
 	}
-	knownOrgs = []Organization{o11, o20, o30}
-	knownIDs = []string{id1, id2, id3}
+	knownOrgs  = []Organization{o11, o20, o30}
+	knownIDs   = []string{id1, id2, id3}
 	knownNames = []string{o11.Name, o20.Name, o30.Name}
-
 )
 
 func TestMain(m *testing.M) {
@@ -187,7 +186,7 @@ func TestReadAllVersionsAsJSON(t *testing.T) {
 // talk to Dave about it on a next meeting
 func TestReadNames(t *testing.T) {
 	expect := assert.New(t)
-	idsAndNames, err := service.ReadNames(ctx, false, 3, "") 
+	idsAndNames, err := service.ReadNames(ctx, false, 3, "")
 	onlyNames := make([]string, 0, len(idsAndNames))
 
 	for _, kv := range idsAndNames {
@@ -200,7 +199,7 @@ func TestReadNames(t *testing.T) {
 
 func TestReadAllNames(t *testing.T) {
 	expect := assert.New(t)
-	idsAndNames, err := service.ReadAllNames(ctx, true) 
+	idsAndNames, err := service.ReadAllNames(ctx, true)
 
 	expectedNames := []v.TextValue{
 		{Value: o11.Name},
@@ -219,12 +218,12 @@ func TestFilterNames(t *testing.T) {
 
 	expectedName := []v.TextValue{
 		{
-		Key: o11.ID,
-		Value: o11.Name,
+			Key:   o11.ID,
+			Value: o11.Name,
 		},
 	}
 
-	if expect.NoError(err){
+	if expect.NoError(err) {
 		expect.Equal(filteredName, expectedName)
 	}
 }
@@ -253,15 +252,15 @@ func TestReadAllStatuses(t *testing.T) {
 func TestReadOrganizationsByStatus(t *testing.T) {
 	expect := assert.New(t)
 	checkOrgs, err := service.ReadOrganizationsByStatus(ctx, "DISABLED", false, 1, "")
-	if expect.NoError(err){
+	if expect.NoError(err) {
 		expect.Equal(o30, checkOrgs[0])
-	}	
+	}
 }
 
 func TestReadOrganizationByStatusAsJSON(t *testing.T) {
 	expect := assert.New(t)
 	checkOrgs, err := service.ReadOrganizationsByStatusAsJSON(ctx, "PENDING", false, 1, "")
-	if expect.NoError(err){
+	if expect.NoError(err) {
 		expect.Contains(string(checkOrgs), o10.Status)
 	}
 }
@@ -269,7 +268,7 @@ func TestReadOrganizationByStatusAsJSON(t *testing.T) {
 func TestReadAllOrganizationsByStatus(t *testing.T) {
 	expect := assert.New(t)
 	checkOrgs, err := service.ReadAllOrganizationsByStatus(ctx, "ENABLED")
-	if expect.NoError(err){		
+	if expect.NoError(err) {
 		for _, v := range checkOrgs {
 			if v.Status == o11.Status {
 				expect.Equal(v, o11)
@@ -282,10 +281,7 @@ func TestReadAllOrganizationsByStatus(t *testing.T) {
 func TestReadAllOrganizationsByStatusAsJSON(t *testing.T) {
 	expect := assert.New(t)
 	checkOrgs, err := service.ReadAllOrganizationsByStatusAsJSON(ctx, "DISABLED")
-	if expect.NoError(err){
+	if expect.NoError(err) {
 		expect.Contains(string(checkOrgs), o30.Status)
 	}
 }
-
-
-
