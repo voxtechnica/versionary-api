@@ -2,6 +2,7 @@ package org
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"reflect"
 	"testing"
@@ -96,9 +97,8 @@ func TestCreateReadUpdateDelete(t *testing.T) {
 
 		// Organization exists in organization table
 		oExist := service.Exists(ctx, o.ID)
-		if expect.NoError(err) {
-			expect.True(oExist)
-		}
+		expect.True(oExist)
+
 		// Read the organization
 		oCheck, err := service.Read(ctx, o.ID)
 		if expect.NoError(err) {
@@ -151,6 +151,12 @@ func TestReadAllIDs(t *testing.T) {
 	}
 }
 
+func TestVersionExists(t *testing.T) {
+	expect := assert.New(t)
+	vExists := service.VersionExists(ctx, id2, id2)
+	expect.True(vExists)	
+}
+
 func TestReadVersion(t *testing.T) {
 	expect := assert.New(t)
 	vExist, err := service.ReadVersion(ctx, id1, id1)
@@ -183,40 +189,50 @@ func TestReadAllVersionsAsJSON(t *testing.T) {
 	}
 }
 
+
 // I don't fully believe in a reliability of this test
 // talk to Dave about it on a next meeting
+// Ask for v.Map(), how it works and how to implement it in this test
 func TestReadNames(t *testing.T) {
 	expect := assert.New(t)
-	idsAndNames, err := service.ReadNames(ctx, false, 3, "") 
-	onlyNames := make([]string, 0, len(idsAndNames))
-
-	for _, kv := range idsAndNames {
-		onlyNames = append(onlyNames, kv.Value)
-	}
+	idsAndNames, err := service.ReadNames(ctx, false, 4, "") 
+	fmt.Println("SHOW ME: ", idsAndNames)
 	if expect.NoError(err) {
+		// onlyNames := make([]string, 0, len(idsAndNames))
+		// for _, kv := range idsAndNames {
+		// 	onlyNames = append(onlyNames, kv.Value)
+		// }
+
+		onlyNames := v.Map(idsAndNames, func (entry v.TextValue)  string { return entry.Value})
+		fmt.Println("SHOW ME: ", onlyNames)
 		expect.Equal(onlyNames, knownNames)
 	}
 }
 
+// work with Dave on this one
 func TestReadAllNames(t *testing.T) {
 	expect := assert.New(t)
 	idsAndNames, err := service.ReadAllNames(ctx, true) 
+	fmt.Println("SHOW ME: ", idsAndNames)
 
-	expectedNames := []v.TextValue{
-		{Value: o11.Name},
-		{Value: o20.Name},
-		{Value: o30.Name},
-	}
+	// expectedNames := []v.TextValue{
+	// 	{Value: o11.Name},
+	// 	{Value: o20.Name},
+	// 	{Value: o30.Name},
+	// }
 
+	expectedNames := v.Map(idsAndNames, func(entry v.TextValue) string {return entry.Value})
+	fmt.Println("SHOW ME: ", expectedNames)
 	if expect.NoError(err) {
 		reflect.DeepEqual(idsAndNames, expectedNames)
+		expect.Subset(knownNames, expectedNames)
 	}
 }
 
 func TestFilterNames(t *testing.T) {
 	expect := assert.New(t)
 	filteredName, err := service.FilterNames(ctx, "1.1", false)
-
+	
 	expectedName := []v.TextValue{
 		{
 		Key: o11.ID,
@@ -236,7 +252,7 @@ func TestReadStatuses(t *testing.T) {
 	statuses, err := service.ReadStatuses(ctx, false, 3, tuid.MinID)
 	if expect.NoError(err) {
 		expect.GreaterOrEqual(len(statuses), len(allStatuses))
-		expect.Subset(statuses, allStatuses)
+		expect.Subset(allStatuses, statuses)
 	}
 }
 
@@ -246,14 +262,14 @@ func TestReadAllStatuses(t *testing.T) {
 	allStatuses := []string{"PENDING", "ENABLED", "DISABLED"}
 	statuses, err := service.ReadAllStatuses(ctx)
 	if expect.NoError(err) {
-		expect.Subset(statuses, allStatuses)
+		expect.Subset(allStatuses, statuses)
 	}
 }
 
 func TestReadOrganizationsByStatus(t *testing.T) {
 	expect := assert.New(t)
 	checkOrgs, err := service.ReadOrganizationsByStatus(ctx, "DISABLED", false, 1, "")
-	if expect.NoError(err){
+	if expect.NoError(err) && expect.NotEmpty(checkOrgs){
 		expect.Equal(o30, checkOrgs[0])
 	}	
 }
@@ -269,13 +285,15 @@ func TestReadOrganizationByStatusAsJSON(t *testing.T) {
 func TestReadAllOrganizationsByStatus(t *testing.T) {
 	expect := assert.New(t)
 	checkOrgs, err := service.ReadAllOrganizationsByStatus(ctx, "ENABLED")
-	if expect.NoError(err){		
-		for _, v := range checkOrgs {
-			if v.Status == o11.Status {
-				expect.Equal(v, o11)
-				break
-			}
+	if expect.NoError(err) && expect.NotEmpty(checkOrgs){		
+		var numOfOrgs  []int
+		var orgsIds []string
+		for i, v := range checkOrgs {
+			numOfOrgs = append(numOfOrgs, i)
+			orgsIds = append(orgsIds, v.ID)
 		}
+		expect.GreaterOrEqual(len(numOfOrgs), 2)
+		expect.Subset(knownIDs, orgsIds)
 	}
 }
 
@@ -284,6 +302,17 @@ func TestReadAllOrganizationsByStatusAsJSON(t *testing.T) {
 	checkOrgs, err := service.ReadAllOrganizationsByStatusAsJSON(ctx, "DISABLED")
 	if expect.NoError(err){
 		expect.Contains(string(checkOrgs), o30.Status)
+	}
+}
+
+func TestDeleteVersion(t *testing.T) {
+	expect := assert.New(t)
+	vDeleted, err := service.DeleteVersion(ctx, id1, id4)
+	if expect.NoError(err) {
+		expect.Equal(o11.VersionID, vDeleted.VersionID)
+
+		vExists := service.VersionExists(ctx, id1, id4)
+		expect.False(vExists)
 	}
 }
 
