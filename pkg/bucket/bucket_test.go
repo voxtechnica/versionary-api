@@ -60,7 +60,7 @@ func TestPrivateBucket(t *testing.T) {
 	expect.Equal("", policy)
 
 	// Check info on a file that does not exist
-	info, err := bucket.FileInfo(ctx, "does-not-exist")
+	_, err = bucket.FileInfo(ctx, "does-not-exist")
 	expect.Error(err)
 	expect.True(errors.Is(err, ErrFileNotFound))
 
@@ -77,7 +77,7 @@ func TestPrivateBucket(t *testing.T) {
 	expect.NoError(err)
 
 	// Check the file info
-	info, err = bucket.FileInfo(ctx, file128.FileName)
+	info, err := bucket.FileInfo(ctx, file128.FileName)
 	expect.NoError(err)
 	expect.Equal(file128, info)
 
