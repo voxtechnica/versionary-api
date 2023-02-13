@@ -20,13 +20,11 @@ var (
 	t1 = time.Date(2022, time.April, 1, 12, 0, 0, 0, time.UTC)
 	t2 = time.Date(2022, time.April, 1, 13, 0, 0, 0, time.UTC)
 	t3 = time.Date(2022, time.April, 1, 14, 0, 0, 0, time.UTC)
-	t4 = time.Date(2022, time.April, 2, 12, 0, 0, 0, time.UTC)
 
 	// Organization IDs
 	id1 = tuid.NewIDWithTime(t1).String()
 	id2 = tuid.NewIDWithTime(t2).String()
 	id3 = tuid.NewIDWithTime(t3).String()
-	id4 = tuid.NewIDWithTime(t4).String()
 
 	// Known Organizations
 	o10 = Organization{
@@ -142,7 +140,6 @@ func TestCreateReadUpdateDelete(t *testing.T) {
 		expect.ErrorIs(err, v.ErrNotFound, "expected ErrNotFound")
 	}
 }
-
 
 func TestReadIDs(t *testing.T) {
 	expect := assert.New(t)
