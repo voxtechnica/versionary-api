@@ -2,9 +2,7 @@ package org
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"reflect"
 	"testing"
 	"time"
 
@@ -57,15 +55,13 @@ var (
 	}
 	o11 = Organization{
 		ID:        id1,
-		VersionID: id4,
 		CreatedAt: t1,
-		UpdatedAt: t4,
 		Name:      "Test Organization 1.1",
 		Status:    ENABLED,
 	}
-	knownOrgs  = []Organization{o11, o20, o30}
-	knownIDs   = []string{id1, id2, id3}
-	knownNames = []string{o11.Name, o20.Name, o30.Name}
+	knownIDs    = []string{id1, id2, id3}
+	knownNames  = []string{o11.Name, o20.Name, o30.Name}
+	allStatuses = []string{"DISABLED", "ENABLED", "PENDING"}
 )
 
 func TestMain(m *testing.M) {
@@ -74,10 +70,15 @@ func TestMain(m *testing.M) {
 		log.Fatal("invalid table configuration")
 	}
 	// Write known organizations
-	for _, e := range []Organization{o10, o11, o20, o30} {
+	for _, e := range []Organization{o10, o20, o30} {
 		if _, err := service.Write(ctx, e); err != nil {
 			log.Fatal(err)
 		}
+	}
+	// Update first organization
+	var err error
+	if o11, _, err = service.Update(ctx, o11); err != nil {
+		log.Fatal(err)
 	}
 	// Run the tests
 	m.Run()
@@ -117,6 +118,15 @@ func TestCreateReadUpdateDelete(t *testing.T) {
 			expect.NotEqual(oUpdated.ID, oUpdated.VersionID)
 			expect.NotEqual(oUpdated.Status, PENDING)
 		}
+		// Delete version
+		vDeleted, err := service.DeleteVersion(ctx, o.ID, o.VersionID)
+		if expect.NoError(err) {
+			expect.Equal(o.ID, vDeleted.ID)
+
+			vExists := service.VersionExists(ctx, o.ID, o.VersionID)
+			expect.False(vExists)
+		}
+
 		// Delete the organization
 		oDelete, err := service.Delete(ctx, o.ID)
 		if expect.NoError(err) {
@@ -132,6 +142,7 @@ func TestCreateReadUpdateDelete(t *testing.T) {
 		expect.ErrorIs(err, v.ErrNotFound, "expected ErrNotFound")
 	}
 }
+
 
 func TestReadIDs(t *testing.T) {
 	expect := assert.New(t)
@@ -153,7 +164,7 @@ func TestReadAllIDs(t *testing.T) {
 func TestVersionExists(t *testing.T) {
 	expect := assert.New(t)
 	vExists := service.VersionExists(ctx, id2, id2)
-	expect.True(vExists)	
+	expect.True(vExists)
 }
 
 func TestReadVersion(t *testing.T) {
@@ -188,50 +199,28 @@ func TestReadAllVersionsAsJSON(t *testing.T) {
 	}
 }
 
-
-// I don't fully believe in a reliability of this test
-// talk to Dave about it on a next meeting
-// Ask for v.Map(), how it works and how to implement it in this test
 func TestReadNames(t *testing.T) {
 	expect := assert.New(t)
-	idsAndNames, err := service.ReadNames(ctx, false, 4, "") 
-	fmt.Println("SHOW ME: ", idsAndNames)
+	idsAndNames, err := service.ReadNames(ctx, false, 4, "")
 	if expect.NoError(err) {
-		// onlyNames := make([]string, 0, len(idsAndNames))
-		// for _, kv := range idsAndNames {
-		// 	onlyNames = append(onlyNames, kv.Value)
-		// }
-
-		onlyNames := v.Map(idsAndNames, func (entry v.TextValue)  string { return entry.Value})
-		fmt.Println("SHOW ME: ", onlyNames)
-		expect.Equal(onlyNames, knownNames)
+		onlyNames := v.Map(idsAndNames, func(entry v.TextValue) string { return entry.Value })
+		expect.Subset(onlyNames, knownNames)
 	}
 }
 
-// work with Dave on this one
 func TestReadAllNames(t *testing.T) {
 	expect := assert.New(t)
-	idsAndNames, err := service.ReadAllNames(ctx, true) 
-	fmt.Println("SHOW ME: ", idsAndNames)
-
-	// expectedNames := []v.TextValue{
-	// 	{Value: o11.Name},
-	// 	{Value: o20.Name},
-	// 	{Value: o30.Name},
-	// }
-
-	expectedNames := v.Map(idsAndNames, func(entry v.TextValue) string {return entry.Value})
-	fmt.Println("SHOW ME: ", expectedNames)
+	idsAndNames, err := service.ReadAllNames(ctx, true)
 	if expect.NoError(err) {
-		reflect.DeepEqual(idsAndNames, expectedNames)
-		expect.Subset(knownNames, expectedNames)
+		onlyNames := v.Map(idsAndNames, func(entry v.TextValue) string { return entry.Value })
+		expect.Subset(onlyNames, knownNames)
 	}
 }
 
 func TestFilterNames(t *testing.T) {
 	expect := assert.New(t)
 	filteredName, err := service.FilterNames(ctx, "1.1", false)
-	
+
 	expectedName := []v.TextValue{
 		{
 			Key:   o11.ID,
@@ -247,45 +236,42 @@ func TestFilterNames(t *testing.T) {
 func TestReadStatuses(t *testing.T) {
 	expect := assert.New(t)
 	// Read all statuses
-	allStatuses := []string{"PENDING", "ENABLED", "DISABLED"}
-	statuses, err := service.ReadStatuses(ctx, false, 3, tuid.MinID)
+	statuses, err := service.ReadStatuses(ctx, false, 3, "-")
 	if expect.NoError(err) {
-		expect.GreaterOrEqual(len(statuses), len(allStatuses))
-		expect.Subset(allStatuses, statuses)
+		expect.Equal(statuses, allStatuses)
 	}
 }
 
 func TestReadAllStatuses(t *testing.T) {
 	expect := assert.New(t)
 	// Read all statuses
-	allStatuses := []string{"PENDING", "ENABLED", "DISABLED"}
 	statuses, err := service.ReadAllStatuses(ctx)
 	if expect.NoError(err) {
-		expect.Subset(allStatuses, statuses)
+		expect.Equal(statuses, allStatuses)
 	}
 }
 
 func TestReadOrganizationsByStatus(t *testing.T) {
 	expect := assert.New(t)
 	checkOrgs, err := service.ReadOrganizationsByStatus(ctx, "DISABLED", false, 1, "")
-	if expect.NoError(err) && expect.NotEmpty(checkOrgs){
+	if expect.NoError(err) && expect.NotEmpty(checkOrgs) {
 		expect.Equal(o30, checkOrgs[0])
 	}
 }
 
 func TestReadOrganizationByStatusAsJSON(t *testing.T) {
 	expect := assert.New(t)
-	checkOrgs, err := service.ReadOrganizationsByStatusAsJSON(ctx, "PENDING", false, 1, "")
+	checkOrgs, err := service.ReadOrganizationsByStatusAsJSON(ctx, "DISABLED", false, 1, "")
 	if expect.NoError(err) {
-		expect.Contains(string(checkOrgs), o10.Status)
+		expect.Contains(string(checkOrgs), o30.ID)
 	}
 }
 
 func TestReadAllOrganizationsByStatus(t *testing.T) {
 	expect := assert.New(t)
 	checkOrgs, err := service.ReadAllOrganizationsByStatus(ctx, "ENABLED")
-	if expect.NoError(err) && expect.NotEmpty(checkOrgs){		
-		var numOfOrgs  []int
+	if expect.NoError(err) && expect.NotEmpty(checkOrgs) {
+		var numOfOrgs []int
 		var orgsIds []string
 		for i, v := range checkOrgs {
 			numOfOrgs = append(numOfOrgs, i)
@@ -303,17 +289,3 @@ func TestReadAllOrganizationsByStatusAsJSON(t *testing.T) {
 		expect.Contains(string(checkOrgs), o30.Status)
 	}
 }
-
-func TestDeleteVersion(t *testing.T) {
-	expect := assert.New(t)
-	vDeleted, err := service.DeleteVersion(ctx, id1, id4)
-	if expect.NoError(err) {
-		expect.Equal(o11.VersionID, vDeleted.VersionID)
-
-		vExists := service.VersionExists(ctx, id1, id4)
-		expect.False(vExists)
-	}
-}
-
-
-
