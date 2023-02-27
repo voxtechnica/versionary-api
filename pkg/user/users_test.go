@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"testing"
 	"time"
@@ -14,7 +13,7 @@ import (
 
 var (
 	// User Service
-	ctx 	= context.Background()
+	ctx     = context.Background()
 	service = NewMockService("test")
 
 	// Known timestamps
@@ -39,94 +38,94 @@ var (
 
 	// Known Users
 	u10 = User{
-		ID:				id1,
-		VersionID:     	id1,    
-		CreatedAt:     	t1, 
-		UpdatedAt:     	t1, 
-		GivenName:     	"User_1",    
-		FamilyName:   	"Family_1",   
-		Email:        	"test_user_one@test.com",    
-		Status:			PENDING,
-		Roles:         	[]string{"admin", "assistant", "manager", "owner"},  
-		OrgID:         	orgID1,    
-		OrgName:      	"Test Organization 1",       
+		ID:         id1,
+		VersionID:  id1,
+		CreatedAt:  t1,
+		UpdatedAt:  t1,
+		GivenName:  "User_1",
+		FamilyName: "Family_1",
+		Email:      "test_user_one@test.com",
+		Status:     PENDING,
+		Roles:      []string{"admin", "assistant", "manager", "owner"},
+		OrgID:      orgID1,
+		OrgName:    "Test Organization 1",
 	}
-	
+
 	u20 = User{
-		ID:				id2,
-		VersionID:     	id2,    
-		CreatedAt:     	t2, 
-		UpdatedAt:     	t2, 
-		GivenName:     	"User_2",    
-		FamilyName:   	"Family_2",   
-		Email:        	"test_user_two@test.com",    
-		Status:			ENABLED,
-		Roles:         	[]string{"engineer"},    
+		ID:         id2,
+		VersionID:  id2,
+		CreatedAt:  t2,
+		UpdatedAt:  t2,
+		GivenName:  "User_2",
+		FamilyName: "Family_2",
+		Email:      "test_user_two@test.com",
+		Status:     ENABLED,
+		Roles:      []string{"engineer"},
 	}
 
 	u30 = User{
-		ID:				id3,
-		VersionID:     	id3,    
-		CreatedAt:     	t3, 
-		UpdatedAt:     	t3, 
-		GivenName:     	"User_3",    
-		FamilyName:   	"Family_3",   
-		Email:        	"test_user_three@test.com",    
-		Status:			ENABLED,
-		Roles:         	[]string{"assistant", "analyst"}, 
-		OrgID:         	orgID3,    
-		OrgName:      	"Test Organization 3",      
+		ID:         id3,
+		VersionID:  id3,
+		CreatedAt:  t3,
+		UpdatedAt:  t3,
+		GivenName:  "User_3",
+		FamilyName: "Family_3",
+		Email:      "test_user_three@test.com",
+		Status:     ENABLED,
+		Roles:      []string{"assistant", "analyst"},
+		OrgID:      orgID3,
+		OrgName:    "Test Organization 3",
 	}
 
 	u40 = User{
-		ID:				id4,
-		VersionID:     	id4,    
-		CreatedAt:     	t4, 
-		UpdatedAt:     	t4, 
-		GivenName:     	"User_4",    
-		FamilyName:   	"Family_4",   
-		Email:        	"test_user_four@test.com",    
-		Status:			ENABLED,
-		Roles:         	[]string{"assistant", "manager", "vp"},  
-		OrgID:         	orgID4,    
-		OrgName:      	"Test Organization 4",       
+		ID:         id4,
+		VersionID:  id4,
+		CreatedAt:  t4,
+		UpdatedAt:  t4,
+		GivenName:  "User_4",
+		FamilyName: "Family_4",
+		Email:      "test_user_four@test.com",
+		Status:     ENABLED,
+		Roles:      []string{"assistant", "manager", "vp"},
+		OrgID:      orgID4,
+		OrgName:    "Test Organization 4",
 	}
 
 	u50 = User{
-		ID:				id5,
-		VersionID:     	id5,    
-		CreatedAt:     	t5, 
-		UpdatedAt:     	t5, 
-		GivenName:     	"User_5",    
-		FamilyName:   	"Family_5",   
-		Email:        	"test_user_five@test.com",    
-		Status:			DISABLED,
-		Roles:         	[]string{"assistant"},  
-		OrgID:         	orgID4,    
-		OrgName:      	"Test Organization 4",       
+		ID:         id5,
+		VersionID:  id5,
+		CreatedAt:  t5,
+		UpdatedAt:  t5,
+		GivenName:  "User_5",
+		FamilyName: "Family_5",
+		Email:      "test_user_five@test.com",
+		Status:     DISABLED,
+		Roles:      []string{"assistant"},
+		OrgID:      orgID4,
+		OrgName:    "Test Organization 4",
 	}
 
 	u11 = User{
-		ID:				id1,
-		VersionID:     	id1,    
-		CreatedAt:     	t1, 
-		UpdatedAt:     	t1, 
-		GivenName:     	"User_1_updated",    
-		FamilyName:   	"Family_1_updated",   
-		Email:        	"user_one_updated@test.com",    
-		Status:			ENABLED,
-		Roles:         	[]string{"admin", "assistant", "manager", "owner"},  
-		OrgID:         	orgID1,    
-		OrgName:      	"Test Organization 1",       
+		ID:         id1,
+		VersionID:  id1,
+		CreatedAt:  t1,
+		UpdatedAt:  t1,
+		GivenName:  "User_1_updated",
+		FamilyName: "Family_1_updated",
+		Email:      "user_one_updated@test.com",
+		Status:     ENABLED,
+		Roles:      []string{"admin", "assistant", "manager", "owner"},
+		OrgID:      orgID1,
+		OrgName:    "Test Organization 1",
 	}
 
-	knownUsers = []User{u11, u20, u30, u40, u50}
-	knownIDs    = []string{id1, id2, id3, id4, id5}
+	knownUsers      = []User{u11, u20, u30, u40, u50}
+	knownIDs        = []string{id1, id2, id3, id4, id5}
 	knownUserEmails = []string{u11.Email, u20.Email, u30.Email, u40.Email, u50.Email}
-	knownOrgIDs = []string{orgID1, orgID3, orgID4}
-	knownOrgNames = []string{"Test Organization 1", "Test Organization 3", "Test Organization 4"}
-	allRoles = []string{"admin", "analyst", "assistant", "engineer", "manager", "owner", "vp"}
-	allStatuses = []string{"DISABLED", "ENABLED", "PENDING"}
+	knownOrgIDs     = []string{orgID1, orgID3, orgID4}
+	knownOrgNames   = []string{"Test Organization 1", "Test Organization 3", "Test Organization 4"}
+	allRoles        = []string{"admin", "analyst", "assistant", "engineer", "manager", "owner", "vp"}
+	allStatuses     = []string{"DISABLED", "ENABLED", "PENDING"}
 )
 
 func TestMain(m *testing.M) {
@@ -153,9 +152,9 @@ func TestCreateReadUpdateDelete(t *testing.T) {
 	expect := assert.New(t)
 	// Create user
 	u, problems, err := service.Create(ctx, User{
-		GivenName:   "crud_test_user",
-		Email: "crud_user_email@test.com",
-		Status: PENDING,
+		GivenName: "crud_test_user",
+		Email:     "crud_user_email@test.com",
+		Status:    PENDING,
 	})
 	expect.Empty(problems)
 
@@ -214,9 +213,9 @@ func TestCreateReadUpdateDelete(t *testing.T) {
 func TestReadAsJSON(t *testing.T) {
 	expect := assert.New(t)
 	uCheckJSON, err := service.ReadAsJSON(ctx, id5)
-		if expect.NoError(err) {
-			expect.Contains(string(uCheckJSON), id5)
-		}
+	if expect.NoError(err) {
+		expect.Contains(string(uCheckJSON), id5)
+	}
 }
 
 func TestVersionExists(t *testing.T) {
@@ -292,9 +291,9 @@ func TestReadAllDs(t *testing.T) {
 
 func TestReadNames(t *testing.T) {
 	expect := assert.New(t)
-	expectedNames :=  v.Map(knownUsers, func(u User) string { return u.String()})
+	expectedNames := v.Map(knownUsers, func(u User) string { return u.String() })
 	idsAndNames, err := service.ReadNames(ctx, false, 10, "-")
-	
+
 	if expect.NoError(err) && expect.NotEmpty(idsAndNames) {
 		onlyNames := v.Map(idsAndNames, func(entry v.TextValue) string {
 			return entry.Value
@@ -318,11 +317,11 @@ func TestFilterNames(t *testing.T) {
 	expect := assert.New(t)
 	expected := []v.TextValue{
 		{
-			Key: u40.ID,
+			Key:   u40.ID,
 			Value: "User_4 Family_4 <test_user_four@test.com>",
 		},
 	}
-	filteredNames, err := service.FilterNames(ctx, "User 4", true) 
+	filteredNames, err := service.FilterNames(ctx, "User 4", true)
 	if expect.NoError(err) && expect.NotEmpty(filteredNames) {
 		expect.Subset(filteredNames, expected)
 	}
@@ -330,7 +329,7 @@ func TestFilterNames(t *testing.T) {
 
 func TestFilterNamesNegative(t *testing.T) {
 	expect := assert.New(t)
-	filteredNames, err := service.FilterNames(ctx, "no name", true) 
+	filteredNames, err := service.FilterNames(ctx, "no name", true)
 	if expect.NoError(err) {
 		expect.Empty(filteredNames)
 	}
@@ -340,7 +339,7 @@ func TestReadUsers(t *testing.T) {
 	expect := assert.New(t)
 	users := service.ReadUsers(ctx, false, 5, "-")
 	if expect.NotEmpty(users) {
-		ids := v.Map(users, func(u User) string {return u.ID})
+		ids := v.Map(users, func(u User) string { return u.ID })
 		expect.GreaterOrEqual(len(users), 5)
 		expect.Subset(ids, knownIDs)
 	}
@@ -474,7 +473,7 @@ func TestReadAllUsersByOrgIDNegative(t *testing.T) {
 
 func TestReadAllUsersByOrgIDAsJSON(t *testing.T) {
 	expect := assert.New(t)
-	users, err := service.ReadAllUsersByOrgIDAsJSON(ctx, orgID4,)
+	users, err := service.ReadAllUsersByOrgIDAsJSON(ctx, orgID4)
 	if expect.NoError(err) && expect.NotEmpty(users) {
 		expect.Contains(string(users), u40.OrgID)
 	}
@@ -595,13 +594,13 @@ func TestReadAllUsersByStatus(t *testing.T) {
 		expect.GreaterOrEqual(len(numOfUsers), 4)
 		expect.Subset(knownIDs, usersIDs)
 	}
-	
+
 }
 
 func TestReadAllUsersByStatusAsJSON(t *testing.T) {
 	expect := assert.New(t)
 	checkUsers, err := service.ReadAllUsersByStatusAsJSON(ctx, "DISABLED")
 	if expect.NoError(err) {
-		expect.Contains(string(checkUsers),u50.Status)
+		expect.Contains(string(checkUsers), u50.Status)
 	}
 }
