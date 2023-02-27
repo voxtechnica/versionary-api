@@ -31,6 +31,12 @@ var (
 	id4 = tuid.NewIDWithTime(t4).String()
 	id5 = tuid.NewIDWithTime(t5).String()
 
+	// Organization IDs
+	orgID1 = tuid.NewIDWithTime(t1).String()
+	orgID2 = tuid.NewIDWithTime(t2).String()
+	orgID3 = tuid.NewIDWithTime(t2).String()
+	orgID4 = tuid.NewIDWithTime(t3).String()
+
 	// Known Users
 	u10 = User{
 		ID:				id1,
@@ -41,16 +47,11 @@ var (
 		FamilyName:   	"Family_1",   
 		Email:        	"test_user_one@test.com",    
 		Status:			PENDING,
-		// Password      	string    
-		// PasswordHash  	string    
-		// PasswordReset 	string  
-		// Roles         	[]string  
-		// OrgID         	string    
-		// OrgName      	string    
-		// AvatarURL    	string    
-		// WebsiteURL    	string    
+		Roles:         	[]string{"admin", "assistant", "manager", "owner"},  
+		OrgID:         	orgID1,    
+		OrgName:      	"Test Organization 1",       
 	}
-
+	
 	u20 = User{
 		ID:				id2,
 		VersionID:     	id2,    
@@ -60,14 +61,7 @@ var (
 		FamilyName:   	"Family_2",   
 		Email:        	"test_user_two@test.com",    
 		Status:			ENABLED,
-		Roles:         	[]string{"admin"},  
-		// Password      	string    
-		// PasswordHash  	string    
-		// PasswordReset 	string  
-		// OrgID         	string    
-		// OrgName      	string    
-		// AvatarURL    	string    
-		// WebsiteURL    	string    
+		Roles:         	[]string{"engineer"},    
 	}
 
 	u30 = User{
@@ -79,14 +73,9 @@ var (
 		FamilyName:   	"Family_3",   
 		Email:        	"test_user_three@test.com",    
 		Status:			ENABLED,
-		// Password      	string    
-		// PasswordHash  	string    
-		// PasswordReset 	string  
-		// Roles         	[]string  
-		// OrgID         	string    
-		// OrgName      	string    
-		// AvatarURL    	string    
-		// WebsiteURL    	string    
+		Roles:         	[]string{"assistant", "analyst"}, 
+		OrgID:         	orgID3,    
+		OrgName:      	"Test Organization 3",      
 	}
 
 	u40 = User{
@@ -98,14 +87,9 @@ var (
 		FamilyName:   	"Family_4",   
 		Email:        	"test_user_four@test.com",    
 		Status:			ENABLED,
-		// Password      	string    
-		// PasswordHash  	string    
-		// PasswordReset 	string  
-		// Roles         	[]string  
-		// OrgID         	string    
-		// OrgName      	string    
-		// AvatarURL    	string    
-		// WebsiteURL    	string    
+		Roles:         	[]string{"assistant", "manager", "vp"},  
+		OrgID:         	orgID4,    
+		OrgName:      	"Test Organization 4",       
 	}
 
 	u50 = User{
@@ -117,14 +101,9 @@ var (
 		FamilyName:   	"Family_5",   
 		Email:        	"test_user_five@test.com",    
 		Status:			DISABLED,
-		// Password      	string    
-		// PasswordHash  	string    
-		// PasswordReset 	string  
-		// Roles         	[]string  
-		// OrgID         	string    
-		// OrgName      	string    
-		// AvatarURL    	string    
-		// WebsiteURL    	string    
+		Roles:         	[]string{"assistant"},  
+		OrgID:         	orgID4,    
+		OrgName:      	"Test Organization 4",       
 	}
 
 	u11 = User{
@@ -136,18 +115,17 @@ var (
 		FamilyName:   	"Family_1_updated",   
 		Email:        	"user_one_updated@test.com",    
 		Status:			ENABLED,
-		// Password      	string    
-		// PasswordHash  	string    
-		// PasswordReset 	string  
-		// Roles         	[]string  
-		// OrgID         	string    
-		// OrgName      	string    
-		// AvatarURL    	string    
-		// WebsiteURL    	string    
+		Roles:         	[]string{"admin", "assistant", "manager", "owner"},  
+		OrgID:         	orgID1,    
+		OrgName:      	"Test Organization 1",       
 	}
 
-	knownUserEmails = []string{u11.Email, u20.Email, u30.Email, u40.Email, u50.Email}
+	knownUsers = []User{u11, u20, u30, u40, u50}
 	knownIDs    = []string{id1, id2, id3, id4, id5}
+	knownUserEmails = []string{u11.Email, u20.Email, u30.Email, u40.Email, u50.Email}
+	knownOrgIDs = []string{orgID1, orgID3, orgID4}
+	knownOrgNames = []string{"Test Organization 1", "Test Organization 3", "Test Organization 4"}
+	allRoles = []string{"admin", "analyst", "assistant", "engineer", "manager", "owner", "vp"}
 	allStatuses = []string{"DISABLED", "ENABLED", "PENDING"}
 )
 
@@ -179,8 +157,6 @@ func TestCreateReadUpdateDelete(t *testing.T) {
 		Email: "crud_user_email@test.com",
 		Status: PENDING,
 	})
-	fmt.Printf("CREATED:\n User name: %s\n Email: %s\n Status: %s\n", u.GivenName, u.Email, u.Status)
-
 	expect.Empty(problems)
 
 	if expect.NoError(err) {
@@ -205,7 +181,6 @@ func TestCreateReadUpdateDelete(t *testing.T) {
 		u.Email = "updated_crud_user_email@test.com"
 		u.Status = ENABLED
 		uUpdated, _, err := service.Update(ctx, u)
-		fmt.Printf("UPDATED:\n User name: %s\n Email: %s\n Status: %s", u.GivenName, u.Email, u.Status)
 		if expect.NoError(err) {
 			// Verify that the version ID has changed
 			expect.NotEqual(uUpdated.ID, uUpdated.VersionID)
@@ -317,16 +292,13 @@ func TestReadAllDs(t *testing.T) {
 
 func TestReadNames(t *testing.T) {
 	expect := assert.New(t)
-	expectedNames :=  []string{
-		"User_5 Family_5 <test_user_five@test.com>",
-		"User_4 Family_4 <test_user_four@test.com>",
-	}
+	expectedNames :=  v.Map(knownUsers, func(u User) string { return u.String()})
 	idsAndNames, err := service.ReadNames(ctx, false, 10, "-")
-	onlyNames := v.Map(idsAndNames, func(entry v.TextValue) string {
-		return entry.Value
-	})
-	fmt.Println(onlyNames)
-	if expect.NoError(err) && expect.NotEmpty(onlyNames) {
+	
+	if expect.NoError(err) && expect.NotEmpty(idsAndNames) {
+		onlyNames := v.Map(idsAndNames, func(entry v.TextValue) string {
+			return entry.Value
+		})
 		expect.Equal(len(onlyNames), len(knownIDs))
 		expect.Subset(onlyNames, expectedNames)
 	}
@@ -428,64 +400,148 @@ func TestReadUserIDsByEmailNegative(t *testing.T) {
 // Users by Organization
 //------------------------------------------------------------------------------
 
-func _TestReadOrgs(t *testing.T) {
-	
+func TestReadOrgs(t *testing.T) {
+	expect := assert.New(t)
+	orgIdAndName, err := service.ReadOrgs(ctx, false, 3, "")
+	orgNames := v.Map(orgIdAndName, func(entry v.TextValue) string { return entry.Value })
+	if expect.NoError(err) {
+		expect.Equal(orgNames, knownOrgNames)
+	}
 }
 
-func _TestReadAllOrgs(t *testing.T) {
-	
+func TestReadAllOrgs(t *testing.T) {
+	expect := assert.New(t)
+	orgIdAndName, err := service.ReadAllOrgs(ctx, true)
+	if expect.NoError(err) {
+		expect.Equal(len(orgIdAndName), 3)
+	}
 }
 
-func _TestReadOrgIDs(t *testing.T) {
-	
+func TestReadOrgIDs(t *testing.T) {
+	expect := assert.New(t)
+	orgIds, err := service.ReadOrgIDs(ctx, false, 3, "")
+	if expect.NoError(err) {
+		expect.Equal(orgIds, knownOrgIDs)
+	}
 }
 
-func _TestReadAllOrgIDs(t *testing.T) {
-	
+func TestReadAllOrgIDs(t *testing.T) {
+	expect := assert.New(t)
+	orgIds, err := service.ReadAllOrgIDs(ctx)
+	if expect.NoError(err) {
+		expect.Equal(orgIds, knownOrgIDs)
+	}
 }
 
-func _TestReadUsersByOrgID(t *testing.T) {
-	
+func TestReadUsersByOrgID(t *testing.T) {
+	expect := assert.New(t)
+	users, err := service.ReadUsersByOrgID(ctx, orgID4, true, 2, "")
+	if expect.NoError(err) && expect.NotEmpty(users) {
+		expect.Subset(knownUsers, users)
+	}
 }
 
-func _TestReadUsersByOrgIDAsJSON(t *testing.T) {
-	
+func TestReadUsersByOrgIDAsJSON(t *testing.T) {
+	expect := assert.New(t)
+	user, err := service.ReadUsersByOrgIDAsJSON(ctx, orgID3, true, 1, "")
+	if expect.NoError(err) && expect.NotEmpty(user) {
+		expect.Contains(string(user), u30.OrgID)
+	}
 }
 
-func _TestReadAllUsersByOrgID(t *testing.T) {
-	
+func TestReadAllUsersByOrgID(t *testing.T) {
+	expect := assert.New(t)
+	users, err := service.ReadAllUsersByOrgID(ctx, orgID1)
+	if expect.NoError(err) && expect.NotEmpty(users) {
+		var numOfUsers []int
+		var usersIds []string
+		for i, v := range users {
+			numOfUsers = append(numOfUsers, i)
+			usersIds = append(usersIds, v.OrgID)
+		}
+		expect.GreaterOrEqual(len(numOfUsers), 1)
+		expect.Subset(knownOrgIDs, usersIds)
+	}
 }
 
-func _TestReadAllUsersByOrgIDAsJSON(t *testing.T) {
-	
+func TestReadAllUsersByOrgIDNegative(t *testing.T) {
+	expect := assert.New(t)
+	noUsers, err := service.ReadAllUsersByOrgID(ctx, orgID2)
+	if expect.NoError(err) {
+		expect.Empty(noUsers)
+	}
+}
+
+func TestReadAllUsersByOrgIDAsJSON(t *testing.T) {
+	expect := assert.New(t)
+	users, err := service.ReadAllUsersByOrgIDAsJSON(ctx, orgID4,)
+	if expect.NoError(err) && expect.NotEmpty(users) {
+		expect.Contains(string(users), u40.OrgID)
+	}
 }
 
 //------------------------------------------------------------------------------
 // Users by Role
 //------------------------------------------------------------------------------
 
-func _TestReadRoles(t *testing.T) {
-	
+func TestReadRoles(t *testing.T) {
+	expect := assert.New(t)
+	roles, err := service.ReadRoles(ctx, false, 2, "o")
+	if expect.NoError(err) {
+		expect.Subset(allRoles, roles)
+	}
 }
 
-func _TestReadAllRoles(t *testing.T) {
-	
+func TestReadAllRoles(t *testing.T) {
+	expect := assert.New(t)
+	roles, err := service.ReadAllRoles(ctx)
+	if expect.NoError(err) {
+		expect.Equal(roles, allRoles)
+	}
 }
 
-func _TestReadUsersByRole(t *testing.T) {
-	
+func TestReadUsersByRole(t *testing.T) {
+	expect := assert.New(t)
+	usersByRole, err := service.ReadUsersByRole(ctx, "vp", false, 1, "")
+	if expect.NoError(err) && expect.NotEmpty(usersByRole) {
+		expect.Subset(knownUsers, usersByRole)
+	}
 }
 
-func _TestReadUsersByRoleAsJSON(t *testing.T) {
-	
+func TestReadUsersByRoleAsJSON(t *testing.T) {
+	expect := assert.New(t)
+	usersByRole, err := service.ReadUsersByRoleAsJSON(ctx, "engineer", false, 1, "")
+	if expect.NoError(err) && expect.NotEmpty(usersByRole) {
+		expect.Contains(string(usersByRole), u20.Roles[0])
+	}
 }
 
-func _TestReadAllUsersByRole(t *testing.T) {
-	
+func TestReadAllUsersByRole(t *testing.T) {
+	expect := assert.New(t)
+	usersByRole, err := service.ReadAllUsersByRole(ctx, "assistant")
+	if expect.NoError(err) && expect.NotEmpty(usersByRole) {
+		var numOfUsers []int
+		for i, _ := range usersByRole {
+			numOfUsers = append(numOfUsers, i)
+		}
+		expect.GreaterOrEqual(len(numOfUsers), 4)
+	}
 }
 
-func _TestReadAllUsersByRoleAsJSON(t *testing.T) {
-	
+func TestReadAllUsersByRoleNegative(t *testing.T) {
+	expect := assert.New(t)
+	noUsers, err := service.ReadAllUsersByOrgID(ctx, "ceo")
+	if expect.NoError(err) {
+		expect.Empty(noUsers)
+	}
+}
+
+func TestReadAllUsersByRoleAsJSON(t *testing.T) {
+	expect := assert.New(t)
+	users, err := service.ReadAllUsersByRoleAsJSON(ctx, "admin")
+	if expect.NoError(err) && expect.NotEmpty(users) {
+		expect.Contains(string(users), u11.Roles[0])
+	}
 }
 
 //------------------------------------------------------------------------------
