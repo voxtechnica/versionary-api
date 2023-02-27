@@ -520,7 +520,7 @@ func TestReadAllUsersByRole(t *testing.T) {
 	usersByRole, err := service.ReadAllUsersByRole(ctx, "assistant")
 	if expect.NoError(err) && expect.NotEmpty(usersByRole) {
 		var numOfUsers []int
-		for i, _ := range usersByRole {
+		for i := range usersByRole {
 			numOfUsers = append(numOfUsers, i)
 		}
 		expect.GreaterOrEqual(len(numOfUsers), 4)
