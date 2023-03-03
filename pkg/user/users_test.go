@@ -167,7 +167,7 @@ func TestCreateReadUpdateDelete(t *testing.T) {
 		// Read the user
 		uCheck, err := service.Read(ctx, u.ID)
 		if expect.NoError(err) {
-			// Check the organization
+			// Check the user
 			expect.Equal(u, uCheck)
 		}
 		// Read the user as JSON
@@ -344,6 +344,10 @@ func TestReadUsers(t *testing.T) {
 		expect.Subset(ids, knownIDs)
 	}
 }
+
+//------------------------------------------------------------------------------
+// Users by Email
+//------------------------------------------------------------------------------
 
 func TestReadEmailAddresses(t *testing.T) {
 	expect := assert.New(t)
