@@ -121,6 +121,7 @@ var (
 
 	knownUsers = []User{u11, u20, u30, u40, u50}
 	knownIDs    = []string{id1, id2, id3, id4, id5}
+	knownEnabledIDs    = []string{id1, id2, id3, id4}
 	knownUserEmails = []string{u11.Email, u20.Email, u30.Email, u40.Email, u50.Email}
 	knownOrgIDs = []string{orgID1, orgID3, orgID4}
 	knownOrgNames = []string{"Test Organization 1", "Test Organization 3", "Test Organization 4"}
@@ -580,9 +581,8 @@ func TestReadAllUsersByStatus(t *testing.T) {
 			usersIDs = append(usersIDs, v.ID)
 		}
 		expect.Equal(len(checkUsers), 4)
-		expect.Subset(knownIDs, usersIDs)
+		expect.Subset(usersIDs, knownEnabledIDs)
 	}
-	
 }
 
 func TestReadAllUsersByStatusAsJSON(t *testing.T) {
