@@ -338,7 +338,7 @@ func TestReadUserVersions(t *testing.T) {
 			expect.Contains(e.Message, "invalid path parameter ID: bad_id", "Event Message")
 		}
 	}
-	// // Read versions of a user that does not exist
+	// Read versions of a user that does not exist
 	w = httptest.NewRecorder()
 	userID := tuid.NewID().String()
 	req, err = http.NewRequest("GET", "/v1/users/"+userID+"/versions", nil)
@@ -356,5 +356,282 @@ func TestReadUserVersions(t *testing.T) {
 	}
 }
 
+func TestReadUserVersion(t *testing.T) {
+	expect := assert.New(t)
+	// Read a known user version
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "/v1/users/"+adminUser.ID+"/versions/"+adminUser.VersionID, nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
+		var u user.User
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&u), "Decode JSON User") {
+			expect.Equal(adminUser, u, "User")
+		}
+	}
+	// Read a known user version that does not exist
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/users/"+adminUser.ID+"/versions/"+tuid.NewID().String(), nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusNotFound, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusNotFound, e.Code, "Event Code")
+			expect.Contains(e.Message, "not found: user "+adminUser.ID+" version", "Event Message")
+		}
+	}
+	// Read a user version: invalid user ID
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/users/bad_id/versions/"+adminUser.VersionID, nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusBadRequest, e.Code, "Event Code")
+			expect.Contains(e.Message, "invalid path parameter ID", "Event Message")
+		}
+	}
+}
 
+func TestUserVersionExists(t *testing.T) {
+	expect := assert.New(t)
+	// Check an invalid user ID
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest("HEAD", "/v1/users/bad_id/versions/bad_id", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+	}
+	// Check a user that does not exist
+	userID := tuid.NewID().String()
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("HEAD", "/v1/users/"+userID+"/versions/"+userID, nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusNotFound, w.Code, "HTTP Status Code")
+	}
+	// Check if a known user version exists
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("HEAD", "/v1/users/"+adminUser.ID+"/versions/"+adminUser.VersionID, nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusNoContent, w.Code, "HTTP Status Code")
+	}
+}
 
+func TestUpdateUser(t *testing.T) {
+	expect := assert.New(t)
+	// Update a user: invalid JSON
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest("PUT", "/v1/users/"+adminUser.ID, strings.NewReader(""))
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusBadRequest, e.Code, "Event Code")
+			expect.Contains(e.Message, "invalid JSON", "Event Message")
+		}
+	}
+	// Update a user: invalid user ID
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("PUT", "/v1/users/bad_id", strings.NewReader(`{"givenName": "updated_user"}`))
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusBadRequest, e.Code, "Event Code")
+			expect.Contains(e.Message, "invalid path parameter ID: bad_id", "Event Message")
+		}
+	}
+	// Update an user: mismatched IDs
+	w = httptest.NewRecorder()
+	userID := tuid.NewID().String()
+	body := `{"id": "` + userID + `", "givenName": "New Name"}`
+	req, err = http.NewRequest("PUT", "/v1/users/"+adminUser.ID, strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusBadRequest, e.Code, "Event Code")
+			expect.Contains(e.Message, "does not match", "Event Message")
+		}
+	}
+	// Update a user: missing name
+	w = httptest.NewRecorder()
+	body = `{"id": "` + adminUser.ID + `", "givenName": ""}`
+	req, err = http.NewRequest("PUT", "/v1/users/"+adminUser.ID, strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusUnprocessableEntity, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusUnprocessableEntity, e.Code, "Event Code")
+			expect.Contains(e.Message, "missing", "Event Message")
+		}
+	}
+	// Update a user: missing email
+	w = httptest.NewRecorder()
+	body = `{"id": "` + adminUser.ID + `", "email": ""}`
+	req, err = http.NewRequest("PUT", "/v1/users/"+adminUser.ID, strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusUnprocessableEntity, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusUnprocessableEntity, e.Code, "Event Code")
+			expect.Contains(e.Message, "missing", "Event Message")
+		}
+	}
+}
+
+func TestDeleteUser(t *testing.T) {
+	expect := assert.New(t)
+	// Delete an invalid user ID
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest("DELETE", "/v1/users/bad_id", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusBadRequest, e.Code, "Event Code")
+			expect.Contains(e.Message, "invalid path parameter ID: bad_id", "Event Message")
+		}
+	}
+	// Delete a user that does not exist
+	w = httptest.NewRecorder()
+	userID := tuid.NewID().String()
+	req, err = http.NewRequest("DELETE", "/v1/users/"+userID, nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusNotFound, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusNotFound, e.Code, "Event Code")
+			expect.Contains(e.Message, "not found: user "+userID, "Event Message")
+		}
+	}
+}
+
+func TestReadUserIDs(t *testing.T) {
+	expect := assert.New(t)
+	// Get user IDs: missing email query
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "/v1/user_ids", nil)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusBadRequest, e.Code, "Event Code")
+			expect.Contains(e.Message, "missing required query parameter: email", "Event Message")
+		}
+	}
+	//Get user IDs: invalid email address
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", `/v1/user_ids?email=bad_email`, nil)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusBadRequest, e.Code, "Event Code")
+			expect.Contains(e.Message, "invalid query parameter email:", "Event Message")
+		}
+	}
+	// Get user IDs: happy path
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", `/v1/user_ids?email=info%40versionary.net`, nil)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
+		var ids []string
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&ids), "Decode JSON User IDs") {
+			expect.Equal(1, len(ids), "Number of IDs")
+		}
+	}
+}
+
+func _TestReadUserNames(t *testing.T) {
+	
+}
+
+func _TestReadUserEmails(t *testing.T) {
+	
+}
+
+func _TestReadUserOrgs(t *testing.T) {
+	
+}
+
+func _TestReadUserRoles(t *testing.T) {
+	
+}
+
+func TestReadUserStatuses(t *testing.T) {
+	expect := assert.New(t)
+	// Read user statuses in use
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "/v1/user_statuses?", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
+		var statuses []string
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&statuses), "Decode JSON User Statuses") {
+			expect.GreaterOrEqual(len(statuses), 1, "User Statuses")
+			expect.Contains(statuses, string(user.ENABLED), "ENABLED Status exists")
+		}
+	}
+}
