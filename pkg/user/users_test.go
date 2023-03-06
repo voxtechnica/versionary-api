@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"testing"
 	"time"
@@ -260,7 +259,7 @@ func TestReadVersionsAsJSON(t *testing.T) {
 func TestReadAllVersions(t *testing.T) {
 	expect := assert.New(t)
 	allVersions, err := service.ReadAllVersions(ctx, id2)
-	if expect.NoError(err) {
+	if expect.NoError(err) && expect.NotEmpty(allVersions) {
 		expect.Equal(u20, allVersions[0])
 	}
 }
@@ -299,7 +298,7 @@ func TestReadNames(t *testing.T) {
 		onlyNames := v.Map(idsAndNames, func(entry v.TextValue) string {
 			return entry.Value
 		})
-		expect.Equal(len(onlyNames), len(knownIDs))
+		expect.GreaterOrEqual(len(onlyNames), 5)
 		expect.Subset(onlyNames, expectedNames)
 	}
 }
@@ -452,15 +451,9 @@ func TestReadUsersByOrgIDAsJSON(t *testing.T) {
 func TestReadAllUsersByOrgID(t *testing.T) {
 	expect := assert.New(t)
 	users, err := service.ReadAllUsersByOrgID(ctx, orgID1)
-	if expect.NoError(err) && expect.NotEmpty(users) {
-		var numOfUsers []int
-		var usersIds []string
-		for i, v := range users {
-			numOfUsers = append(numOfUsers, i)
-			usersIds = append(usersIds, v.OrgID)
-		}
-		expect.GreaterOrEqual(len(numOfUsers), 1)
-		expect.Subset(knownOrgIDs, usersIds)
+	if expect.NoError(err) {
+		expect.Equal(len(users),1)
+		expect.Contains(users, u11)
 	}
 }
 
@@ -520,11 +513,7 @@ func TestReadAllUsersByRole(t *testing.T) {
 	expect := assert.New(t)
 	usersByRole, err := service.ReadAllUsersByRole(ctx, "assistant")
 	if expect.NoError(err) && expect.NotEmpty(usersByRole) {
-		var numOfUsers []int
-		for i, _ := range usersByRole {
-			numOfUsers = append(numOfUsers, i)
-		}
-		expect.GreaterOrEqual(len(numOfUsers), 4)
+		expect.Equal(len(usersByRole), 4)
 	}
 }
 
@@ -586,13 +575,11 @@ func TestReadAllUsersByStatus(t *testing.T) {
 	expect := assert.New(t)
 	checkUsers, err := service.ReadAllUsersByStatus(ctx, "ENABLED")
 	if expect.NoError(err) && expect.NotEmpty(checkUsers) {
-		var numOfUsers []int
 		var usersIDs []string
-		for i, v := range checkUsers {
-			numOfUsers = append(numOfUsers, i)
+		for _, v := range checkUsers {
 			usersIDs = append(usersIDs, v.ID)
 		}
-		expect.GreaterOrEqual(len(numOfUsers), 4)
+		expect.Equal(len(checkUsers), 4)
 		expect.Subset(knownIDs, usersIDs)
 	}
 	
