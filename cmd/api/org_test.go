@@ -490,7 +490,7 @@ func TestDeleteOrganization(t *testing.T) {
 	expect := assert.New(t)
 	// Delete an invalid organization ID
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest("GET", "/v1/organizations/bad_id", nil)
+	req, err := http.NewRequest("DELETE", "/v1/organizations/bad_id", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {

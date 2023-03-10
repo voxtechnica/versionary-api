@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/voxtechnica/versionary"
 
+	"versionary-api/pkg/org"
 	"versionary-api/pkg/user"
 )
 
@@ -45,7 +45,7 @@ func TestUserCRUD(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {
-		r.ServeHTTP(w, req) 
+		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var u2 user.User
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&u2), "Decode JSON User") {
@@ -198,8 +198,6 @@ func TestReadUsers(t *testing.T) {
 	if expect.NoError(err) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
-		fmt.Println("Server response: ", w.Body)
-		fmt.Println(req)
 		var users []user.User
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&users), "Decode JSON Users") {
 			expect.GreaterOrEqual(len(users), 1, "Number of users")
@@ -209,22 +207,20 @@ func TestReadUsers(t *testing.T) {
 	}
 
 	// Read users by status invalid
-	// w = httptest.NewRecorder()
-	// req, err = http.NewRequest("GET", "/v1/users?status=invalid", nil)
-	// req.Header.Set("Authorization", "Bearer "+adminToken)
-	// req.Header.Set("Accept", "application/json;charset=UTF-8")
-	// if expect.NoError(err) {
-	// 	r.ServeHTTP(w, req)
-	// 	expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
-	// 	fmt.Println("Server response: ", w.Body)
-	// 	fmt.Println(req)
-	// 	var e APIEvent
-	// 	if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Users") {
-	// 		expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
-	// 		expect.Equal(http.StatusBadRequest, e.Code, "Event Code")
-	// 		expect.Contains(e.Message, "invalid status: INVALID", "Event Message")
-	// 	}
-	// }
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/users?status=invalid", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Users") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusBadRequest, e.Code, "Event Code")
+			expect.Contains(e.Message, "invalid status: INVALID", "Event Message")
+		}
+	}
 }
 
 func TestReadUser(t *testing.T) {
@@ -598,31 +594,325 @@ func TestReadUserIDs(t *testing.T) {
 		var ids []string
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&ids), "Decode JSON User IDs") {
 			expect.Equal(1, len(ids), "Number of IDs")
+			expect.Equal(regularUser.ID, ids[0])
 		}
 	}
 }
 
-func _TestReadUserNames(t *testing.T) {
-	
+func TestReadUserNames(t *testing.T) {
+	knownUsers := []user.User{regularUser}
+	expect := assert.New(t)
+	// Get user IDs and names: missing authentication token
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "/v1/user_names?search=regular&any=true", nil)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusUnauthorized, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusUnauthorized, e.Code, "Event Code")
+			expect.Contains(e.Message, "unauthenticated", "Event Message")
+		}
+	}
+	// Get user IDs and names: unauthorized token (not an admin)
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/user_names?search=regular&any=true", nil)
+	req.Header.Set("Authorization", "Bearer "+regularToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusForbidden, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusForbidden, e.Code, "Event Code")
+			expect.Contains(e.Message, "unauthorized", "Event Message")
+		}
+	}
+	// Get user IDs and names: invalid 'any' parameter
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", `/v1/user_names?search=regular&any=invalid`, nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusBadRequest, e.Code, "Event Code")
+			expect.Contains(e.Message, "invalid parameter", "Event Message")
+		}
+	}
+	// Get user IDs and names: invalid 'limit' parameter
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", `/v1/user_names?limit=invalid`, nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusBadRequest, e.Code, "Event Code")
+			expect.Contains(e.Message, "invalid parameter", "Event Message")
+		}
+	}
+	// Get user IDs and names: happy path (search and any parameters)
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/user_names?search=Regular&any=true", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
+		var users []versionary.TextValue
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&users), "Decode JSON Users") {
+			names := versionary.Map(users, func(e versionary.TextValue) string { return e.Value })
+			knownNames := versionary.Map(knownUsers, func(u user.User) string { return u.String() })
+			expect.Equal(1, len(users), "Number of Users")
+			expect.Subset(names, knownNames, "User Name")
+		}
+	}
+	// Get user IDs and names: happy path (limit, offset parameters)
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/user_names?limit=1&offset=0", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
+		var users []versionary.TextValue
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&users), "Decode JSON Users") {
+			expect.Equal(1, len(users), "Number of Users")
+		}
+	}
+	// Get user IDs and names: happy path (sorted parameters)
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/user_names?sorted=true", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
+		var users []versionary.TextValue
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&users), "Decode JSON Users") {
+			names := versionary.Map(users, func(e versionary.TextValue) string { return e.Value })
+			knownNames := versionary.Map(knownUsers, func(u user.User) string { return u.String() })
+			expect.Equal(2, len(users), "Number of Users")
+			expect.Equal(names[1], knownNames[0], "User Name")
+		}
+	}
 }
 
-func _TestReadUserEmails(t *testing.T) {
-	
+func TestReadUserEmails(t *testing.T) {
+	expect := assert.New(t)
+	// Get users emails: missing authentication token
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "/v1/user_emails", nil)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusUnauthorized, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusUnauthorized, e.Code, "Event Code")
+			expect.Contains(e.Message, "unauthenticated", "Event Message")
+		}
+	}
+	// Get users emails: unauthorized token (not an admin)
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/user_emails", nil)
+	req.Header.Set("Authorization", "Bearer "+regularToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusForbidden, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusForbidden, e.Code, "Event Code")
+			expect.Contains(e.Message, "unauthorized", "Event Message")
+		}
+	}
+	// Get users emails: happy path
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/user_emails", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
+		var emails []string
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&emails), "Decode JSON Users") {
+			expect.Equal(3, len(emails))
+		}
+	}
+	// Get users emails: happy path (limit parameter)
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/user_emails?limit=1", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
+		var emails []string
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&emails), "Decode JSON Users") {
+			expect.Equal(1, len(emails))
+		}
+	}
+	// Get users emails: happy path (offset parameter)
+	expectedEmailAddress := "test_user@test.com"
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/user_emails?reverse=true", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
+		var emails []string
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&emails), "Decode JSON Users") {
+			expect.Equal(3, len(emails))
+			expect.Equal(emails[0], expectedEmailAddress, "Email address")
+		}
+	}
 }
 
-func _TestReadUserOrgs(t *testing.T) {
-	
+func TestReadUserOrgs(t *testing.T) {
+	expect := assert.New(t)
+	// Get orgs ID and name: missing authentication token
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "/v1/user_orgs", nil)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusUnauthorized, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusUnauthorized, e.Code, "Event Code")
+			expect.Contains(e.Message, "unauthenticated", "Event Message")
+		}
+	}
+	// Get orgs ID and name: unauthorized token (not an admin)
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/user_orgs", nil)
+	req.Header.Set("Authorization", "Bearer "+regularToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusForbidden, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusForbidden, e.Code, "Event Code")
+			expect.Contains(e.Message, "unauthorized", "Event Message")
+		}
+	}
+	// Get orgs ID and name: happy path
+	knownOrganization := []org.Organization{userOrg}
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/user_orgs", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
+		var orgs []versionary.TextValue
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&orgs), "Decode JSON Users") {
+			orgName := versionary.Map(orgs, func(e versionary.TextValue) string { return e.Value })
+			knownOrgName := versionary.Map(knownOrganization, func(o org.Organization) string { return o.Name })
+			expect.Equal(1, len(orgs))
+			expect.Equal(orgName, knownOrgName, "User Name")
+		}
+	}
 }
 
-func _TestReadUserRoles(t *testing.T) {
-	
+func TestReadUserRoles(t *testing.T) {
+	expect := assert.New(t)
+	// Get roles: missing authentication token
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "/v1/user_roles", nil)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusUnauthorized, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusUnauthorized, e.Code, "Event Code")
+			expect.Contains(e.Message, "unauthenticated", "Event Message")
+		}
+	}
+	// Get roles: unauthorized token (not an admin)
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/user_roles", nil)
+	req.Header.Set("Authorization", "Bearer "+regularToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusForbidden, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusForbidden, e.Code, "Event Code")
+			expect.Contains(e.Message, "unauthorized", "Event Message")
+		}
+	}
+	// Get roles: happy path
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/user_roles", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
+		var roles []string
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&roles), "Decode JSON Users") {
+			expect.Equal(1, len(roles))
+		}
+	}
 }
 
 func TestReadUserStatuses(t *testing.T) {
 	expect := assert.New(t)
-	// Read user statuses in use
+	// Get statuses: missing authentication token
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest("GET", "/v1/user_statuses?", nil)
+	req, err := http.NewRequest("GET", "/v1/user_statuses", nil)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusUnauthorized, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusUnauthorized, e.Code, "Event Code")
+			expect.Contains(e.Message, "unauthenticated", "Event Message")
+		}
+	}
+	// Get statuses: unauthorized token (not an admin)
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/user_statuses", nil)
+	req.Header.Set("Authorization", "Bearer "+regularToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusForbidden, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusForbidden, e.Code, "Event Code")
+			expect.Contains(e.Message, "unauthorized", "Event Message")
+		}
+	}
+	expect = assert.New(t)
+	// Get statuses: happy path
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/user_statuses", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {
