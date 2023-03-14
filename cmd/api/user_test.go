@@ -247,7 +247,7 @@ func TestReadUsers(t *testing.T) {
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&users), "Decode JSON Users") {
 			expect.GreaterOrEqual(len(users), 1, "Number of users")
 			orgIDs := versionary.Map(users, func(u user.User) string { return u.OrgID })
-			expect.Contains(orgIDs, adminUser.OrgID, "User ID")
+			expect.Contains(orgIDs, adminUser.OrgID, "User Organization ID")
 		}
 	}
 	// Read users by invalid org ID
@@ -377,7 +377,9 @@ func TestReadUser(t *testing.T) {
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var u user.User
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&u), "Decode JSON User") {
-			expect.Equal(regularUser, u, "User")
+			expect.Equal(regularUser.ID, u.ID, "User")
+			expect.Empty(u.PasswordHash, "User Password Hash")
+			expect.Empty(u.PasswordReset, "User Password Reset Token")
 		}
 	}
 }
