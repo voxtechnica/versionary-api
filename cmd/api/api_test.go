@@ -58,7 +58,7 @@ func generateUsers() {
 		Email:      "info@versionary.net",
 		OrgID:      userOrg.ID,
 		OrgName:    userOrg.Name,
-		Roles:		[]string{"creator"},
+		Roles:      []string{"creator"},
 		Status:     user.PENDING,
 	})
 	if err != nil || len(problems) > 0 {
