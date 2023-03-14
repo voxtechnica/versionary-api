@@ -7507,7 +7507,7 @@
                     }
                 },
                 "type": {
-                    "type": "string"
+                    "$ref": "#/definitions/content.Type"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -7601,6 +7601,21 @@
                     "type": "string"
                 }
             }
+        },
+        "content.Type": {
+            "type": "string",
+            "enum": [
+                "BOOK",
+                "CHAPTER",
+                "ARTICLE",
+                "CATEGORY"
+            ],
+            "x-enum-varnames": [
+                "BOOK",
+                "CHAPTER",
+                "ARTICLE",
+                "CATEGORY"
+            ]
         },
         "device.Count": {
             "type": "object",
@@ -7701,7 +7716,7 @@
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
+                    "$ref": "#/definitions/email.Status"
                 },
                 "subject": {
                     "type": "string"
@@ -7733,6 +7748,21 @@
                 }
             }
         },
+        "email.Status": {
+            "type": "string",
+            "enum": [
+                "PENDING",
+                "SENT",
+                "UNSENT",
+                "ERROR"
+            ],
+            "x-enum-varnames": [
+                "PENDING",
+                "SENT",
+                "UNSENT",
+                "ERROR"
+            ]
+        },
         "event.Event": {
             "type": "object",
             "properties": {
@@ -7752,7 +7782,7 @@
                     "type": "string"
                 },
                 "logLevel": {
-                    "type": "string"
+                    "$ref": "#/definitions/event.LogLevel"
                 },
                 "message": {
                     "type": "string"
@@ -7770,6 +7800,25 @@
                     "type": "string"
                 }
             }
+        },
+        "event.LogLevel": {
+            "type": "string",
+            "enum": [
+                "TRACE",
+                "DEBUG",
+                "INFO",
+                "WARN",
+                "ERROR",
+                "FATAL"
+            ],
+            "x-enum-varnames": [
+                "TRACE",
+                "DEBUG",
+                "INFO",
+                "WARN",
+                "ERROR",
+                "FATAL"
+            ]
         },
         "image.Distance": {
             "type": "object",
@@ -7855,7 +7904,11 @@
                 },
                 "mediaType": {
                     "description": "Media Type (image/jpeg, image/webp, image/png, image/gif)",
-                    "type": "string"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/image.MediaType"
+                        }
+                    ]
                 },
                 "pHash": {
                     "description": "PHash is the DTC perceptual hash of the image",
@@ -7871,7 +7924,11 @@
                 },
                 "status": {
                     "description": "Status is the current status of the image",
-                    "type": "string"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/image.Status"
+                        }
+                    ]
                 },
                 "tags": {
                     "description": "Tags are used to group images by topic or category",
@@ -7895,6 +7952,36 @@
                     "type": "integer"
                 }
             }
+        },
+        "image.MediaType": {
+            "type": "string",
+            "enum": [
+                "image/gif",
+                "image/jpeg",
+                "image/png",
+                "image/webp"
+            ],
+            "x-enum-varnames": [
+                "GIF",
+                "JPEG",
+                "PNG",
+                "WebP"
+            ]
+        },
+        "image.Status": {
+            "type": "string",
+            "enum": [
+                "PENDING",
+                "UPLOADED",
+                "COMPLETE",
+                "ERROR"
+            ],
+            "x-enum-varnames": [
+                "PENDING",
+                "UPLOADED",
+                "COMPLETE",
+                "ERROR"
+            ]
         },
         "main.APIEvent": {
             "type": "object",
@@ -8008,7 +8095,7 @@
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
+                    "$ref": "#/definitions/org.Status"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -8017,6 +8104,19 @@
                     "type": "string"
                 }
             }
+        },
+        "org.Status": {
+            "type": "string",
+            "enum": [
+                "PENDING",
+                "ENABLED",
+                "DISABLED"
+            ],
+            "x-enum-varnames": [
+                "PENDING",
+                "ENABLED",
+                "DISABLED"
+            ]
         },
         "token.Request": {
             "type": "object",
@@ -8086,6 +8186,19 @@
                 }
             }
         },
+        "user.Status": {
+            "type": "string",
+            "enum": [
+                "PENDING",
+                "ENABLED",
+                "DISABLED"
+            ],
+            "x-enum-varnames": [
+                "PENDING",
+                "ENABLED",
+                "DISABLED"
+            ]
+        },
         "user.User": {
             "type": "object",
             "properties": {
@@ -8129,7 +8242,7 @@
                     }
                 },
                 "status": {
-                    "type": "string"
+                    "$ref": "#/definitions/user.Status"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -8218,7 +8331,11 @@
                 },
                 "userAgent": {
                     "description": "Parsed User-Agent header",
-                    "$ref": "#/definitions/user_agent.UserAgent"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/user_agent.UserAgent"
+                        }
+                    ]
                 },
                 "width": {
                     "description": "Javascript window.innerWidth",
