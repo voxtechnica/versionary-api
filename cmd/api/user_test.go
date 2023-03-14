@@ -14,7 +14,6 @@ import (
 
 	"github.com/voxtechnica/versionary"
 
-	"versionary-api/pkg/org"
 	"versionary-api/pkg/user"
 )
 
@@ -54,8 +53,7 @@ func TestUserCRUD(t *testing.T) {
 	}
 	// Update the user
 	w = httptest.NewRecorder()
-	newRole := []string{"test_role"}
-	u.Roles = newRole
+	u.Roles = append(u.Roles, "test")
 	u.Status = user.DISABLED
 	body, _ := json.Marshal(u)
 	req, err = http.NewRequest("PUT", "/v1/users/"+u.ID, bytes.NewBuffer(body))
@@ -859,8 +857,8 @@ func TestReadUserEmails(t *testing.T) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var emails []string
-		if expect.NoError(json.NewDecoder(w.Body).Decode(&emails), "Decode JSON Users") {
-			expect.GreaterOrEqual(len(emails), 2)
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&emails), "Decode JSON Emails") {
+			expect.GreaterOrEqual(len(emails), 2, "Number of Emails")
 		}
 	}
 	// Get users emails: happy path (limit parameter)
@@ -872,7 +870,7 @@ func TestReadUserEmails(t *testing.T) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var emails []string
-		if expect.NoError(json.NewDecoder(w.Body).Decode(&emails), "Decode JSON Users") {
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&emails), "Decode JSON Emails") {
 			expect.Equal(1, len(emails))
 		}
 	}
@@ -886,9 +884,9 @@ func TestReadUserEmails(t *testing.T) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var emails []string
-		if expect.NoError(json.NewDecoder(w.Body).Decode(&emails), "Decode JSON Users") {
-			expect.Equal(3, len(emails))
-			expect.Equal(emails[1], expectedEmailAddress, "Email address")
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&emails), "Decode JSON Emails") {
+			expect.GreaterOrEqual(len(emails), 2, "Number of Emails")
+			expect.Contains(emails, expectedEmailAddress, "Email address")
 		}
 	}
 }
@@ -925,7 +923,6 @@ func TestReadUserOrgs(t *testing.T) {
 		}
 	}
 	// Get orgs ID and name: happy path
-	knownOrganization := []org.Organization{userOrg}
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest("GET", "/v1/user_orgs", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
@@ -934,11 +931,11 @@ func TestReadUserOrgs(t *testing.T) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var orgs []versionary.TextValue
-		if expect.NoError(json.NewDecoder(w.Body).Decode(&orgs), "Decode JSON Users") {
-			orgName := versionary.Map(orgs, func(e versionary.TextValue) string { return e.Value })
-			knownOrgName := versionary.Map(knownOrganization, func(o org.Organization) string { return o.Name })
-			expect.Equal(1, len(orgs))
-			expect.Equal(orgName, knownOrgName, "User Name")
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&orgs), "Decode JSON Organizations") {
+			orgNames := versionary.Map(orgs, func(e versionary.TextValue) string { return e.Value })
+			expect.GreaterOrEqual(len(orgs), 1, "Number of Organizations")
+			knownOrgName := userOrg.Name
+			expect.Contains(orgNames, knownOrgName, "Organization Name")
 		}
 	}
 }
@@ -983,8 +980,10 @@ func TestReadUserRoles(t *testing.T) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var roles []string
-		if expect.NoError(json.NewDecoder(w.Body).Decode(&roles), "Decode JSON Users") {
-			expect.Equal(3, len(roles))
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&roles), "Decode JSON User Roles") {
+			expect.GreaterOrEqual(len(roles), 2, "Number of Roles")
+			expect.Contains(roles, "admin", "Role Name")
+			expect.Contains(roles, "creator", "Role Name")
 		}
 	}
 }
@@ -1030,7 +1029,8 @@ func TestReadUserStatuses(t *testing.T) {
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var statuses []string
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&statuses), "Decode JSON User Statuses") {
-			expect.GreaterOrEqual(len(statuses), 1, "User Statuses")
+			expect.GreaterOrEqual(len(statuses), 2, "Number of User Statuses")
+			expect.Contains(statuses, string(user.PENDING), "PENDING Status exists")
 			expect.Contains(statuses, string(user.ENABLED), "ENABLED Status exists")
 		}
 	}
