@@ -578,7 +578,7 @@ func TestUpdateUser(t *testing.T) {
 			expect.Contains(e.Message, "invalid path parameter ID: bad_id", "Event Message")
 		}
 	}
-	// Update an user: mismatched IDs
+	// Update a user: mismatched IDs
 	w = httptest.NewRecorder()
 	userID := tuid.NewID().String()
 	body := `{"id": "` + userID + `", "givenName": "New Name"}`
@@ -596,44 +596,21 @@ func TestUpdateUser(t *testing.T) {
 			expect.Contains(e.Message, "does not match", "Event Message")
 		}
 	}
-	// Update user's role by unauthorized user
-	// w = httptest.NewRecorder()
-	// var roles []string
-	// _ = copy(roles, regularUser.Roles)
-	// regularUser.Roles = append(regularUser.Roles, "admin")
-	// body1, _ := json.Marshal(regularUser)
-	// req, err = http.NewRequest("PUT", "/v1/users/"+regularUser.ID, bytes.NewBuffer(body1))
-	// req.Header.Set("Authorization", "Bearer "+regularToken)
-	// req.Header.Set("Content-Type", "application/json;charset=UTF-8")
-	// req.Header.Set("Accept", "application/json;charset=UTF-8")
-	// if expect.NoError(err) {
-	// 	r.ServeHTTP(w, req)
-	// 	fmt.Println("BODY: ", w.Body)
-	// 	expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
-	// 	if expect.NoError(json.NewDecoder(w.Body).Decode(&regularUser), "Decode JSON User") {
-	// 		expect.Equal(roles, regularUser.Roles)
-	// 	}
-	// }
-}
-
-func TestUpdateUserRoleByRegularUser(t *testing.T) {
-	expect := assert.New(t)
-	// Update user's role by unauthorized user
-	w := httptest.NewRecorder()
+	// Update a user: escalation of privileges
+	w = httptest.NewRecorder()
+	priorRoles := make([]string, len(regularUser.Roles))
+	_ = copy(priorRoles, regularUser.Roles)
 	regularUser.Roles = append(regularUser.Roles, "admin")
-	body, _ := json.Marshal(regularUser)
-	req, err := http.NewRequest("PUT", "/v1/users/"+regularUser.ID, bytes.NewBuffer(body))
+	b, _ := json.Marshal(regularUser)
+	req, err = http.NewRequest("PUT", "/v1/users/"+regularUser.ID, bytes.NewBuffer(b))
 	req.Header.Set("Authorization", "Bearer "+regularToken)
 	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
-		var regularUserUpdated user.User
-		if expect.NoError(json.NewDecoder(w.Body).Decode(&regularUserUpdated), "Decode JSON User") {
-			expect.Equal(regularUser.ID, regularUserUpdated.ID, "User ID")
-			expect.NotEqual(regularUser.VersionID, regularUserUpdated.VersionID, "User VersionID")
-			expect.NotEqual(regularUser.Roles, regularUserUpdated.Roles, "User Roles")
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&regularUser), "Decode JSON User") {
+			expect.Equal(priorRoles, regularUser.Roles, "Unchanged Regular User Roles")
 		}
 	}
 }
