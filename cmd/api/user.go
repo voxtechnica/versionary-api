@@ -27,7 +27,7 @@ func registerUserRoutes(r *gin.Engine) {
 	r.GET("/v1/users/:id/versions/:versionid", readUserVersion)
 	r.HEAD("/v1/users/:id/versions/:versionid", existsUserVersion)
 	r.PUT("/v1/users/:id", updateUser)
-	r.DELETE("/v1/users", deleteUser)
+	r.DELETE("/v1/users/:id", deleteUser)
 	r.DELETE("/v1/users/:id/versions/:versionid", roleAuthorizer("admin"), deleteUserVersion)
 	r.GET("/v1/user_ids", readUserIDs)
 	r.GET("/v1/user_names", roleAuthorizer("admin"), readUserNames)
@@ -130,6 +130,10 @@ func readUsers(c *gin.Context) {
 	}
 	role := c.Query("role")
 	status := strings.ToUpper(c.Query("status"))
+	if status != "" && !user.Status(status).IsValid() {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid status: %s", status))
+		return
+	}
 	// Read and return paginated Users
 	if email != "" {
 		// Filter by email address (there should be only one user with this email address)
