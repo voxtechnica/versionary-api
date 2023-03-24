@@ -12,7 +12,6 @@ import (
 
 	"versionary-api/pkg/email"
 	"versionary-api/pkg/event"
-	"versionary-api/pkg/user"
 )
 
 // registerEmailRoutes initializes the Email routes.
@@ -150,7 +149,7 @@ func readEmails(c *gin.Context) {
 	}
 	// Read and return paginated Emails by Status (admin only)
 	status := strings.ToUpper(c.Query("status"))
-	if status != "" && !user.Status(status).IsValid() {
+	if status != "" && !email.Status(status).IsValid() {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid status: %s", status))
 		return
 	}
