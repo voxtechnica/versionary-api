@@ -21,6 +21,7 @@ var adminUser user.User
 var adminToken string
 var emailOne email.Email
 var emailTwo email.Email
+var emailThree email.Email
 
 func TestMain(m *testing.M) {
 	// Initialize the application for testing
@@ -104,7 +105,7 @@ func generateUsers() {
 
 func generateEmails() {
 	ctx := context.Background()
-	// Test Emails no1
+	// Test Email: admin to regular user
 	email1, problems, err := api.EmailService.Create(ctx, email.Email{
 		From: email.Identity{
 			Name:    adminUser.FullName(),
@@ -125,7 +126,7 @@ func generateEmails() {
 	}
 	emailOne = email1
 
-	// Test Emails no2
+	// Test Email: regular user to admin
 	email2, problems, err := api.EmailService.Create(ctx, email.Email{
 		From: email.Identity{
 			Name:    regularUser.FullName(),
@@ -145,4 +146,25 @@ func generateEmails() {
 		log.Fatal(err)
 	}
 	emailTwo = email2
+
+	// Test Email: admin to unknown user
+	email3, problems, err := api.EmailService.Create(ctx, email.Email{
+		From: email.Identity{
+			Name:    adminUser.FullName(),
+			Address: adminUser.Email,
+		},
+		To: []email.Identity{
+			{
+				Name:    "Unknown User",
+				Address: "unknown_user@test.net",
+			},
+		},
+		Subject:  "Email from admin to uknown user",
+		BodyText: "This email is from an admin to an unknown user.",
+		Status:   email.UNSENT,
+	})
+	if err != nil || len(problems) > 0 {
+		log.Fatal(err)
+	}
+	emailThree = email3
 }
