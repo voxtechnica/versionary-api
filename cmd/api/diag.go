@@ -36,6 +36,7 @@ func registerDiagRoutes(r *gin.Engine) {
 
 // swaggerDocs initializes Swagger and redirects to the Swagger API documentation.
 //
+// @Summary Show API documentation
 // @Description Show API documentation
 // @Description Show Swagger API documentation, generated from annotations in the running code.
 // @Tags Diagnostic
@@ -48,6 +49,7 @@ func swaggerDocs(c *gin.Context) {
 
 // about provides basic information about the API, including the operating environment and the current git commit.
 //
+// @Summary About the API
 // @Description Basic information about the API
 // @Description Basic information about the API, including the operating environment and the current git commit.
 // @Tags Diagnostic
@@ -60,6 +62,7 @@ func about(c *gin.Context) {
 
 // commit redirects to the current git commit on GitHub.
 //
+// @Summary Show Git Commit
 // @Description Redirect to the current git commit on GitHub
 // @Description Redirects to the current git commit on GitHub.
 // @Tags Diagnostic
@@ -79,6 +82,7 @@ func commit(c *gin.Context) {
 
 // userAgent echoes a parsed client User-Agent header.
 //
+// @Summary Parse User-Agent Header
 // @Description Echo a parsed User-Agent header
 // @Description Echo a parsed User-Agent header.
 // @Tags Diagnostic
@@ -94,6 +98,7 @@ func userAgent(c *gin.Context) {
 
 // echoRequest echos the request back to the client, including a recognized Token and associated User.
 //
+// @Summary Echo Request
 // @Description Echo the request back to the client
 // @Description Echo the request back to the client, including the provided Token and associated User.
 // @Tags Diagnostic

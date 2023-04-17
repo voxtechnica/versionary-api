@@ -24,6 +24,7 @@ const docTemplate = `{
                 "tags": [
                     "Diagnostic"
                 ],
+                "summary": "About the API",
                 "responses": {
                     "200": {
                         "description": "Information about the running application",
@@ -44,6 +45,7 @@ const docTemplate = `{
                 "tags": [
                     "Diagnostic"
                 ],
+                "summary": "Show Git Commit",
                 "responses": {
                     "307": {
                         "description": "Redirect URL",
@@ -75,6 +77,7 @@ const docTemplate = `{
                 "tags": [
                     "Diagnostic"
                 ],
+                "summary": "Show API documentation",
                 "responses": {
                     "307": {
                         "description": "Temporary Redirect",
@@ -98,6 +101,7 @@ const docTemplate = `{
                 "tags": [
                     "Diagnostic"
                 ],
+                "summary": "Echo Request",
                 "parameters": [
                     {
                         "type": "string",
@@ -158,6 +162,7 @@ const docTemplate = `{
                 "tags": [
                     "Token"
                 ],
+                "summary": "Logout",
                 "parameters": [
                     {
                         "type": "string",
@@ -198,6 +203,7 @@ const docTemplate = `{
                 "tags": [
                     "Diagnostic"
                 ],
+                "summary": "Parse User-Agent Header",
                 "parameters": [
                     {
                         "type": "string",
@@ -225,6 +231,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "List Content Authors",
                 "parameters": [
                     {
                         "type": "string",
@@ -274,6 +281,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "List Content Editors",
                 "parameters": [
                     {
                         "type": "string",
@@ -329,6 +337,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "List Content Tags",
                 "parameters": [
                     {
                         "type": "string",
@@ -378,6 +387,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "List Content Titles",
                 "parameters": [
                     {
                         "type": "string",
@@ -499,6 +509,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "List Content Types",
                 "parameters": [
                     {
                         "type": "string",
@@ -548,6 +559,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "List Contents",
                 "parameters": [
                     {
                         "type": "string",
@@ -622,6 +634,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "Create Content",
                 "parameters": [
                     {
                         "type": "string",
@@ -695,6 +708,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "Read Content",
                 "parameters": [
                     {
                         "type": "string",
@@ -742,6 +756,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "Update Content",
                 "parameters": [
                     {
                         "type": "string",
@@ -814,6 +829,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "Delete Content",
                 "parameters": [
                     {
                         "type": "string",
@@ -874,6 +890,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "Content Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -905,6 +922,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "List Content Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -991,6 +1009,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "Read Content Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -1042,6 +1061,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "Delete Content Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -1109,6 +1129,7 @@ const docTemplate = `{
                 "tags": [
                     "Content"
                 ],
+                "summary": "Content Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -1147,6 +1168,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "List Device UserAgents",
                 "parameters": [
                     {
                         "type": "string",
@@ -1238,6 +1260,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "List Device Counts",
                 "parameters": [
                     {
                         "type": "string",
@@ -1311,6 +1334,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "Read Device Count",
                 "parameters": [
                     {
                         "type": "string",
@@ -1374,6 +1398,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "Update Device Count",
                 "parameters": [
                     {
                         "type": "string",
@@ -1428,6 +1453,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "Device Count Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -1459,6 +1485,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "List Device Dates",
                 "parameters": [
                     {
                         "type": "string",
@@ -1508,6 +1535,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "List Device User IDs",
                 "parameters": [
                     {
                         "type": "string",
@@ -1581,6 +1609,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "List Devices",
                 "parameters": [
                     {
                         "type": "string",
@@ -1667,6 +1696,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "Create Device",
                 "parameters": [
                     {
                         "type": "string",
@@ -1713,6 +1743,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "Read Device",
                 "parameters": [
                     {
                         "type": "string",
@@ -1760,6 +1791,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "Update Device",
                 "parameters": [
                     {
                         "type": "string",
@@ -1823,6 +1855,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "Delete Device",
                 "parameters": [
                     {
                         "type": "string",
@@ -1883,6 +1916,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "Device Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -1914,6 +1948,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "List Device Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -2000,6 +2035,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "Read Device Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -2051,6 +2087,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "Delete Device Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -2118,6 +2155,7 @@ const docTemplate = `{
                 "tags": [
                     "Device"
                 ],
+                "summary": "Device Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -2156,6 +2194,7 @@ const docTemplate = `{
                 "tags": [
                     "Email"
                 ],
+                "summary": "List Email Addresses",
                 "parameters": [
                     {
                         "type": "string",
@@ -2223,6 +2262,7 @@ const docTemplate = `{
                 "tags": [
                     "Email"
                 ],
+                "summary": "List Email Statuses",
                 "parameters": [
                     {
                         "type": "string",
@@ -2265,13 +2305,14 @@ const docTemplate = `{
         },
         "/v1/emails": {
             "get": {
-                "description": "List Emails\nList Emails, paging with reverse, limit, and offset. Optionally, filter by email address or status.\nRegular users can only list their own Emails. Administrators can list all Emails.",
+                "description": "List Email Messages\nList Emails, paging with reverse, limit, and offset. Optionally, filter by email address or status.\nRegular users can only list their own Emails. Administrators can list all Emails.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Email"
                 ],
+                "summary": "List Email Messages",
                 "parameters": [
                     {
                         "type": "string",
@@ -2364,6 +2405,7 @@ const docTemplate = `{
                 "tags": [
                     "Email"
                 ],
+                "summary": "Create Email Message",
                 "parameters": [
                     {
                         "type": "string",
@@ -2430,13 +2472,14 @@ const docTemplate = `{
         },
         "/v1/emails/{id}": {
             "get": {
-                "description": "Get Email\nGet Email by ID.",
+                "description": "Get Email Message\nGet Email Message by ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Email"
                 ],
+                "summary": "Read Email Message",
                 "parameters": [
                     {
                         "type": "string",
@@ -2493,7 +2536,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update/Send Email\nUpdate the provided complete Email. If the status is PENDING, the Email is sent.",
+                "description": "Update/Send Email Message\nUpdate the provided complete Email. If the status is PENDING, the Email is sent.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2503,6 +2546,7 @@ const docTemplate = `{
                 "tags": [
                     "Email"
                 ],
+                "summary": "Update Email Message",
                 "parameters": [
                     {
                         "type": "string",
@@ -2568,13 +2612,14 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete Email\nDelete and return the specified Email.",
+                "description": "Delete Email Message\nDelete and return the specified Email.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Email"
                 ],
+                "summary": "Delete Email Message",
                 "parameters": [
                     {
                         "type": "string",
@@ -2631,10 +2676,11 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Email Exists\nCheck if the specified Email exists.",
+                "description": "Email Message Exists\nCheck if the specified Email exists.",
                 "tags": [
                     "Email"
                 ],
+                "summary": "Email Message Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -2666,6 +2712,7 @@ const docTemplate = `{
                 "tags": [
                     "Email"
                 ],
+                "summary": "List Email Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -2752,6 +2799,7 @@ const docTemplate = `{
                 "tags": [
                     "Email"
                 ],
+                "summary": "Read Email Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -2819,6 +2867,7 @@ const docTemplate = `{
                 "tags": [
                     "Email"
                 ],
+                "summary": "Email Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -2857,6 +2906,7 @@ const docTemplate = `{
                 "tags": [
                     "Event"
                 ],
+                "summary": "List Event Dates",
                 "parameters": [
                     {
                         "type": "string",
@@ -2930,6 +2980,7 @@ const docTemplate = `{
                 "tags": [
                     "Event"
                 ],
+                "summary": "List Event Entity IDs",
                 "parameters": [
                     {
                         "type": "string",
@@ -3003,6 +3054,7 @@ const docTemplate = `{
                 "tags": [
                     "Event"
                 ],
+                "summary": "List Event Entity Types",
                 "parameters": [
                     {
                         "type": "string",
@@ -3052,6 +3104,7 @@ const docTemplate = `{
                 "tags": [
                     "Event"
                 ],
+                "summary": "List Event Log Levels",
                 "parameters": [
                     {
                         "type": "string",
@@ -3101,6 +3154,7 @@ const docTemplate = `{
                 "tags": [
                     "Event"
                 ],
+                "summary": "List Event Log Messages",
                 "parameters": [
                     {
                         "type": "string",
@@ -3186,6 +3240,7 @@ const docTemplate = `{
                 "tags": [
                     "Event"
                 ],
+                "summary": "List Events",
                 "parameters": [
                     {
                         "type": "string",
@@ -3292,6 +3347,7 @@ const docTemplate = `{
                 "tags": [
                     "Event"
                 ],
+                "summary": "Create Event",
                 "parameters": [
                     {
                         "type": "string",
@@ -3356,6 +3412,7 @@ const docTemplate = `{
                 "tags": [
                     "Event"
                 ],
+                "summary": "Read Event",
                 "parameters": [
                     {
                         "type": "string",
@@ -3400,6 +3457,7 @@ const docTemplate = `{
                 "tags": [
                     "Event"
                 ],
+                "summary": "Delete Event",
                 "parameters": [
                     {
                         "type": "string",
@@ -3460,6 +3518,7 @@ const docTemplate = `{
                 "tags": [
                     "Event"
                 ],
+                "summary": "Event Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -3491,6 +3550,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "List Image Labels",
                 "parameters": [
                     {
                         "type": "string",
@@ -3582,6 +3642,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "List Image Statuses",
                 "parameters": [
                     {
                         "type": "string",
@@ -3631,6 +3692,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "List Image Tags",
                 "parameters": [
                     {
                         "type": "string",
@@ -3680,6 +3742,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "List Images",
                 "parameters": [
                     {
                         "type": "string",
@@ -3772,6 +3835,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "Create Image",
                 "parameters": [
                     {
                         "type": "string",
@@ -3838,13 +3902,14 @@ const docTemplate = `{
         },
         "/v1/images/{id}": {
             "get": {
-                "description": "Get Image\nGet Image by ID.",
+                "description": "Get Image Metadata.\nGet Image Metadata by ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Image"
                 ],
+                "summary": "Read Image Metadata",
                 "parameters": [
                     {
                         "type": "string",
@@ -3892,6 +3957,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "Update Image",
                 "parameters": [
                     {
                         "type": "string",
@@ -3964,6 +4030,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "Delete Image",
                 "parameters": [
                     {
                         "type": "string",
@@ -4024,6 +4091,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "Image Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -4055,6 +4123,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "Get Image Download URL",
                 "parameters": [
                     {
                         "type": "string",
@@ -4101,6 +4170,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "Find Similar Images",
                 "parameters": [
                     {
                         "type": "string",
@@ -4179,6 +4249,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "Get Image Upload URL",
                 "parameters": [
                     {
                         "type": "string",
@@ -4244,6 +4315,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "List Image Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -4330,6 +4402,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "Read Image Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -4381,6 +4454,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "Delete Image Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -4429,6 +4503,7 @@ const docTemplate = `{
                 "tags": [
                     "Image"
                 ],
+                "summary": "Image Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -4467,6 +4542,7 @@ const docTemplate = `{
                 "tags": [
                     "Organization"
                 ],
+                "summary": "List Organization Names",
                 "parameters": [
                     {
                         "type": "string",
@@ -4558,6 +4634,7 @@ const docTemplate = `{
                 "tags": [
                     "Organization"
                 ],
+                "summary": "List Organization Statuses",
                 "parameters": [
                     {
                         "type": "string",
@@ -4607,6 +4684,7 @@ const docTemplate = `{
                 "tags": [
                     "Organization"
                 ],
+                "summary": "List Organizations",
                 "parameters": [
                     {
                         "type": "string",
@@ -4692,6 +4770,7 @@ const docTemplate = `{
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Create Organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -4765,6 +4844,7 @@ const docTemplate = `{
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Read Organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -4812,6 +4892,7 @@ const docTemplate = `{
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Update Organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -4884,6 +4965,7 @@ const docTemplate = `{
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Delete Organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -4944,6 +5026,7 @@ const docTemplate = `{
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Organization Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -4975,6 +5058,7 @@ const docTemplate = `{
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Read Organization Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -5061,6 +5145,7 @@ const docTemplate = `{
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Read Organization Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -5112,6 +5197,7 @@ const docTemplate = `{
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Delete Organization Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -5179,6 +5265,7 @@ const docTemplate = `{
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Organization Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -5217,6 +5304,7 @@ const docTemplate = `{
                 "tags": [
                     "Token"
                 ],
+                "summary": "List Token/User ID Pairs",
                 "parameters": [
                     {
                         "type": "string",
@@ -5296,6 +5384,7 @@ const docTemplate = `{
                 "tags": [
                     "Token"
                 ],
+                "summary": "List Token Users",
                 "parameters": [
                     {
                         "type": "string",
@@ -5387,6 +5476,7 @@ const docTemplate = `{
                 "tags": [
                     "Token"
                 ],
+                "summary": "List Tokens",
                 "parameters": [
                     {
                         "type": "string",
@@ -5449,6 +5539,7 @@ const docTemplate = `{
                 "tags": [
                     "Token"
                 ],
+                "summary": "Create Token",
                 "parameters": [
                     {
                         "description": "Token Request",
@@ -5503,6 +5594,7 @@ const docTemplate = `{
                 "tags": [
                     "Token"
                 ],
+                "summary": "Read Token",
                 "parameters": [
                     {
                         "type": "string",
@@ -5566,6 +5658,7 @@ const docTemplate = `{
                 "tags": [
                     "Token"
                 ],
+                "summary": "Delete Token",
                 "parameters": [
                     {
                         "type": "string",
@@ -5626,6 +5719,7 @@ const docTemplate = `{
                 "tags": [
                     "Token"
                 ],
+                "summary": "Token Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -5657,6 +5751,7 @@ const docTemplate = `{
                 "tags": [
                     "TUID"
                 ],
+                "summary": "Generate TUIDs",
                 "parameters": [
                     {
                         "type": "integer",
@@ -5691,6 +5786,7 @@ const docTemplate = `{
                 "tags": [
                     "TUID"
                 ],
+                "summary": "Generate TUID",
                 "responses": {
                     "201": {
                         "description": "TUIDInfo for the generated TUID",
@@ -5716,6 +5812,7 @@ const docTemplate = `{
                 "tags": [
                     "TUID"
                 ],
+                "summary": "Read TUID Info",
                 "parameters": [
                     {
                         "type": "string",
@@ -5750,6 +5847,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "List User Email Addresses",
                 "parameters": [
                     {
                         "type": "string",
@@ -5817,6 +5915,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "List User IDs for Email Address",
                 "parameters": [
                     {
                         "type": "string",
@@ -5860,6 +5959,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "List User Names",
                 "parameters": [
                     {
                         "type": "string",
@@ -5951,6 +6051,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "List User Organizations",
                 "parameters": [
                     {
                         "type": "string",
@@ -6024,6 +6125,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "List User Roles",
                 "parameters": [
                     {
                         "type": "string",
@@ -6073,6 +6175,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "List User Statuses",
                 "parameters": [
                     {
                         "type": "string",
@@ -6122,6 +6225,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "List Users",
                 "parameters": [
                     {
                         "type": "string",
@@ -6225,6 +6329,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "Create User",
                 "parameters": [
                     {
                         "type": "string",
@@ -6298,6 +6403,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "Read User",
                 "parameters": [
                     {
                         "type": "string",
@@ -6364,6 +6470,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "Update User",
                 "parameters": [
                     {
                         "type": "string",
@@ -6436,6 +6543,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "Delete User",
                 "parameters": [
                     {
                         "type": "string",
@@ -6496,6 +6604,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "User Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -6533,6 +6642,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "List User Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -6619,6 +6729,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "Read User Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -6689,6 +6800,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "Delete User Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -6756,6 +6868,7 @@ const docTemplate = `{
                 "tags": [
                     "User"
                 ],
+                "summary": "User Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -6800,6 +6913,7 @@ const docTemplate = `{
                 "tags": [
                     "View"
                 ],
+                "summary": "List View Counts",
                 "parameters": [
                     {
                         "type": "string",
@@ -6873,6 +6987,7 @@ const docTemplate = `{
                 "tags": [
                     "View"
                 ],
+                "summary": "Read View Count",
                 "parameters": [
                     {
                         "type": "string",
@@ -6936,6 +7051,7 @@ const docTemplate = `{
                 "tags": [
                     "View"
                 ],
+                "summary": "Update View Count",
                 "parameters": [
                     {
                         "type": "string",
@@ -6990,6 +7106,7 @@ const docTemplate = `{
                 "tags": [
                     "View"
                 ],
+                "summary": "View Count Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -7021,6 +7138,7 @@ const docTemplate = `{
                 "tags": [
                     "View"
                 ],
+                "summary": "List View Dates",
                 "parameters": [
                     {
                         "type": "string",
@@ -7070,6 +7188,7 @@ const docTemplate = `{
                 "tags": [
                     "View"
                 ],
+                "summary": "List View Devices",
                 "parameters": [
                     {
                         "type": "string",
@@ -7143,6 +7262,7 @@ const docTemplate = `{
                 "tags": [
                     "View"
                 ],
+                "summary": "List Views",
                 "parameters": [
                     {
                         "type": "string",
@@ -7229,6 +7349,7 @@ const docTemplate = `{
                 "tags": [
                     "View"
                 ],
+                "summary": "Create View",
                 "parameters": [
                     {
                         "type": "string",
@@ -7275,6 +7396,7 @@ const docTemplate = `{
                 "tags": [
                     "View"
                 ],
+                "summary": "Read View",
                 "parameters": [
                     {
                         "type": "string",
@@ -7319,6 +7441,7 @@ const docTemplate = `{
                 "tags": [
                     "View"
                 ],
+                "summary": "Delete View",
                 "parameters": [
                     {
                         "type": "string",
@@ -7379,6 +7502,7 @@ const docTemplate = `{
                 "tags": [
                     "View"
                 ],
+                "summary": "View Exists",
                 "parameters": [
                     {
                         "type": "string",

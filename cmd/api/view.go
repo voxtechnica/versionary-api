@@ -32,6 +32,7 @@ func registerViewRoutes(r *gin.Engine) {
 
 // createView creates a new View.
 //
+// @Summary Create View
 // @Description Create a new View
 // @Description Create a new View with an associated new/updated Device.
 // @Tags View
@@ -127,6 +128,7 @@ func createView(c *gin.Context) {
 
 // deleteView deletes the specified View.
 //
+// @Summary Delete View
 // @Description Delete View
 // @Description Delete and return the specified View.
 // @Tags View
@@ -181,6 +183,7 @@ func deleteView(c *gin.Context) {
 
 // readViews returns a paginated list of Views.
 //
+// @Summary List Views
 // @Description List Views
 // @Description List Views, paging with reverse, limit, and offset. Optionally, filter by DeviceID or Date.
 // @Tags View
@@ -256,6 +259,7 @@ func readViews(c *gin.Context) {
 
 // readView returns the specified View.
 //
+// @Summary Read View
 // @Description Get View
 // @Description Get View by ID.
 // @Tags View
@@ -297,6 +301,7 @@ func readView(c *gin.Context) {
 
 // existsView checks if the specified View exists.
 //
+// @Summary View Exists
 // @Description View Exists
 // @Description Check if the specified View exists.
 // @Tags View
@@ -319,6 +324,7 @@ func existsView(c *gin.Context) {
 // readViewDates returns a list of dates for which views exist.
 // It's useful for paging through views by date.
 //
+// @Summary List View Dates
 // @Description Get View Dates
 // @Description Get a list of dates for which views exist.
 // @Tags View
@@ -349,6 +355,7 @@ func readViewDates(c *gin.Context) {
 // readViewDeviceIDs returns a list of Device IDs for which views exist.
 // It's useful for paging through views by Device ID.
 //
+// @Summary List View Devices
 // @Description Get View Device IDs
 // @Description Get a list of Device IDs for which views exist.
 // @Tags View
@@ -389,6 +396,7 @@ func readViewDeviceIDs(c *gin.Context) {
 
 // readViewCounts returns a paginated list of view counts by date.
 //
+// @Summary List View Counts
 // @Description Get View Counts
 // @Description Get a paginated list of view counts by date.
 // @Tags View
@@ -429,6 +437,7 @@ func readViewCounts(c *gin.Context) {
 
 // readViewCount returns the number of views encountered on the specified date.
 //
+// @Summary Read View Count
 // @Description Get View Count
 // @Description Get the number of views encountered on the specified date.
 // @Tags View
@@ -472,6 +481,7 @@ func readViewCount(c *gin.Context) {
 
 // existsViewCount checks if the specified View Count exists.
 //
+// @Summary View Count Exists
 // @Description View Count Exists
 // @Description Check if the specified View Count exists.
 // @Tags View
@@ -493,6 +503,7 @@ func existsViewCount(c *gin.Context) {
 
 // updateViewCount updates the number of views encountered on the specified date.
 //
+// @Summary Update View Count
 // @Description Update View Count
 // @Description Update the number of views encountered on the specified date.
 // @Tags View

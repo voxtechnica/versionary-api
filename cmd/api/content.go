@@ -34,8 +34,9 @@ func registerContentRoutes(r *gin.Engine) {
 	r.GET("/v1/content_titles", roleAuthorizer("admin"), readContentTitles)
 }
 
-// createContent creates a new Content.
+// createContent creates a new unit of Content.
 //
+// @Summary Create Content
 // @Description Create a new Content
 // @Description Create a new unit of Content (Book, Chapter, Article, Category, etc.)
 // @Tags Content
@@ -97,6 +98,7 @@ func createContent(c *gin.Context) {
 
 // readContents returns a paginated list of Contents.
 //
+// @Summary List Contents
 // @Description List Contents
 // @Description List Contents, paging with reverse, limit, and offset.
 // @Tags Content
@@ -125,6 +127,7 @@ func readContents(c *gin.Context) {
 
 // readContent returns the current version of the specified Content.
 //
+// @Summary Read Content
 // @Description Get Content
 // @Description Get Content by ID.
 // @Tags Content
@@ -167,6 +170,7 @@ func readContent(c *gin.Context) {
 
 // existsContent checks if the specified Content exists.
 //
+// @Summary Content Exists
 // @Description Content Exists
 // @Description Check if the specified Content exists.
 // @Tags Content
@@ -188,6 +192,7 @@ func existsContent(c *gin.Context) {
 
 // readContentVersions returns a paginated list of versions of the specified Content.
 //
+// @Summary List Content Versions
 // @Description Get Content Versions
 // @Description Get Content Versions by ID, paging with reverse, limit, and offset.
 // @Tags Content
@@ -242,6 +247,7 @@ func readContentVersions(c *gin.Context) {
 
 // readContentVersion returns the specified version of the specified Content.
 //
+// @Summary Read Content Version
 // @Description Get Content Version
 // @Description Get Content Version by ID and VersionID.
 // @Tags Content
@@ -286,6 +292,7 @@ func readContentVersion(c *gin.Context) {
 
 // existsContentVersion checks if the specified Content version exists.
 //
+// @Summary Content Version Exists
 // @Description Content Version Exists
 // @Description Check if the specified Content version exists.
 // @Tags Content
@@ -310,6 +317,7 @@ func existsContentVersion(c *gin.Context) {
 // updateContent updates and returns the specified Content.
 // Note that the updated version needs to be complete; this is not a partial update (e.g. PATCH).
 //
+// @Summary Update Content
 // @Description Update Content
 // @Description Update the provided, complete unit of Content.
 // @Tags Content
@@ -382,6 +390,7 @@ func updateContent(c *gin.Context) {
 
 // deleteContent deletes the specified Content.
 //
+// @Summary Delete Content
 // @Description Delete Content
 // @Description Delete and return the specified Content.
 // @Tags Content
@@ -437,6 +446,7 @@ func deleteContent(c *gin.Context) {
 
 // deleteContentVersion deletes the specified Content version.
 //
+// @Summary Delete Content Version
 // @Description Delete Content Version
 // @Description Delete and return the specified Content version.
 // @Tags Content
@@ -495,6 +505,7 @@ func deleteContentVersion(c *gin.Context) {
 // readContentTypes returns a list of Content types for which contents exist.
 // It's useful for paging through contents by type.
 //
+// @Summary List Content Types
 // @Description List Content Types
 // @Description List content types, for which contents exist.
 // @Tags Content
@@ -525,6 +536,7 @@ func readContentTypes(c *gin.Context) {
 // readContentAuthors returns a list of Content authors for which contents exist.
 // It's useful for paging through contents by author.
 //
+// @Summary List Content Authors
 // @Description List Content Authors
 // @Description List content authors, for which contents exist.
 // @Tags Content
@@ -555,6 +567,7 @@ func readContentAuthors(c *gin.Context) {
 // readContentEditors returns a list of Content editors for which contents exist.
 // It's useful for paging through contents by editor.
 //
+// @Summary List Content Editors
 // @Description List Content Editors
 // @Description List content editors (IDs and names), for which contents exist.
 // @Tags Content
@@ -591,6 +604,7 @@ func readContentEditors(c *gin.Context) {
 // readContentTags returns a list of Content tags for which contents exist.
 // It's useful for paging through contents by tag.
 //
+// @Summary List Content Tags
 // @Description List Content Tags
 // @Description List content tags, for which contents exist.
 // @Tags Content
@@ -620,6 +634,7 @@ func readContentTags(c *gin.Context) {
 
 // readContentTitles returns a paginated list of Content titles.
 //
+// @Summary List Content Titles
 // @Description List Content Titles
 // @Description List Content Titles by type, author, or tag, paging with reverse, limit, and offset.
 // @Description Optionally, filter results with search terms.

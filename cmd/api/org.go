@@ -34,6 +34,7 @@ func registerOrganizationRoutes(r *gin.Engine) {
 
 // createOrganization creates a new Organization.
 //
+// @Summary Create Organization
 // @Description Create a new Organization
 // @Description Create a new Organization.
 // @Tags Organization
@@ -91,6 +92,7 @@ func createOrganization(c *gin.Context) {
 
 // readOrganizations returns a paginated list of Organizations.
 //
+// @Summary List Organizations
 // @Description List Organizations
 // @Description List Organizations, paging with reverse, limit, and offset. Optionally, filter by status.
 // @Tags Organization
@@ -142,6 +144,7 @@ func readOrganizations(c *gin.Context) {
 
 // readOrganization returns the current version of the specified Organization.
 //
+// @Summary Read Organization
 // @Description Get Organization
 // @Description Get Organization by ID.
 // @Tags Organization
@@ -183,6 +186,7 @@ func readOrganization(c *gin.Context) {
 
 // existsOrganization checks if the specified Organization exists.
 //
+// @Summary Organization Exists
 // @Description Organization Exists
 // @Description Check if the specified Organization exists.
 // @Tags Organization
@@ -204,6 +208,7 @@ func existsOrganization(c *gin.Context) {
 
 // readOrganizationVersions returns a paginated list of versions of the specified Organization.
 //
+// @Summary Read Organization Versions
 // @Description Get Organization Versions
 // @Description Get Organization Versions by ID, paging with reverse, limit, and offset.
 // @Tags Organization
@@ -257,6 +262,7 @@ func readOrganizationVersions(c *gin.Context) {
 
 // readOrganizationVersion returns the specified version of the specified Organization.
 //
+// @Summary Read Organization Version
 // @Description Get Organization Version
 // @Description Get Organization Version by ID and VersionID.
 // @Tags Organization
@@ -304,6 +310,7 @@ func readOrganizationVersion(c *gin.Context) {
 
 // existsOrganizationVersion checks if the specified Organization version exists.
 //
+// @Summary Organization Version Exists
 // @Description Organization Version Exists
 // @Description Check if the specified Organization version exists.
 // @Tags Organization
@@ -328,6 +335,7 @@ func existsOrganizationVersion(c *gin.Context) {
 // updateOrganization updates and returns the specified Organization.
 // Note that the updated version needs to be complete; this is not a partial update (e.g. PATCH).
 //
+// @Summary Update Organization
 // @Description Update Organization
 // @Description Update the provided, complete Organization.
 // @Tags Organization
@@ -395,6 +403,7 @@ func updateOrganization(c *gin.Context) {
 
 // deleteOrganization deletes the specified Organization.
 //
+// @Summary Delete Organization
 // @Description Delete Organization
 // @Description Delete and return the specified Organization.
 // @Tags Organization
@@ -449,6 +458,7 @@ func deleteOrganization(c *gin.Context) {
 
 // deleteOrganizationVersion deletes the specified Organization version.
 //
+// @Summary Delete Organization Version
 // @Description Delete Organization Version
 // @Description Delete and return the specified Organization version.
 // @Tags Organization
@@ -506,6 +516,7 @@ func deleteOrganizationVersion(c *gin.Context) {
 
 // readOrganizationNames returns a list of Organization IDs and Names.
 //
+// @Summary List Organization Names
 // @Description List Organization IDs and Names
 // @Description List Organization IDs and Names, paging with reverse, limit, and offset.
 // @Description Optionally, filter results with search terms.
@@ -576,6 +587,7 @@ func readOrganizationNames(c *gin.Context) {
 // readOrganizationStatuses returns a list of status codes for which organizations exist.
 // It's useful for paging through organizations by status.
 //
+// @Summary List Organization Statuses
 // @Description Get Organization Statuses
 // @Description Get a list of status codes for which organizations exist.
 // @Tags Organization

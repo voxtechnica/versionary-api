@@ -41,6 +41,7 @@ func registerImageRoutes(r *gin.Engine) {
 
 // createImage creates a new Image.
 //
+// @Summary Create Image
 // @Description Create a new Image
 // @Description Create a new Image.
 // @Tags Image
@@ -98,6 +99,7 @@ func createImage(c *gin.Context) {
 
 // readImages returns a paginated list of Images.
 //
+// @Summary List Images
 // @Description List Images
 // @Description List Images, paging with reverse, limit, and offset. Optionally, filter by status.
 // @Tags Image
@@ -166,8 +168,9 @@ func readImages(c *gin.Context) {
 
 // readImage returns the current version of the specified Image.
 //
-// @Description Get Image
-// @Description Get Image by ID.
+// @Summary Read Image Metadata
+// @Description Get Image Metadata.
+// @Description Get Image Metadata by ID.
 // @Tags Image
 // @Produce json
 // @Param id path string true "Image ID"
@@ -207,6 +210,7 @@ func readImage(c *gin.Context) {
 
 // existsImage checks if the specified Image exists.
 //
+// @Summary Image Exists
 // @Description Image Exists
 // @Description Check if the specified Image exists.
 // @Tags Image
@@ -228,6 +232,7 @@ func existsImage(c *gin.Context) {
 
 // readImageVersions returns a paginated list of versions of the specified Image.
 //
+// @Summary List Image Versions
 // @Description Get Image Versions
 // @Description Get Image Versions by ID, paging with reverse, limit, and offset.
 // @Tags Image
@@ -281,6 +286,7 @@ func readImageVersions(c *gin.Context) {
 
 // readImageVersion returns the specified version of the specified Image.
 //
+// @Summary Read Image Version
 // @Description Get Image Version
 // @Description Get Image Version by ID and VersionID.
 // @Tags Image
@@ -328,6 +334,7 @@ func readImageVersion(c *gin.Context) {
 
 // existsImageVersion checks if the specified Image version exists.
 //
+// @Summary Image Version Exists
 // @Description Image Version Exists
 // @Description Check if the specified Image version exists.
 // @Tags Image
@@ -351,6 +358,7 @@ func existsImageVersion(c *gin.Context) {
 
 // readSimilarImages returns a list of similar Distance objects for the specified Image.
 //
+// @Summary Find Similar Images
 // @Description Find Similar Images
 // @Description Find similar Images, within the specified perceptual hash distance.
 // @Tags Image
@@ -422,6 +430,7 @@ func readSimilarImages(c *gin.Context) {
 
 // getImageDownloadURL returns the Image download URL.
 //
+// @Summary Get Image Download URL
 // @Description Get Image Download URL
 // @Description Get a pre-signed file download URL for the specified Image.
 // @Tags Image
@@ -467,6 +476,7 @@ func getImageDownloadURL(c *gin.Context) {
 
 // getImageUploadURL returns the Image upload URL.
 //
+// @Summary Get Image Upload URL
 // @Description Get Image Upload URL
 // @Description Get a pre-signed file upload URL for the specified Image.
 // @Tags Image
@@ -512,6 +522,7 @@ func getImageUploadURL(c *gin.Context) {
 // updateImage updates and returns the specified Image.
 // Note that the updated version needs to be complete; this is not a partial update (e.g. PATCH).
 //
+// @Summary Update Image
 // @Description Update Image
 // @Description Update the provided, complete Image.
 // @Tags Image
@@ -579,6 +590,7 @@ func updateImage(c *gin.Context) {
 
 // deleteImage deletes the specified Image.
 //
+// @Summary Delete Image
 // @Description Delete Image
 // @Description Delete and return the specified Image.
 // @Description The associated Image file is also deleted.
@@ -634,6 +646,7 @@ func deleteImage(c *gin.Context) {
 
 // deleteImageVersion returns the specified version of the specified Image.
 //
+// @Summary Delete Image Version
 // @Description Delete Image Version
 // @Description Delete Image Version by ID and VersionID.
 // @Description Note that the associated Image file is not deleted.
@@ -680,6 +693,7 @@ func deleteImageVersion(c *gin.Context) {
 // readImageStatuses returns a list of status codes for which images exist.
 // It's useful for paging through images by status.
 //
+// @Summary List Image Statuses
 // @Description Get Image Statuses
 // @Description Get a complete list of status codes for which images exist.
 // @Tags Image
@@ -710,6 +724,7 @@ func readImageStatuses(c *gin.Context) {
 // readImageTags returns a list of tags for which images exist.
 // It's useful for paging through images by tag.
 //
+// @Summary List Image Tags
 // @Description Get Image Tags
 // @Description Get a complete list of tags for which images exist.
 // @Tags Image
@@ -739,6 +754,7 @@ func readImageTags(c *gin.Context) {
 
 // readImageLabels returns a list of images labels, optionally filtered with search terms.
 //
+// @Summary List Image Labels
 // @Description Get Image Labels
 // @Description Get a list of Image Labels, optionally filtered with search terms.
 // @Tags Image

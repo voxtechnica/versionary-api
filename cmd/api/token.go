@@ -29,6 +29,7 @@ func registerTokenRoutes(r *gin.Engine) {
 // createToken receives an OAuth TokenRequest, validates the User password,
 // creates a new Token, and returns an OAuth Response.
 //
+// @Summary Create Token
 // @Description Create a new Token
 // @Description Create a new OAuth Bearer Token.
 // @Tags Token
@@ -111,6 +112,7 @@ func createToken(c *gin.Context) {
 // If the User is not specified, it's extracted from the Context.
 // Administrators may read any user's tokens. Users may only read their own tokens.
 //
+// @Summary List Tokens
 // @Description List Tokens
 // @Description List OAuth Bearer Tokens by User ID (defaults to the Context User).
 // @Tags Token
@@ -176,6 +178,7 @@ func readTokens(c *gin.Context) {
 // This method is useful for verifying that a Bearer token is (still) active.
 // Is the User still logged in? Use to their token to get the token.
 //
+// @Summary Read Token
 // @Description Read Token
 // @Description Read OAuth Bearer Token by ID (e.g. to verify a token has not expired).
 // @Tags Token
@@ -232,6 +235,7 @@ func readToken(c *gin.Context) {
 
 // existsToken checks if the specified Token exists.
 //
+// @Summary Token Exists
 // @Description Token Exists
 // @Description Check if the specified OAuth Bearer Token exists.
 // @Tags Token
@@ -255,6 +259,7 @@ func existsToken(c *gin.Context) {
 // To "log out", the user should use the token to delete it.
 // Administrators may delete any user's tokens. Users may only delete their own tokens.
 //
+// @Summary Delete Token
 // @Description Delete Token
 // @Description Delete OAuth Bearer Token by ID (e.g. to log out).
 // @Tags Token
@@ -335,6 +340,7 @@ func deleteToken(c *gin.Context) {
 
 // logout deletes the Token provided in the Authorization header.
 //
+// @Summary Logout
 // @Description Logout
 // @Description Delete the OAuth Bearer Token provided in the Authorization header (e.g. to log out).
 // @Tags Token
@@ -381,6 +387,7 @@ func logout(c *gin.Context) {
 // readTokenIDs returns a paginated list of Token/User ID pairs.
 // This endpoint is only available to administrators. It's useful for paging through tokens.
 //
+// @Summary List Token/User ID Pairs
 // @Description List Token/User ID pairs
 // @Description List Token/User ID pairs. This is useful for paging through tokens.
 // @Tags Token
@@ -438,6 +445,7 @@ func readTokenIDs(c *gin.Context) {
 // readTokenUsers returns a paginated list of User IDs and email addresses for which tokens exist.
 // This endpoint is only available to administrators. It's useful for paging through tokens by user.
 //
+// @Summary List Token Users
 // @Description List Users for which tokens exist
 // @Description List User IDs and email addresses for which tokens exist.
 // @Description This is useful for paging through tokens by user.
