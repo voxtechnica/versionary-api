@@ -13,6 +13,7 @@
                 "tags": [
                     "Diagnostic"
                 ],
+                "summary": "About the API",
                 "responses": {
                     "200": {
                         "description": "Information about the running application",
@@ -33,6 +34,7 @@
                 "tags": [
                     "Diagnostic"
                 ],
+                "summary": "Show Git Commit",
                 "responses": {
                     "307": {
                         "description": "Redirect URL",
@@ -64,6 +66,7 @@
                 "tags": [
                     "Diagnostic"
                 ],
+                "summary": "Show API documentation",
                 "responses": {
                     "307": {
                         "description": "Temporary Redirect",
@@ -87,6 +90,7 @@
                 "tags": [
                     "Diagnostic"
                 ],
+                "summary": "Echo Request",
                 "parameters": [
                     {
                         "type": "string",
@@ -147,6 +151,7 @@
                 "tags": [
                     "Token"
                 ],
+                "summary": "Logout",
                 "parameters": [
                     {
                         "type": "string",
@@ -187,6 +192,7 @@
                 "tags": [
                     "Diagnostic"
                 ],
+                "summary": "Parse User-Agent Header",
                 "parameters": [
                     {
                         "type": "string",
@@ -214,6 +220,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "List Content Authors",
                 "parameters": [
                     {
                         "type": "string",
@@ -263,6 +270,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "List Content Editors",
                 "parameters": [
                     {
                         "type": "string",
@@ -318,6 +326,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "List Content Tags",
                 "parameters": [
                     {
                         "type": "string",
@@ -367,6 +376,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "List Content Titles",
                 "parameters": [
                     {
                         "type": "string",
@@ -488,6 +498,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "List Content Types",
                 "parameters": [
                     {
                         "type": "string",
@@ -537,6 +548,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "List Contents",
                 "parameters": [
                     {
                         "type": "string",
@@ -611,6 +623,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "Create Content",
                 "parameters": [
                     {
                         "type": "string",
@@ -684,6 +697,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "Read Content",
                 "parameters": [
                     {
                         "type": "string",
@@ -731,6 +745,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "Update Content",
                 "parameters": [
                     {
                         "type": "string",
@@ -803,6 +818,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "Delete Content",
                 "parameters": [
                     {
                         "type": "string",
@@ -863,6 +879,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "Content Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -894,6 +911,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "List Content Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -980,6 +998,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "Read Content Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -1031,6 +1050,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "Delete Content Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -1098,6 +1118,7 @@
                 "tags": [
                     "Content"
                 ],
+                "summary": "Content Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -1136,6 +1157,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "List Device UserAgents",
                 "parameters": [
                     {
                         "type": "string",
@@ -1227,6 +1249,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "List Device Counts",
                 "parameters": [
                     {
                         "type": "string",
@@ -1300,6 +1323,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "Read Device Count",
                 "parameters": [
                     {
                         "type": "string",
@@ -1363,6 +1387,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "Update Device Count",
                 "parameters": [
                     {
                         "type": "string",
@@ -1417,6 +1442,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "Device Count Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -1448,6 +1474,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "List Device Dates",
                 "parameters": [
                     {
                         "type": "string",
@@ -1497,6 +1524,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "List Device User IDs",
                 "parameters": [
                     {
                         "type": "string",
@@ -1570,6 +1598,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "List Devices",
                 "parameters": [
                     {
                         "type": "string",
@@ -1656,6 +1685,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "Create Device",
                 "parameters": [
                     {
                         "type": "string",
@@ -1702,6 +1732,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "Read Device",
                 "parameters": [
                     {
                         "type": "string",
@@ -1749,6 +1780,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "Update Device",
                 "parameters": [
                     {
                         "type": "string",
@@ -1812,6 +1844,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "Delete Device",
                 "parameters": [
                     {
                         "type": "string",
@@ -1872,6 +1905,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "Device Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -1903,6 +1937,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "List Device Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -1989,6 +2024,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "Read Device Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -2040,6 +2076,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "Delete Device Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -2107,6 +2144,7 @@
                 "tags": [
                     "Device"
                 ],
+                "summary": "Device Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -2145,6 +2183,7 @@
                 "tags": [
                     "Email"
                 ],
+                "summary": "List Email Addresses",
                 "parameters": [
                     {
                         "type": "string",
@@ -2212,6 +2251,7 @@
                 "tags": [
                     "Email"
                 ],
+                "summary": "List Email Statuses",
                 "parameters": [
                     {
                         "type": "string",
@@ -2254,13 +2294,14 @@
         },
         "/v1/emails": {
             "get": {
-                "description": "List Emails\nList Emails, paging with reverse, limit, and offset. Optionally, filter by email address or status.\nRegular users can only list their own Emails. Administrators can list all Emails.",
+                "description": "List Email Messages\nList Emails, paging with reverse, limit, and offset. Optionally, filter by email address or status.\nRegular users can only list their own Emails. Administrators can list all Emails.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Email"
                 ],
+                "summary": "List Email Messages",
                 "parameters": [
                     {
                         "type": "string",
@@ -2353,6 +2394,7 @@
                 "tags": [
                     "Email"
                 ],
+                "summary": "Create Email Message",
                 "parameters": [
                     {
                         "type": "string",
@@ -2419,13 +2461,14 @@
         },
         "/v1/emails/{id}": {
             "get": {
-                "description": "Get Email\nGet Email by ID.",
+                "description": "Get Email Message\nGet Email Message by ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Email"
                 ],
+                "summary": "Read Email Message",
                 "parameters": [
                     {
                         "type": "string",
@@ -2482,7 +2525,7 @@
                 }
             },
             "put": {
-                "description": "Update/Send Email\nUpdate the provided complete Email. If the status is PENDING, the Email is sent.",
+                "description": "Update/Send Email Message\nUpdate the provided complete Email. If the status is PENDING, the Email is sent.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2492,6 +2535,7 @@
                 "tags": [
                     "Email"
                 ],
+                "summary": "Update Email Message",
                 "parameters": [
                     {
                         "type": "string",
@@ -2557,13 +2601,14 @@
                 }
             },
             "delete": {
-                "description": "Delete Email\nDelete and return the specified Email.",
+                "description": "Delete Email Message\nDelete and return the specified Email.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Email"
                 ],
+                "summary": "Delete Email Message",
                 "parameters": [
                     {
                         "type": "string",
@@ -2620,10 +2665,11 @@
                 }
             },
             "head": {
-                "description": "Email Exists\nCheck if the specified Email exists.",
+                "description": "Email Message Exists\nCheck if the specified Email exists.",
                 "tags": [
                     "Email"
                 ],
+                "summary": "Email Message Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -2655,6 +2701,7 @@
                 "tags": [
                     "Email"
                 ],
+                "summary": "List Email Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -2741,6 +2788,7 @@
                 "tags": [
                     "Email"
                 ],
+                "summary": "Read Email Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -2808,6 +2856,7 @@
                 "tags": [
                     "Email"
                 ],
+                "summary": "Email Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -2846,6 +2895,7 @@
                 "tags": [
                     "Event"
                 ],
+                "summary": "List Event Dates",
                 "parameters": [
                     {
                         "type": "string",
@@ -2919,6 +2969,7 @@
                 "tags": [
                     "Event"
                 ],
+                "summary": "List Event Entity IDs",
                 "parameters": [
                     {
                         "type": "string",
@@ -2992,6 +3043,7 @@
                 "tags": [
                     "Event"
                 ],
+                "summary": "List Event Entity Types",
                 "parameters": [
                     {
                         "type": "string",
@@ -3041,6 +3093,7 @@
                 "tags": [
                     "Event"
                 ],
+                "summary": "List Event Log Levels",
                 "parameters": [
                     {
                         "type": "string",
@@ -3090,6 +3143,7 @@
                 "tags": [
                     "Event"
                 ],
+                "summary": "List Event Log Messages",
                 "parameters": [
                     {
                         "type": "string",
@@ -3175,6 +3229,7 @@
                 "tags": [
                     "Event"
                 ],
+                "summary": "List Events",
                 "parameters": [
                     {
                         "type": "string",
@@ -3281,6 +3336,7 @@
                 "tags": [
                     "Event"
                 ],
+                "summary": "Create Event",
                 "parameters": [
                     {
                         "type": "string",
@@ -3345,6 +3401,7 @@
                 "tags": [
                     "Event"
                 ],
+                "summary": "Read Event",
                 "parameters": [
                     {
                         "type": "string",
@@ -3389,6 +3446,7 @@
                 "tags": [
                     "Event"
                 ],
+                "summary": "Delete Event",
                 "parameters": [
                     {
                         "type": "string",
@@ -3449,6 +3507,7 @@
                 "tags": [
                     "Event"
                 ],
+                "summary": "Event Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -3480,6 +3539,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "List Image Labels",
                 "parameters": [
                     {
                         "type": "string",
@@ -3571,6 +3631,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "List Image Statuses",
                 "parameters": [
                     {
                         "type": "string",
@@ -3620,6 +3681,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "List Image Tags",
                 "parameters": [
                     {
                         "type": "string",
@@ -3669,6 +3731,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "List Images",
                 "parameters": [
                     {
                         "type": "string",
@@ -3761,6 +3824,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "Create Image",
                 "parameters": [
                     {
                         "type": "string",
@@ -3827,13 +3891,14 @@
         },
         "/v1/images/{id}": {
             "get": {
-                "description": "Get Image\nGet Image by ID.",
+                "description": "Get Image Metadata.\nGet Image Metadata by ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Image"
                 ],
+                "summary": "Read Image Metadata",
                 "parameters": [
                     {
                         "type": "string",
@@ -3881,6 +3946,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "Update Image",
                 "parameters": [
                     {
                         "type": "string",
@@ -3953,6 +4019,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "Delete Image",
                 "parameters": [
                     {
                         "type": "string",
@@ -4013,6 +4080,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "Image Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -4044,6 +4112,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "Get Image Download URL",
                 "parameters": [
                     {
                         "type": "string",
@@ -4090,6 +4159,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "Find Similar Images",
                 "parameters": [
                     {
                         "type": "string",
@@ -4168,6 +4238,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "Get Image Upload URL",
                 "parameters": [
                     {
                         "type": "string",
@@ -4233,6 +4304,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "List Image Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -4319,6 +4391,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "Read Image Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -4370,6 +4443,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "Delete Image Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -4418,6 +4492,7 @@
                 "tags": [
                     "Image"
                 ],
+                "summary": "Image Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -4456,6 +4531,7 @@
                 "tags": [
                     "Organization"
                 ],
+                "summary": "List Organization Names",
                 "parameters": [
                     {
                         "type": "string",
@@ -4547,6 +4623,7 @@
                 "tags": [
                     "Organization"
                 ],
+                "summary": "List Organization Statuses",
                 "parameters": [
                     {
                         "type": "string",
@@ -4596,6 +4673,7 @@
                 "tags": [
                     "Organization"
                 ],
+                "summary": "List Organizations",
                 "parameters": [
                     {
                         "type": "string",
@@ -4681,6 +4759,7 @@
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Create Organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -4754,6 +4833,7 @@
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Read Organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -4801,6 +4881,7 @@
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Update Organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -4873,6 +4954,7 @@
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Delete Organization",
                 "parameters": [
                     {
                         "type": "string",
@@ -4933,6 +5015,7 @@
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Organization Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -4964,6 +5047,7 @@
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Read Organization Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -5050,6 +5134,7 @@
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Read Organization Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -5101,6 +5186,7 @@
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Delete Organization Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -5168,6 +5254,7 @@
                 "tags": [
                     "Organization"
                 ],
+                "summary": "Organization Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -5206,6 +5293,7 @@
                 "tags": [
                     "Token"
                 ],
+                "summary": "List Token/User ID Pairs",
                 "parameters": [
                     {
                         "type": "string",
@@ -5285,6 +5373,7 @@
                 "tags": [
                     "Token"
                 ],
+                "summary": "List Token Users",
                 "parameters": [
                     {
                         "type": "string",
@@ -5376,6 +5465,7 @@
                 "tags": [
                     "Token"
                 ],
+                "summary": "List Tokens",
                 "parameters": [
                     {
                         "type": "string",
@@ -5438,6 +5528,7 @@
                 "tags": [
                     "Token"
                 ],
+                "summary": "Create Token",
                 "parameters": [
                     {
                         "description": "Token Request",
@@ -5492,6 +5583,7 @@
                 "tags": [
                     "Token"
                 ],
+                "summary": "Read Token",
                 "parameters": [
                     {
                         "type": "string",
@@ -5555,6 +5647,7 @@
                 "tags": [
                     "Token"
                 ],
+                "summary": "Delete Token",
                 "parameters": [
                     {
                         "type": "string",
@@ -5615,6 +5708,7 @@
                 "tags": [
                     "Token"
                 ],
+                "summary": "Token Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -5646,6 +5740,7 @@
                 "tags": [
                     "TUID"
                 ],
+                "summary": "Generate TUIDs",
                 "parameters": [
                     {
                         "type": "integer",
@@ -5680,6 +5775,7 @@
                 "tags": [
                     "TUID"
                 ],
+                "summary": "Generate TUID",
                 "responses": {
                     "201": {
                         "description": "TUIDInfo for the generated TUID",
@@ -5705,6 +5801,7 @@
                 "tags": [
                     "TUID"
                 ],
+                "summary": "Read TUID Info",
                 "parameters": [
                     {
                         "type": "string",
@@ -5739,6 +5836,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "List User Email Addresses",
                 "parameters": [
                     {
                         "type": "string",
@@ -5806,6 +5904,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "List User IDs for Email Address",
                 "parameters": [
                     {
                         "type": "string",
@@ -5849,6 +5948,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "List User Names",
                 "parameters": [
                     {
                         "type": "string",
@@ -5940,6 +6040,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "List User Organizations",
                 "parameters": [
                     {
                         "type": "string",
@@ -6013,6 +6114,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "List User Roles",
                 "parameters": [
                     {
                         "type": "string",
@@ -6062,6 +6164,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "List User Statuses",
                 "parameters": [
                     {
                         "type": "string",
@@ -6111,6 +6214,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "List Users",
                 "parameters": [
                     {
                         "type": "string",
@@ -6214,6 +6318,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "Create User",
                 "parameters": [
                     {
                         "type": "string",
@@ -6287,6 +6392,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "Read User",
                 "parameters": [
                     {
                         "type": "string",
@@ -6353,6 +6459,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "Update User",
                 "parameters": [
                     {
                         "type": "string",
@@ -6425,6 +6532,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "Delete User",
                 "parameters": [
                     {
                         "type": "string",
@@ -6485,6 +6593,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "User Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -6522,6 +6631,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "List User Versions",
                 "parameters": [
                     {
                         "type": "string",
@@ -6608,6 +6718,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "Read User Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -6678,6 +6789,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "Delete User Version",
                 "parameters": [
                     {
                         "type": "string",
@@ -6745,6 +6857,7 @@
                 "tags": [
                     "User"
                 ],
+                "summary": "User Version Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -6789,6 +6902,7 @@
                 "tags": [
                     "View"
                 ],
+                "summary": "List View Counts",
                 "parameters": [
                     {
                         "type": "string",
@@ -6862,6 +6976,7 @@
                 "tags": [
                     "View"
                 ],
+                "summary": "Read View Count",
                 "parameters": [
                     {
                         "type": "string",
@@ -6925,6 +7040,7 @@
                 "tags": [
                     "View"
                 ],
+                "summary": "Update View Count",
                 "parameters": [
                     {
                         "type": "string",
@@ -6979,6 +7095,7 @@
                 "tags": [
                     "View"
                 ],
+                "summary": "View Count Exists",
                 "parameters": [
                     {
                         "type": "string",
@@ -7010,6 +7127,7 @@
                 "tags": [
                     "View"
                 ],
+                "summary": "List View Dates",
                 "parameters": [
                     {
                         "type": "string",
@@ -7059,6 +7177,7 @@
                 "tags": [
                     "View"
                 ],
+                "summary": "List View Devices",
                 "parameters": [
                     {
                         "type": "string",
@@ -7132,6 +7251,7 @@
                 "tags": [
                     "View"
                 ],
+                "summary": "List Views",
                 "parameters": [
                     {
                         "type": "string",
@@ -7218,6 +7338,7 @@
                 "tags": [
                     "View"
                 ],
+                "summary": "Create View",
                 "parameters": [
                     {
                         "type": "string",
@@ -7264,6 +7385,7 @@
                 "tags": [
                     "View"
                 ],
+                "summary": "Read View",
                 "parameters": [
                     {
                         "type": "string",
@@ -7308,6 +7430,7 @@
                 "tags": [
                     "View"
                 ],
+                "summary": "Delete View",
                 "parameters": [
                     {
                         "type": "string",
@@ -7368,6 +7491,7 @@
                 "tags": [
                     "View"
                 ],
+                "summary": "View Exists",
                 "parameters": [
                     {
                         "type": "string",
