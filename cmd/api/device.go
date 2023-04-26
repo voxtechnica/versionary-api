@@ -39,6 +39,7 @@ func registerDeviceRoutes(r *gin.Engine) {
 
 // createDevice creates a new Device.
 //
+// @Summary Create Device
 // @Description Create a new Device
 // @Description Create a new Device from a User-Agent header.
 // @Tags Device
@@ -87,6 +88,7 @@ func createDevice(c *gin.Context) {
 // updateDevice updates and returns the specified Device.
 // Note that if the Device does not exist (e.g. TTL expired), a new Device will be created.
 //
+// @Summary Update Device
 // @Description Update Device
 // @Description Update the specified Device from a User-Agent header.
 // @Tags Device
@@ -147,6 +149,7 @@ func updateDevice(c *gin.Context) {
 
 // deleteDevice deletes the specified Device.
 //
+// @Summary Delete Device
 // @Description Delete Device
 // @Description Delete and return the specified Device.
 // @Tags Device
@@ -201,6 +204,7 @@ func deleteDevice(c *gin.Context) {
 
 // deleteDeviceVersion deletes the specified Device version.
 //
+// @Summary Delete Device Version
 // @Description Delete Device Version
 // @Description Delete and return the specified Device Version.
 // @Tags Device
@@ -258,6 +262,7 @@ func deleteDeviceVersion(c *gin.Context) {
 
 // readDevices returns a paginated list of Devices.
 //
+// @Summary List Devices
 // @Description List Devices
 // @Description List Devices, paging with reverse, limit, and offset. Optionally, filter by UserID or Date.
 // @Tags Device
@@ -333,6 +338,7 @@ func readDevices(c *gin.Context) {
 
 // readDevice returns the current version of the specified Device.
 //
+// @Summary Read Device
 // @Description Get Device
 // @Description Get Device by ID.
 // @Tags Device
@@ -374,6 +380,7 @@ func readDevice(c *gin.Context) {
 
 // existsDevice checks if the specified Device exists.
 //
+// @Summary Device Exists
 // @Description Device Exists
 // @Description Check if the specified Device exists.
 // @Tags Device
@@ -395,6 +402,7 @@ func existsDevice(c *gin.Context) {
 
 // readDeviceVersions returns a paginated list of versions of the specified Device.
 //
+// @Summary List Device Versions
 // @Description Get Device Versions
 // @Description Get Device Versions by ID, paging with reverse, limit, and offset.
 // @Tags Device
@@ -448,6 +456,7 @@ func readDeviceVersions(c *gin.Context) {
 
 // readDeviceVersion returns the specified version of the specified Device.
 //
+// @Summary Read Device Version
 // @Description Get Device Version
 // @Description Get Device Version by ID and VersionID.
 // @Tags Device
@@ -495,6 +504,7 @@ func readDeviceVersion(c *gin.Context) {
 
 // existsDeviceVersion checks if the specified Device version exists.
 //
+// @Summary Device Version Exists
 // @Description Device Version Exists
 // @Description Check if the specified Device version exists.
 // @Tags Device
@@ -518,6 +528,7 @@ func existsDeviceVersion(c *gin.Context) {
 
 // readDeviceAgents returns a list of Device IDs and UserAgents.
 //
+// @Summary List Device UserAgents
 // @Description List Device IDs and UserAgents
 // @Description List Device IDs and UserAgents, paging with reverse, limit, and offset.
 // @Description Optionally, filter results with search terms.
@@ -588,6 +599,7 @@ func readDeviceAgents(c *gin.Context) {
 // readDeviceDates returns a list of dates for which devices exist.
 // It's useful for paging through devices by date.
 //
+// @Summary List Device Dates
 // @Description Get Device Dates
 // @Description Get a list of dates for which devices exist.
 // @Tags Device
@@ -618,6 +630,7 @@ func readDeviceDates(c *gin.Context) {
 // readDeviceUserIDs returns a list of User IDs for which devices exist.
 // It's useful for paging through devices by User ID.
 //
+// @Summary List Device User IDs
 // @Description Get Device User IDs
 // @Description Get a list of User IDs for which devices exist.
 // @Tags Device
@@ -658,6 +671,7 @@ func readDeviceUserIDs(c *gin.Context) {
 
 // readDeviceCounts returns a paginated list of device counts by date.
 //
+// @Summary List Device Counts
 // @Description Get Device Counts
 // @Description Get a paginated list of device counts by date.
 // @Tags Device
@@ -698,6 +712,7 @@ func readDeviceCounts(c *gin.Context) {
 
 // readDeviceCount returns the number of devices encountered on the specified date.
 //
+// @Summary Read Device Count
 // @Description Get Device Count
 // @Description Get the number of devices encountered on the specified date.
 // @Tags Device
@@ -741,6 +756,7 @@ func readDeviceCount(c *gin.Context) {
 
 // existsDeviceCount checks if the specified Device Count exists.
 //
+// @Summary Device Count Exists
 // @Description Device Count Exists
 // @Description Check if the specified Device Count exists.
 // @Tags Device
@@ -762,6 +778,7 @@ func existsDeviceCount(c *gin.Context) {
 
 // updateDeviceCount updates the number of devices encountered on the specified date.
 //
+// @Summary Update Device Count
 // @Description Update Device Count
 // @Description Update the number of devices encountered on the specified date.
 // @Tags Device
