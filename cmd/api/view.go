@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"versionary-api/pkg/device"
 	"versionary-api/pkg/util"
 
@@ -60,12 +61,13 @@ func createView(c *gin.Context) {
 	var d device.Device
 	var problems []string
 	var err error
+	ua := strings.Join(c.Request.Header.Values("User-Agent"), " ")
 	if body.Client.DeviceID == "" || !tuid.IsValid(tuid.TUID(body.Client.DeviceID)) {
 		// Create a Device if not supplied or invalid ID
-		d, problems, err = api.DeviceService.Create(c, c.GetHeader("User-Agent"), contextUserID(c))
+		d, problems, err = api.DeviceService.Create(c, ua, contextUserID(c))
 	} else {
 		// Update the supplied Device
-		d, problems, err = api.DeviceService.Update(c, body.Client.DeviceID, c.GetHeader("User-Agent"), contextUserID(c))
+		d, problems, err = api.DeviceService.Update(c, body.Client.DeviceID, ua, contextUserID(c))
 	}
 	if len(problems) > 0 && err != nil {
 		abortWithError(c, http.StatusUnprocessableEntity, fmt.Errorf("unprocessable entity: %w", err))
