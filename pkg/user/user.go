@@ -139,11 +139,11 @@ func (u User) ValidEmail() bool {
 // ValidPassword checks the supplied clear-text password against stored password hash.
 func (u User) ValidPassword(password string) bool {
 	return u.ID != "" && password != "" && u.PasswordHash != "" &&
-		hashPassword(u.ID, password) == u.PasswordHash
+		HashPassword(u.ID, password) == u.PasswordHash
 }
 
-// hashPassword produces a salted SHA256 hash of a User's ID and Password.
-func hashPassword(id, password string) string {
+// HashPassword produces a salted SHA256 hash of a User's ID and Password.
+func HashPassword(id, password string) string {
 	if id == "" && password == "" {
 		return ""
 	}
