@@ -48,33 +48,35 @@ var (
 	t20 = Token{
 		ID:        id2,
 		CreatedAt: t2,
-		ExpiresAt: t1.AddDate(0, 0, 30),
+		ExpiresAt: t2.AddDate(0, 0, 30),
 		UserID:    user2,
 	}
 
 	t30 = Token{
 		ID:        id3,
 		CreatedAt: t3,
-		ExpiresAt: t1.AddDate(0, 0, 30),
+		ExpiresAt: t3.AddDate(0, 0, 30),
 		UserID:    user3,
 	}
 
 	t40 = Token{
 		ID:        id4,
 		CreatedAt: t4,
-		ExpiresAt: t1.AddDate(0, 0, 30),
+		ExpiresAt: t4.AddDate(0, 0, 30),
 		UserID:    user4,
+		Email:     "token_user@test.net",
 	}
 
 	t50 = Token{
 		ID:        id5,
 		CreatedAt: t5,
-		ExpiresAt: t1.AddDate(0, 0, 30),
+		ExpiresAt: t5.AddDate(0, 0, 30),
 		UserID:    user5,
 	}
 
 	knownTokens   = []Token{t10, t20, t30, t40, t50}
 	knownTokenIDs = []string{id1, id2, id3, id4, id5}
+	knownUsersIDs = []string{user1, user2, user3, user4, user5}
 )
 
 func TestMain(m *testing.M) {
@@ -92,8 +94,42 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-func _TestTokenCRUD(t *testing.T) {
-	
+func TestTokenCRUD(t *testing.T) {
+	expect := assert.New(t)
+	// Create a new token
+	newToken, err := service.Create(ctx, Token{
+		ID:        tuid.NewID().String(),
+		CreatedAt: time.Now(),
+		ExpiresAt: time.Now().AddDate(0, 0, 30),
+		UserID:    tuid.NewID().String(),
+	})
+
+	if expect.NoError(err) {
+
+		// Token should exist
+		tExist := service.Exists(ctx, newToken.ID)
+		expect.True(tExist)
+
+		// Read the token
+		readToken, err := service.Read(ctx, newToken.ID)
+		if expect.NoError(err) {
+			expect.Equal(newToken, readToken)
+		}
+
+		// Delete the token
+		dToken, err := service.Delete(ctx, newToken.ID)
+		if expect.NoError(err) {
+			expect.Equal(newToken, dToken)
+		}
+
+		// Token should not exist
+		tExist = service.Exists(ctx, newToken.ID)
+		expect.False(tExist)
+
+		// Read the token
+		_, err = service.Read(ctx, newToken.ID)
+		expect.ErrorIs(err, v.ErrNotFound, "expected ErrNotFound")
+	}
 }
 
 func TestTokenExists(t *testing.T) {
@@ -153,46 +189,90 @@ func TestReadTokens(t *testing.T) {
 // Tokens by User ID
 //------------------------------------------------------------------------------
 
-func _TestReadUsers(t *testing.T) {
-
+func TestReadUsers(t *testing.T) {
+	expect := assert.New(t)
+	userList, err := service.ReadUsers(ctx, false, 10, "")
+	if expect.NoError(err) {
+		expect.Equal(6, len(userList))
+	}
 }
 
-func _TestReadAllUsers(t *testing.T) {
-
+func TestReadAllUsers(t *testing.T) {
+	expect := assert.New(t)
+	userList, err := service.ReadAllUsers(ctx, false)
+	if expect.NoError(err) {
+		expect.Equal(6, len(userList))
+	}
 }
 
-func _TestFilterUsers(t *testing.T) {
-
+func TestFilterUsers(t *testing.T) {
+	expect := assert.New(t)
+	filter, err := service.FilterUsers(ctx, "token_user", true)
+	if expect.NoError(err) && expect.NotEmpty(filter) {
+		expect.Equal(1, len(filter))
+	}
 }
 
-func _TestReadUserIDs(t *testing.T) {
+func TestReadUserIDs(t *testing.T) {
+	expect := assert.New(t)
+	userID, err := service.ReadUserIDs(ctx, false, 10, "")
+	if expect.NoError(err) {
+		expect.Equal(6, len(userID))
+		expect.Subset(userID, knownUsersIDs)
 
+	}
 }
 
-func _TestReadAllUserIDs(t *testing.T) {
-
+func TestReadAllUserIDs(t *testing.T) {
+	expect := assert.New(t)
+	userList, err := service.ReadAllUserIDs(ctx)
+	if expect.NoError(err) {
+		expect.Equal(6, len(userList))
+	}
 }
 
-func _TestReadAllTokenIDsByUserID(t *testing.T) {
-
+func TestReadAllTokenIDsByUserID(t *testing.T) {
+	expect := assert.New(t)
+	userID, err := service.ReadAllTokenIDsByUserID(ctx, user2)
+	if expect.NoError(err) {
+		expect.Equal(1, len(userID))
+	}
 }
 
-func _TestReadTokensByUserID(t *testing.T) {
-
+func TestReadTokensByUserID(t *testing.T) {
+	expect := assert.New(t)
+	token, err := service.ReadTokensByUserID(ctx, user4, false, 1, "")
+	if expect.NoError(err) {
+		expect.Equal(1, len(token))
+	}
 }
 
-func _TestReadTokensByUserIDAsJSON(t *testing.T) {
-
+func TestReadTokensByUserIDAsJSON(t *testing.T) {
+	expect := assert.New(t)
+	json, err := service.ReadTokensByUserIDAsJSON(ctx, user2, false, 1, "")
+	if expect.NoError(err) && expect.NotEmpty(json) {
+		expect.Contains(string(json), t20.ID)
+	}
 }
 
-func _TestReadAllTokensByUserID(t *testing.T) {
-
+func TestReadAllTokensByUserID(t *testing.T) {
+	expect := assert.New(t)
+	token, err := service.ReadAllTokensByUserID(ctx, user5)
+	if expect.NoError(err) && expect.NotEmpty(token) {
+		expect.Equal(1, len(token))
+	}
 }
 
-func _TestReadAllTokensByUserIDAsJSON(t *testing.T) {
-
+func TestReadAllTokensByUserIDAsJSON(t *testing.T) {
+	expect := assert.New(t)
+	tokenList, err := service.ReadAllTokensByUserIDAsJSON(ctx, user1)
+	if expect.NoError(err) && expect.NotEmpty(tokenList) {
+		expect.Contains(string(tokenList), t10.ID)
+	}
 }
 
-func _TestDeleteAllTokensByUserID(t *testing.T) {
-
+func TestDeleteAllTokensByUserID(t *testing.T) {
+	expect := assert.New(t)
+	err := service.DeleteAllTokensByUserID(ctx, user3)
+	expect.NoError(err)
 }
