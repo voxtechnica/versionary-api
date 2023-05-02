@@ -983,7 +983,6 @@ func readUserStatuses(c *gin.Context) {
 // @Success 204
 // @Failure 400 {object} APIEvent "Bad Request (invalid JSON or parameter)"
 // @Failure 404 {object} APIEvent "Not Found (no user with the specified ID or email address)"
-// @Failure 422 {object} APIEvent "User validation errors"
 // @Failure 500 {object} APIEvent "Internal Server Error"
 // @Router /v1/users/{id}/resets [post]
 func sendResetToken(c *gin.Context) {
@@ -1101,6 +1100,7 @@ func sendResetToken(c *gin.Context) {
 // @Param password body map[string]string true "New Password"
 // @Success 204
 // @Failure 400 {object} APIEvent "Bad Request (invalid JSON or parameter)"
+// @Failure 401 {object} APIEvent "Unauthenticated (incorrect password reset token)"
 // @Failure 404 {object} APIEvent "Not Found (no user with the specified ID or email address)"
 // @Failure 422 {object} APIEvent "User validation errors"
 // @Failure 500 {object} APIEvent "Internal Server Error"

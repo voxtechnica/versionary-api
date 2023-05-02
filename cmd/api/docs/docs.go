@@ -6669,12 +6669,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/main.APIEvent"
                         }
                     },
-                    "422": {
-                        "description": "User validation errors",
-                        "schema": {
-                            "$ref": "#/definitions/main.APIEvent"
-                        }
-                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -6731,6 +6725,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request (invalid JSON or parameter)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (incorrect password reset token)",
                         "schema": {
                             "$ref": "#/definitions/main.APIEvent"
                         }

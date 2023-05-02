@@ -1092,20 +1092,19 @@ func TestSendResetToken(t *testing.T) {
 	}
 
 	// Unprocessable entity
-	// w = httptest.NewRecorder()
-	// body := `{"name": "", "email": "info@versionary.net"}`
-	// req, err = http.NewRequest("POST", "/v1/users/"+body+"/resets", nil)
-	// req.Header.Set("Content-Type", "application/json;charset=UFT-8")
-	// req.Header.Set("Accept", "application/json;charset=UFT-8")
-	// if expect.NoError(err) {
-	// 	r.ServeHTTP(w, req)
-	// 	expect.Equal(http.StatusUnprocessableEntity, w.Code, "HTTP Status Code")
-	// }
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("POST", "/v1/users/info@versionary.net/resets", nil)
+	req.Header.Set("Content-Type", "application/json;charset=UFT-8")
+	req.Header.Set("Accept", "application/json;charset=UFT-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusUnprocessableEntity, w.Code, "HTTP Status Code")
+	}
 }
 
 func TestResetUserPassword(t *testing.T) {
 	expect := assert.New(t)
-	// Invalid token
+	// Invalid tuid (token)
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest("PUT", "/v1/users/"+regularUser.Email+"/resets/bad_token", nil)
 	req.Header.Set("Content-Type", "application/json;charset=UFT-8")
@@ -1118,15 +1117,16 @@ func TestResetUserPassword(t *testing.T) {
 	// Unknown token
 	w = httptest.NewRecorder()
 	token := tuid.NewID().String()
-	req, err = http.NewRequest("PUT", "/v1/users/"+regularUser.Email+"/resets/"+token, nil)
+	body := `{"password": "new_password123"}`
+	req, err = http.NewRequest("PUT", "/v1/users/"+regularUser.Email+"/resets/"+token, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json;charset=UFT-8")
 	req.Header.Set("Accept", "application/json;charset=UFT-8")
 	if expect.NoError(err) {
 		r.ServeHTTP(w, req)
-		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+		expect.Equal(http.StatusUnauthorized, w.Code, "HTTP Status Code")
 	}
 
-	// // Invalid parameter
+	// Invalid parameter
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest("POST", "/v1/users/bad_email/resets/"+token, nil)
 	req.Header.Set("Content-Type", "application/json;charset=UFT-8")
@@ -1136,7 +1136,7 @@ func TestResetUserPassword(t *testing.T) {
 		expect.Equal(http.StatusNotFound, w.Code, "HTTP Status Code")
 	}
 
-	// // Unknown email address
+	// Unknown email address
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest("POST", "/v1/users/unknown@address.net/resets"+token, nil)
 	req.Header.Set("Content-Type", "application/json;charset=UFT-8")
@@ -1215,8 +1215,11 @@ func TestResetFlow(t *testing.T) {
 		var u2 user.User
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&u2), "Decode JSON User") {
 			expect.Empty(u2.PasswordReset, "PasswordReset token is empty")
+			expect.NotEqual(u.PasswordHash, u2.PasswordHash, "PasswordHash has changed")
 		}
 	}
+
+	// Check the email message
 
 	// Delete the user
 	w = httptest.NewRecorder()
