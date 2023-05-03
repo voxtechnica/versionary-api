@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -91,8 +92,8 @@ func commit(c *gin.Context) {
 // @Success 200 {object} user_agent.UserAgent "Parsed User-Agent header"
 // @Router /user_agent [get]
 func userAgent(c *gin.Context) {
-	header := c.Request.Header.Get("User-Agent")
-	ua := user_agent.Parse(header)
+	header := c.Request.Header.Values("User-Agent")
+	ua := user_agent.Parse(strings.Join(header, " "))
 	c.IndentedJSON(http.StatusOK, ua)
 }
 

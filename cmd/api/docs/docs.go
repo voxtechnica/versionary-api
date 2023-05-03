@@ -8412,7 +8412,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "clientVersion": {
-                    "description": "ClientVersion indicates the extractVersion of the application, if provided",
+                    "description": "ClientVersion indicates the version of the application, if provided",
                     "type": "string"
                 },
                 "deviceType": {

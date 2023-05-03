@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/voxtechnica/tuid-go"
@@ -53,7 +54,8 @@ func registerDeviceRoutes(r *gin.Engine) {
 // @Router /v1/devices [post]
 func createDevice(c *gin.Context) {
 	// Create a new Device
-	d, problems, err := api.DeviceService.Create(c, c.GetHeader("User-Agent"), contextUserID(c))
+	ua := strings.Join(c.Request.Header.Values("User-Agent"), " ")
+	d, problems, err := api.DeviceService.Create(c, ua, contextUserID(c))
 	if len(problems) > 0 && err != nil {
 		abortWithError(c, http.StatusUnprocessableEntity, fmt.Errorf("unprocessable entity: %w", err))
 		return
