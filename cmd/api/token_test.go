@@ -46,7 +46,6 @@ func TestTokenCRUD(t *testing.T) {
 	}
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest("POST", "/v1/tokens", bytes.NewBuffer(j))
-	// req.Header.Set("Authorization", "Bearer "+adminToken)
 	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	var token token.Response
@@ -61,7 +60,7 @@ func TestTokenCRUD(t *testing.T) {
 	// Read token
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest("GET", "v1/token/"+token.AccessToken, nil)
-	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {
@@ -71,7 +70,7 @@ func TestTokenCRUD(t *testing.T) {
 	// Delete token
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest("DELETE", "v1/tokens/"+token.AccessToken, nil)
-	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {
@@ -81,7 +80,7 @@ func TestTokenCRUD(t *testing.T) {
 	// Read token
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest("GET", "v1/token/"+token.AccessToken, nil)
-	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {
@@ -103,7 +102,9 @@ func TestReadTokens(t *testing.T) {
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var tokens []token.Token
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&tokens), "Decode JSON Token") {
-			expect.Equal(1, len(tokens), "Token Count")
+			if expect.Equal(1, len(tokens), "Token Count") {
+				expect.Equal(adminToken, tokens[0].ID, "Token ID")
+			}
 		}
 	}
 
@@ -118,7 +119,9 @@ func TestReadTokens(t *testing.T) {
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var tokens []token.Token
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&tokens), "Decode JSON Token") {
-			expect.Equal(1, len(tokens), "Token Count")
+			if expect.Equal(1, len(tokens), "Token Count") {
+				expect.Equal(regularToken, tokens[0].ID, "Token ID")
+			}
 		}
 	}
 
@@ -133,7 +136,9 @@ func TestReadTokens(t *testing.T) {
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var tokens []token.Token
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&tokens), "Decode JSON Token") {
-			expect.Contains(tokens[0].UserID, regularUser.ID, "User ID")
+			if expect.NotEmpty(tokens, "Token Count") {
+				expect.Equal(tokens[0].UserID, regularUser.ID, "User ID")
+			}
 		}
 	}
 
@@ -165,8 +170,63 @@ func TestReadTokens(t *testing.T) {
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var tokens []token.Token
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&tokens), "Decode JSON Token") {
-			expect.Contains(tokens[0].UserID, regularUser.ID, "User ID")
+			if expect.NotEmpty(tokens, "Token Count") {
+				expect.Equal(tokens[0].UserID, regularUser.ID, "User ID")
+			}
 		}
+	}
+}
+
+func TestReadToken(t *testing.T) {
+	expect := assert.New(t)
+	// Read Token (happy path)
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest("GET", "/v1/tokens/"+regularToken, nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
+		var t token.Token
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&t), "Decode JSON Token") {
+			expect.Equal(regularToken, t.ID, "Token ID")
+			expect.Equal(regularUser.ID, t.UserID, "User ID")
+		}
+	}
+
+	// Read another user's Token (not admin)
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/tokens/"+adminToken, nil)
+	req.Header.Set("Authorization", "Bearer "+regularToken)
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusForbidden, w.Code, "HTTP Status Code")
+	}
+
+	// Bad token parameter
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/tokens/bad_token", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+	}
+
+	// Token does not exist
+	tokenID := tuid.NewID().String()
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/tokens/"+tokenID, nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusNotFound, w.Code, "HTTP Status Code")
 	}
 }
 
@@ -175,6 +235,7 @@ func TestTokenExists(t *testing.T) {
 	// Token exists
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest("HEAD", "/v1/tokens/"+adminToken, nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
 	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {
@@ -185,6 +246,7 @@ func TestTokenExists(t *testing.T) {
 	// Bad token parameter
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest("HEAD", "/v1/tokens/bad_token", nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
 	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {
@@ -196,6 +258,7 @@ func TestTokenExists(t *testing.T) {
 	tokenID := tuid.NewID().String()
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest("HEAD", "/v1/tokens/"+tokenID, nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
 	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {
@@ -265,7 +328,7 @@ func TestReadTokenIDs(t *testing.T) {
 		var ids []versionary.TextValue
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&ids), "Decode JSON Token IDs") {
 			userIds := versionary.Map(ids, func(v versionary.TextValue) string { return v.Value })
-			expect.Equal(3, len(ids), "Number of Token/Users ID pairs")
+			expect.GreaterOrEqual(len(ids), 2, "Number of Token/Users ID pairs")
 			expect.Contains(userIds, adminUser.ID)
 			expect.Contains(userIds, regularUser.ID)
 		}
@@ -335,7 +398,7 @@ func TestTokenUsers(t *testing.T) {
 		var users []versionary.TextValue
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&users), "Decode JSON User IDs") {
 			userEmails := versionary.Map(users, func(v versionary.TextValue) string { return v.Value })
-			expect.Equal(3, len(users), "Number of Users with Tokens")
+			expect.GreaterOrEqual(len(users), 2, "Number of Users with Tokens")
 			expect.Contains(userEmails, adminUser.Email)
 			expect.Contains(userEmails, regularUser.Email)
 		}

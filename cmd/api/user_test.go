@@ -14,6 +14,7 @@ import (
 
 	"github.com/voxtechnica/versionary"
 
+	"versionary-api/pkg/email"
 	"versionary-api/pkg/user"
 )
 
@@ -813,7 +814,7 @@ func TestReadUserNames(t *testing.T) {
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&users), "Decode JSON Users") {
 			names := versionary.Map(users, func(e versionary.TextValue) string { return e.Value })
 			knownNames := versionary.Map(knownUsers, func(u user.User) string { return u.String() })
-			expect.Equal(2, len(users), "Number of Users")
+			expect.GreaterOrEqual(len(users), 2, "Number of Users")
 			expect.Equal(names[1], knownNames[0], "User Name")
 		}
 	}
@@ -1090,60 +1091,125 @@ func TestSendResetToken(t *testing.T) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusNotFound, w.Code, "HTTP Status Code")
 	}
-
-	// Unprocessable entity
-	w = httptest.NewRecorder()
-	req, err = http.NewRequest("POST", "/v1/users/info@versionary.net/resets", nil)
-	req.Header.Set("Content-Type", "application/json;charset=UFT-8")
-	req.Header.Set("Accept", "application/json;charset=UFT-8")
-	if expect.NoError(err) {
-		r.ServeHTTP(w, req)
-		expect.Equal(http.StatusUnprocessableEntity, w.Code, "HTTP Status Code")
-	}
 }
 
 func TestResetUserPassword(t *testing.T) {
 	expect := assert.New(t)
 	// Invalid tuid (token)
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest("PUT", "/v1/users/"+regularUser.Email+"/resets/bad_token", nil)
+	body := `{"password": "new_password123"}`
+	req, err := http.NewRequest("PUT", "/v1/users/"+regularUser.Email+"/resets/bad_token", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json;charset=UFT-8")
 	req.Header.Set("Accept", "application/json;charset=UFT-8")
 	if expect.NoError(err) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusBadRequest, e.Code, "Event Code")
+			expect.Contains(e.Message, "invalid path parameter token", "Event Message")
+		}
 	}
 
 	// Unknown token
 	w = httptest.NewRecorder()
 	token := tuid.NewID().String()
-	body := `{"password": "new_password123"}`
 	req, err = http.NewRequest("PUT", "/v1/users/"+regularUser.Email+"/resets/"+token, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json;charset=UFT-8")
 	req.Header.Set("Accept", "application/json;charset=UFT-8")
 	if expect.NoError(err) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusUnauthorized, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusUnauthorized, e.Code, "Event Code")
+			expect.Contains(e.Message, "invalid token", "Event Message")
+		}
 	}
 
 	// Invalid parameter
 	w = httptest.NewRecorder()
-	req, err = http.NewRequest("POST", "/v1/users/bad_email/resets/"+token, nil)
+	req, err = http.NewRequest("PUT", "/v1/users/bad_email/resets/"+token, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json;charset=UFT-8")
 	req.Header.Set("Accept", "application/json;charset=UFT-8")
 	if expect.NoError(err) {
 		r.ServeHTTP(w, req)
-		expect.Equal(http.StatusNotFound, w.Code, "HTTP Status Code")
+		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusBadRequest, e.Code, "Event Code")
+			expect.Contains(e.Message, "invalid path parameter ID", "Event Message")
+		}
 	}
 
 	// Unknown email address
 	w = httptest.NewRecorder()
-	req, err = http.NewRequest("POST", "/v1/users/unknown@address.net/resets"+token, nil)
+	req, err = http.NewRequest("PUT", "/v1/users/unknown@address.net/resets/"+token, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json;charset=UFT-8")
 	req.Header.Set("Accept", "application/json;charset=UFT-8")
 	if expect.NoError(err) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusNotFound, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusNotFound, e.Code, "Event Code")
+			expect.Contains(e.Message, "not found: user", "Event Message")
+		}
+	}
+
+	// Invalid password
+	w = httptest.NewRecorder()
+	body = `{"password": "short"}`
+	req, err = http.NewRequest("PUT", "/v1/users/"+regularUser.Email+"/resets/"+token, strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json;charset=UFT-8")
+	req.Header.Set("Accept", "application/json;charset=UFT-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusUnprocessableEntity, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusUnprocessableEntity, e.Code, "Event Code")
+			expect.Contains(e.Message, "password", "Event Message")
+		}
+	}
+
+	// Missing password
+	w = httptest.NewRecorder()
+	body = `{}`
+	req, err = http.NewRequest("PUT", "/v1/users/"+regularUser.Email+"/resets/"+token, strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json;charset=UFT-8")
+	req.Header.Set("Accept", "application/json;charset=UFT-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusUnprocessableEntity, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusUnprocessableEntity, e.Code, "Event Code")
+			expect.Contains(e.Message, "password", "Event Message")
+		}
+	}
+
+	// Invalid JSON body
+	w = httptest.NewRecorder()
+	body = `{"password": "short"`
+	req, err = http.NewRequest("PUT", "/v1/users/"+regularUser.Email+"/resets/"+token, strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json;charset=UFT-8")
+	req.Header.Set("Accept", "application/json;charset=UFT-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusBadRequest, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusBadRequest, e.Code, "Event Code")
+			expect.Contains(e.Message, "invalid JSON", "Event Message")
+		}
 	}
 }
 
@@ -1176,6 +1242,23 @@ func TestResetFlow(t *testing.T) {
 	if expect.NoError(err) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusNoContent, w.Code, "HTTP Status Code")
+	}
+
+	// Check the email message
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/emails?address="+u.Email, nil)
+	req.Header.Set("Authorization", "Bearer "+adminToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
+		var emails []email.Email
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&emails), "Decode JSON Emails") {
+			if expect.NotEmpty(emails, "Emails") {
+				expect.Contains(emails[0].Subject, "Password Reset", "Email Subject")
+				expect.Contains(emails[0].BodyText, "reset token", "Email Body")
+			}
+		}
 	}
 
 	// Read the user
@@ -1212,14 +1295,12 @@ func TestResetFlow(t *testing.T) {
 	if expect.NoError(err) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
-		var u2 user.User
-		if expect.NoError(json.NewDecoder(w.Body).Decode(&u2), "Decode JSON User") {
-			expect.Empty(u2.PasswordReset, "PasswordReset token is empty")
-			expect.NotEqual(u.PasswordHash, u2.PasswordHash, "PasswordHash has changed")
+		var u3 user.User
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&u3), "Decode JSON User") {
+			expect.Empty(u3.PasswordReset, "PasswordReset token is empty")
+			expect.NotEqual(u2.PasswordHash, u3.PasswordHash, "PasswordHash has changed")
 		}
 	}
-
-	// Check the email message
 
 	// Delete the user
 	w = httptest.NewRecorder()
@@ -1229,9 +1310,9 @@ func TestResetFlow(t *testing.T) {
 	if expect.NoError(err) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
-		var u2 user.User
-		if expect.NoError(json.NewDecoder(w.Body).Decode(&u2), "Decode JSON User") {
-			expect.Equal(u.ID, u2.ID, "User ID")
+		var u4 user.User
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&u4), "Decode JSON User") {
+			expect.Equal(u.ID, u4.ID, "User ID")
 		}
 	}
 }

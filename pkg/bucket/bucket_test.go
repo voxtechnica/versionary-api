@@ -250,35 +250,26 @@ func TestPublicBucket(t *testing.T) {
 
 	// Create the bucket
 	err = bucket.CreateBucket(ctx)
-	expect.NoError(err)
+	if expect.NoError(err) {
+		// Verify that the index file exists
+		index, err := bucket.FileInfo(ctx, "index.png")
+		expect.NoError(err)
+		expect.Equal("image/png", index.ContentType)
 
-	// Configure the bucket to be publicly readable
-	policy, err := bucket.SetPublicAccessPolicy(ctx)
-	expect.NoError(err)
-	expect.True(strings.Contains(policy, "Allow"))
+		// Download the index file as a publicly readable object
+		httpClient := http.Client{
+			Timeout: 30 * time.Second,
+		}
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, bucket.BucketURL()+index.FileName, nil)
+		expect.NoError(err)
+		res, err := httpClient.Do(req)
+		expect.NoError(err)
+		defer func(r *http.Response) { _ = r.Body.Close() }(res)
+		expect.Equal(http.StatusOK, res.StatusCode)
 
-	// Configure the bucket to as a website
-	err = bucket.SetBucketAsWebsite(ctx)
-	expect.NoError(err)
-
-	// Verify that the index file exists
-	index, err := bucket.FileInfo(ctx, "index.png")
-	expect.NoError(err)
-	expect.Equal("image/png", index.ContentType)
-
-	// Download the index file as a publicly readable object
-	httpClient := http.Client{
-		Timeout: 30 * time.Second,
+		// Delete the index file
+		expect.NoError(bucket.DeleteFile(ctx, index.FileName))
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, bucket.BucketURL()+index.FileName, nil)
-	expect.NoError(err)
-	res, err := httpClient.Do(req)
-	expect.NoError(err)
-	defer func(r *http.Response) { _ = r.Body.Close() }(res)
-	expect.Equal(http.StatusOK, res.StatusCode)
-
-	// Delete the index file
-	expect.NoError(bucket.DeleteFile(ctx, index.FileName))
 
 	// Delete the bucket
 	expect.NoError(bucket.DeleteBucket(ctx))

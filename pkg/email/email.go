@@ -112,6 +112,9 @@ func (e Email) IsParticipant(address string) bool {
 	if a == "" {
 		return false
 	}
+	if e.From.Address == a {
+		return true
+	}
 	for _, i := range e.To {
 		if i.Address == a {
 			return true

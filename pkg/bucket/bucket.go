@@ -145,11 +145,7 @@ func (b Bucket) CreateBucket(ctx context.Context) error {
 		CreateBucketConfiguration: &types.CreateBucketConfiguration{
 			LocationConstraint: types.BucketLocationConstraintUsWest2,
 		},
-	}
-	if b.Public {
-		req.ACL = types.BucketCannedACLPublicRead
-	} else {
-		req.ACL = types.BucketCannedACLPrivate
+		ObjectOwnership: types.ObjectOwnershipBucketOwnerEnforced,
 	}
 	_, err = b.Client.CreateBucket(ctx, &req)
 	if err != nil {
@@ -166,16 +162,114 @@ func (b Bucket) CreateBucket(ctx context.Context) error {
 	}
 	// Set up public access, if needed
 	if b.Public {
+		// Set the bucket policy
 		_, err = b.SetPublicAccessPolicy(ctx)
 		if err != nil {
 			return fmt.Errorf("create bucket %s: %w", b.BucketName, err)
 		}
+		// Set the bucket website configuration
 		err = b.SetBucketAsWebsite(ctx)
 		if err != nil {
 			return fmt.Errorf("create bucket %s: %w", b.BucketName, err)
 		}
 	}
 	log.Println("bucket", b.BucketName, "CREATED", time.Since(startTime))
+	return nil
+}
+
+// GetBucketPolicy returns the current bucket policy text, if any.
+func (b Bucket) GetBucketPolicy(ctx context.Context) (string, error) {
+	if b.Client == nil || b.BucketName == "" {
+		return "", ErrBucketNotConfigured
+	}
+	output, err := b.Client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{Bucket: &b.BucketName})
+	if err != nil {
+		// Not Found is an expected error.
+		var nf *smithy.GenericAPIError
+		if errors.As(err, &nf) {
+			if nf.ErrorCode() == "NoSuchBucketPolicy" {
+				return "", nil
+			}
+		}
+		return "", fmt.Errorf("get bucket %s policy: %w", b.BucketName, err)
+	}
+	return *output.Policy, nil
+}
+
+// SetPublicAccessPolicy sets the bucket policy to public read access.
+func (b Bucket) SetPublicAccessPolicy(ctx context.Context) (string, error) {
+	if b.Client == nil || b.BucketName == "" {
+		return "", ErrBucketNotConfigured
+	}
+
+	// Enable Public Read Access
+	_, err := b.Client.PutPublicAccessBlock(ctx, &s3.PutPublicAccessBlockInput{
+		Bucket: &b.BucketName,
+		PublicAccessBlockConfiguration: &types.PublicAccessBlockConfiguration{
+			BlockPublicAcls:       true,
+			BlockPublicPolicy:     false,
+			IgnorePublicAcls:      true,
+			RestrictPublicBuckets: false,
+		},
+	})
+	if err != nil {
+		return "", fmt.Errorf("set bucket %s public access: %w", b.BucketName, err)
+	}
+
+	// Set the bucket policy
+	policy :=
+		`{
+			"Version": "2012-10-17",
+			"Statement": [
+				{
+					"Sid": "` + b.BucketName + `-public-read",
+					"Effect": "Allow",
+					"Principal": "*",
+					"Action": "s3:GetObject",
+					"Resource": "arn:aws:s3:::` + b.BucketName + `/*"
+				}
+			]
+		}`
+	_, err = b.Client.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
+		Bucket: &b.BucketName,
+		Policy: aws.String(policy),
+	})
+	if err != nil {
+		return "", fmt.Errorf("set bucket %s policy: %w", b.BucketName, err)
+	}
+	return policy, nil
+}
+
+// SetBucketAsWebsite sets the bucket as a website with public read access.
+func (b Bucket) SetBucketAsWebsite(ctx context.Context) error {
+	if b.Client == nil || b.BucketName == "" {
+		return ErrBucketNotConfigured
+	}
+	// Set the bucket policy to public read access
+	if policy, _ := b.GetBucketPolicy(ctx); policy == "" {
+		_, err := b.SetPublicAccessPolicy(ctx)
+		if err != nil {
+			return fmt.Errorf("set bucket %s as website: %w", b.BucketName, err)
+		}
+	}
+	// Upload the default index file
+	if exists, _ := b.FileExists(ctx, indexFileInfo.FileName); !exists {
+		_, err := b.UploadFile(ctx, indexFileInfo, bytes.NewReader(indexFile))
+		if err != nil {
+			return fmt.Errorf("set bucket %s as website: %w", b.BucketName, err)
+		}
+	}
+	// Configure the bucket as a website
+	_, err := b.Client.PutBucketWebsite(ctx, &s3.PutBucketWebsiteInput{
+		Bucket: &b.BucketName,
+		WebsiteConfiguration: &types.WebsiteConfiguration{
+			IndexDocument: &types.IndexDocument{Suffix: &indexFileInfo.FileName},
+			ErrorDocument: &types.ErrorDocument{Key: &indexFileInfo.FileName},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("set bucket %s as website: %w", b.BucketName, err)
+	}
 	return nil
 }
 
@@ -254,85 +348,30 @@ func (b Bucket) DeleteBucket(ctx context.Context) error {
 	return nil
 }
 
-// GetBucketPolicy returns the current bucket policy text, if any.
-func (b Bucket) GetBucketPolicy(ctx context.Context) (string, error) {
+// ListAllFiles returns a list of files in the bucket. This may be a large list!
+func (b Bucket) ListAllFiles(ctx context.Context) ([]FileInfo, error) {
 	if b.Client == nil || b.BucketName == "" {
-		return "", ErrBucketNotConfigured
+		return nil, ErrBucketNotConfigured
 	}
-	output, err := b.Client.GetBucketPolicy(ctx, &s3.GetBucketPolicyInput{Bucket: &b.BucketName})
-	if err != nil {
-		// Not Found is an expected error.
-		var nf *smithy.GenericAPIError
-		if errors.As(err, &nf) {
-			if nf.ErrorCode() == "NoSuchBucketPolicy" {
-				return "", nil
-			}
-		}
-		return "", fmt.Errorf("get bucket %s policy: %w", b.BucketName, err)
-	}
-	return *output.Policy, nil
-}
-
-// SetPublicAccessPolicy sets the bucket policy to public read access.
-func (b Bucket) SetPublicAccessPolicy(ctx context.Context) (string, error) {
-	if b.Client == nil || b.BucketName == "" {
-		return "", ErrBucketNotConfigured
-	}
-	// Set the bucket policy
-	policy :=
-		`{
-			"Version": "2012-10-17",
-			"Statement": [
-				{
-					"Sid": "` + b.BucketName + `-public-read",
-					"Effect": "Allow",
-					"Principal": "*",
-					"Action": "s3:GetObject",
-					"Resource": "arn:aws:s3:::` + b.BucketName + `/*"
-				}
-			]
-		}`
-	_, err := b.Client.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
-		Bucket: &b.BucketName,
-		Policy: aws.String(policy),
-	})
-	if err != nil {
-		return "", fmt.Errorf("set bucket %s policy: %w", b.BucketName, err)
-	}
-	return policy, nil
-}
-
-// SetBucketAsWebsite sets the bucket as a website with public read access.
-func (b Bucket) SetBucketAsWebsite(ctx context.Context) error {
-	if b.Client == nil || b.BucketName == "" {
-		return ErrBucketNotConfigured
-	}
-	// Set the bucket policy to public read access
-	if policy, _ := b.GetBucketPolicy(ctx); policy == "" {
-		_, err := b.SetPublicAccessPolicy(ctx)
+	// List the files using a paginator
+	var files []FileInfo
+	p := s3.NewListObjectsV2Paginator(b.Client, &s3.ListObjectsV2Input{Bucket: &b.BucketName})
+	for p.HasMorePages() {
+		page, err := p.NextPage(ctx)
 		if err != nil {
-			return fmt.Errorf("set bucket %s as website: %w", b.BucketName, err)
+			return files, fmt.Errorf("list files in %s: %w", b.BucketName, err)
+		}
+		for _, f := range page.Contents {
+			files = append(files, FileInfo{
+				BucketName:    b.BucketName,
+				FileName:      *f.Key,
+				ContentLength: f.Size,
+				ETag:          strings.ReplaceAll(*f.ETag, "\"", ""), // remove unnecessary quotes
+				LastModified:  *f.LastModified,
+			})
 		}
 	}
-	// Upload the default index file
-	if exists, _ := b.FileExists(ctx, indexFileInfo.FileName); !exists {
-		_, err := b.UploadFile(ctx, indexFileInfo, bytes.NewReader(indexFile))
-		if err != nil {
-			return fmt.Errorf("set bucket %s as website: %w", b.BucketName, err)
-		}
-	}
-	// Configure the bucket as a website
-	_, err := b.Client.PutBucketWebsite(ctx, &s3.PutBucketWebsiteInput{
-		Bucket: &b.BucketName,
-		WebsiteConfiguration: &types.WebsiteConfiguration{
-			IndexDocument: &types.IndexDocument{Suffix: &indexFileInfo.FileName},
-			ErrorDocument: &types.ErrorDocument{Key: &indexFileInfo.FileName},
-		},
-	})
-	if err != nil {
-		return fmt.Errorf("set bucket %s as website: %w", b.BucketName, err)
-	}
-	return nil
+	return files, nil
 }
 
 // FileExists returns true if the file exists in the bucket.
@@ -641,30 +680,4 @@ func errorString(err types.Error) string {
 		msg += " (version " + *err.VersionId + ")"
 	}
 	return msg
-}
-
-// ListAllFiles returns a list of files in the bucket. This may be a large list!
-func (b Bucket) ListAllFiles(ctx context.Context) ([]FileInfo, error) {
-	if b.Client == nil || b.BucketName == "" {
-		return nil, ErrBucketNotConfigured
-	}
-	// List the files using a paginator
-	var files []FileInfo
-	p := s3.NewListObjectsV2Paginator(b.Client, &s3.ListObjectsV2Input{Bucket: &b.BucketName})
-	for p.HasMorePages() {
-		page, err := p.NextPage(ctx)
-		if err != nil {
-			return files, fmt.Errorf("list files in %s: %w", b.BucketName, err)
-		}
-		for _, f := range page.Contents {
-			files = append(files, FileInfo{
-				BucketName:    b.BucketName,
-				FileName:      *f.Key,
-				ContentLength: f.Size,
-				ETag:          strings.ReplaceAll(*f.ETag, "\"", ""), // remove unnecessary quotes
-				LastModified:  *f.LastModified,
-			})
-		}
-	}
-	return files, nil
 }

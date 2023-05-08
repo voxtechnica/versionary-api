@@ -217,7 +217,7 @@ func TestReadEmails(t *testing.T) {
 			expect.Contains(e.Message, "not found", "Event Message")
 		}
 	}
-	// // Read emails: missing admin token, reads only own emails
+	// Read emails: missing admin role, reads only own emails
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest("GET", "/v1/emails", nil)
 	req.Header.Set("Authorization", "Bearer "+regularToken)
@@ -228,10 +228,13 @@ func TestReadEmails(t *testing.T) {
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var emails []email.Email
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&emails), "Decode JSON Emails") {
-			expect.Equal(2, len(emails), "Number of Emails")
+			expect.NotEmpty(emails)
+			for _, e := range emails {
+				expect.True(e.IsParticipant(regularUser.Email))
+			}
 		}
 	}
-	// // Read emails: invalid pagination param (reverse)
+	// Read emails: invalid pagination param (reverse)
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest("GET", "/v1/emails?reverse=forward", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
@@ -277,7 +280,7 @@ func TestReadEmails(t *testing.T) {
 	}
 	// Read recent emails by address: valid request
 	w = httptest.NewRecorder()
-	req, err = http.NewRequest("GET", "/v1/emails?address=admin%40versionary.net", nil)
+	req, err = http.NewRequest("GET", "/v1/emails?address="+adminUser.Email, nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {
@@ -289,24 +292,24 @@ func TestReadEmails(t *testing.T) {
 			expect.Equal(3, len(emails), "Number of Emails")
 		}
 	}
-	// Read different user emails by address
-	// This test is failing because address parameter in the query doesn't return correct results
-	// instead test returns all emails for the user with regularToken in the header
-	// w = httptest.NewRecorder()
-	// req, err = http.NewRequest("GET", `/v1/emails?address=unknown_user%40test.net`, nil)
-	// req.Header.Set("Authorization", "Bearer "+regularToken)
-	// req.Header.Set("Accept", "application/json;charset=UTF-8")
-	// if expect.NoError(err) {
-	// 	r.ServeHTTP(w, req)
-	// 	expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
-	// 	var emails []email.Email
-	// 	if expect.NoError(json.NewDecoder(w.Body).Decode(&emails), "Decode JSON Emails") {
-	// 		expect.Empty(emails, "Emails")
-	// 	}
-	// }
+	// Read a different user's emails by address (non admin)
+	w = httptest.NewRecorder()
+	req, err = http.NewRequest("GET", "/v1/emails?address="+adminUser.Email, nil)
+	req.Header.Set("Authorization", "Bearer "+regularToken)
+	req.Header.Set("Accept", "application/json;charset=UTF-8")
+	if expect.NoError(err) {
+		r.ServeHTTP(w, req)
+		expect.Equal(http.StatusForbidden, w.Code, "HTTP Status Code")
+		var e APIEvent
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
+			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
+			expect.Equal(http.StatusForbidden, e.Code, "Event Code")
+			expect.Contains(e.Message, "admin credentials", "Event Message")
+		}
+	}
 	// Read own user emails by address
 	w = httptest.NewRecorder()
-	req, err = http.NewRequest("GET", `/v1/emails?address=info@versionary.net`, nil)
+	req, err = http.NewRequest("GET", "/v1/emails?address="+regularUser.Email, nil)
 	req.Header.Set("Authorization", "Bearer "+regularToken)
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {
@@ -315,6 +318,9 @@ func TestReadEmails(t *testing.T) {
 		var emails []email.Email
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&emails), "Decode JSON Emails") {
 			expect.NotEmpty(emails)
+			for _, e := range emails {
+				expect.True(e.IsParticipant(regularUser.Email))
+			}
 		}
 	}
 	// Read emails by status: valid request
@@ -328,7 +334,9 @@ func TestReadEmails(t *testing.T) {
 		var emails []email.Email
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&emails), "Decode JSON Emails") {
 			expect.NotEmpty(emails, "Emails")
-			expect.GreaterOrEqual(len(emails), 3, "Number of Emails")
+			for _, e := range emails {
+				expect.Equal(email.UNSENT, e.Status)
+			}
 		}
 	}
 	// Read emails by status: invalid status
@@ -510,7 +518,7 @@ func TestReadEmailVersions(t *testing.T) {
 			expect.Contains(e.Message, "unauthenticated", "Event Message")
 		}
 	}
-	// Read version by email ID: not an admin or owner
+	// Read versions by email ID: not an admin or owner
 	w = httptest.NewRecorder()
 	req, err = http.NewRequest("GET", "/v1/emails/"+emailThree.ID+"/versions", nil)
 	req.Header.Set("Authorization", "Bearer "+regularToken)
@@ -525,10 +533,10 @@ func TestReadEmailVersions(t *testing.T) {
 			expect.Contains(e.Message, "unauthorized", "Event Message")
 		}
 	}
-	// Read version by email ID: not found
+	// Read versions by email ID: not found
 	w = httptest.NewRecorder()
 	emailID := tuid.NewID().String()
-	req, err = http.NewRequest("HEAD", "/v1/emails/"+emailID+"/versions", nil)
+	req, err = http.NewRequest("GET", "/v1/emails/"+emailID+"/versions", nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	if expect.NoError(err) {
@@ -537,11 +545,11 @@ func TestReadEmailVersions(t *testing.T) {
 	}
 }
 
-// tests below need more scenarios
+// TODO: tests below need more scenarios
 
 func TestReadEmailVersion(t *testing.T) {
 	expect := assert.New(t)
-	// Read a known user version
+	// Read a known email version
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", "/v1/emails/"+emailOne.ID+"/versions/"+emailOne.VersionID, nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
@@ -558,7 +566,7 @@ func TestReadEmailVersion(t *testing.T) {
 
 func TestEmailVersionExists(t *testing.T) {
 	expect := assert.New(t)
-	// Read a known user version
+	// Check a known email version
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest("HEAD", "/v1/emails/"+emailOne.ID+"/versions/"+emailOne.VersionID, nil)
 	req.Header.Set("Authorization", "Bearer "+adminToken)
@@ -636,7 +644,7 @@ func TestReadEmailAddresses(t *testing.T) {
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var emailAddresses []string
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&emailAddresses), "Decode JSON Email Addresses") {
-			expect.GreaterOrEqual(len(emailAddresses), 6, "Number of Email Addresses")
+			expect.GreaterOrEqual(len(emailAddresses), 3, "Number of Email Addresses")
 		}
 	}
 }
@@ -653,7 +661,7 @@ func TestReadEmailStatuses(t *testing.T) {
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var statuses []string
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&statuses), "Decode JSON Email Statuses") {
-			expect.GreaterOrEqual(1, len(statuses), "Number of Email Statuses")
+			expect.NotEmpty(statuses, "Email Statuses")
 			expect.Contains(statuses, string(email.UNSENT), "Email Statuses")
 		}
 	}

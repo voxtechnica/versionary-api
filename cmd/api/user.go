@@ -983,24 +983,24 @@ func readUserStatuses(c *gin.Context) {
 // @Success 204
 // @Failure 400 {object} APIEvent "Bad Request (invalid JSON or parameter)"
 // @Failure 404 {object} APIEvent "Not Found (no user with the specified ID or email address)"
+// @Failure 422 {object} APIEvent "Unprocessable Entity (invalid password reset email message)"
 // @Failure 500 {object} APIEvent "Internal Server Error"
 // @Router /v1/users/{id}/resets [post]
 func sendResetToken(c *gin.Context) {
 	// Validate the path parameter ID (as either an email address or a TUID)
 	idOrEmail := c.Param("id")
-	var id string
-	var emailAddress string
 	if strings.Contains(idOrEmail, "@") {
-		emailAddress = user.StandardizeEmail(idOrEmail)
-		_, err := mail.ParseAddress(emailAddress)
+		// Standardize the email address
+		i, err := email.NewIdentity("", idOrEmail)
 		if err != nil {
-			abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter %s: %w", emailAddress, err))
+			abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter %s: %w", idOrEmail, err))
 			return
 		}
+		idOrEmail = i.Address
 	} else {
-		id = idOrEmail
-		if !tuid.IsValid(tuid.TUID(id)) {
-			abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %s", id))
+		// Validate the TUID
+		if !tuid.IsValid(tuid.TUID(idOrEmail)) {
+			abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %s", idOrEmail))
 			return
 		}
 	}
@@ -1013,7 +1013,6 @@ func sendResetToken(c *gin.Context) {
 	}
 	if err != nil {
 		e, _, _ := api.EventService.Create(c, event.Event{
-			EntityID:   id,
 			EntityType: "User",
 			LogLevel:   event.ERROR,
 			Message:    fmt.Errorf("password reset: read user %s: %w", idOrEmail, err).Error(),
@@ -1043,7 +1042,7 @@ func sendResetToken(c *gin.Context) {
 		return
 	}
 
-	// Create and send an email to the user's email address containing a link that includes the token
+	// Create and send an email to the user's email address containing the password reset token
 	to := email.Identity{
 		Name:    u.FullName(),
 		Address: u.Email,
@@ -1051,7 +1050,7 @@ func sendResetToken(c *gin.Context) {
 	body := fmt.Sprintf("Hi %s,\n\nYou recently requested to reset your password for your account. Your password reset token is provided below. Copy and paste it on the website where you sent the reset message.\n\nPassword reset token: %s\n", u.FullName(), token)
 	message := email.Email{
 		To:       []email.Identity{to},
-		Subject:  "Password Reset",
+		Subject:  "Password Reset Token",
 		BodyText: body,
 	}
 
@@ -1079,18 +1078,16 @@ func sendResetToken(c *gin.Context) {
 		EntityID:   e.ID,
 		EntityType: e.Type(),
 		LogLevel:   event.INFO,
-		Message:    "password reset: created Email " + e.ID,
+		Message:    "password reset: created email " + e.ID,
 		URI:        c.Request.URL.String(),
 	})
 
 	c.Status(http.StatusNoContent)
-	// c.JSON(http.StatusOK, u)
-
 }
 
 // resetUserPassword updates the provided User with a new password hash and deletes the password reset token.
 //
-// @Summary Create Password Hash
+// @Summary Reset Password
 // @Description Update the provided User with a new password hash and delete the password reset token.
 // @Tags User
 // @Accept json
@@ -1102,7 +1099,7 @@ func sendResetToken(c *gin.Context) {
 // @Failure 400 {object} APIEvent "Bad Request (invalid JSON or parameter)"
 // @Failure 401 {object} APIEvent "Unauthenticated (incorrect password reset token)"
 // @Failure 404 {object} APIEvent "Not Found (no user with the specified ID or email address)"
-// @Failure 422 {object} APIEvent "User validation errors"
+// @Failure 422 {object} APIEvent "Invalid password (must be at least 12 characters)"
 // @Failure 500 {object} APIEvent "Internal Server Error"
 // @Router /v1/users/{id}/resets/:token_id [put]
 func resetUserPassword(c *gin.Context) {
@@ -1128,19 +1125,18 @@ func resetUserPassword(c *gin.Context) {
 
 	// Validate the path parameter ID (as either an email address or a TUID)
 	idOrEmail := c.Param("id")
-	var id string
-	var emailAddress string
 	if strings.Contains(idOrEmail, "@") {
-		emailAddress = user.StandardizeEmail(idOrEmail)
-		_, err := mail.ParseAddress(emailAddress)
+		// Standardize the email address
+		i, err := email.NewIdentity("", idOrEmail)
 		if err != nil {
-			abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter %s: %w", emailAddress, err))
+			abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter %s: %w", idOrEmail, err))
 			return
 		}
+		idOrEmail = i.Address
 	} else {
-		id = idOrEmail
-		if !tuid.IsValid(tuid.TUID(id)) {
-			abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %s", id))
+		// Validate the TUID
+		if !tuid.IsValid(tuid.TUID(idOrEmail)) {
+			abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %s", idOrEmail))
 			return
 		}
 	}
@@ -1160,7 +1156,6 @@ func resetUserPassword(c *gin.Context) {
 	}
 	if err != nil {
 		e, _, _ := api.EventService.Create(c, event.Event{
-			EntityID:   id,
 			EntityType: "User",
 			LogLevel:   event.ERROR,
 			Message:    fmt.Errorf("password update: read user with token %s: %w", idOrEmail, err).Error(),
@@ -1173,7 +1168,7 @@ func resetUserPassword(c *gin.Context) {
 
 	// Verify reset token
 	if u.PasswordReset != token {
-		abortWithError(c, http.StatusUnauthorized, fmt.Errorf("unauthorized: invalid token"))
+		abortWithError(c, http.StatusUnauthorized, fmt.Errorf("unauthenticated: invalid token"))
 		return
 	}
 
@@ -1202,7 +1197,7 @@ func resetUserPassword(c *gin.Context) {
 		EntityID:   u.ID,
 		EntityType: u.Type(),
 		LogLevel:   event.INFO,
-		Message:    fmt.Sprintf("updated User: password hash updated %s %s", u.ID, u.Email),
+		Message:    fmt.Sprintf("updated user %s %s: updated password hash", u.ID, u.Email),
 		URI:        c.Request.URL.String(),
 	})
 

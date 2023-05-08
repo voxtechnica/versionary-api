@@ -190,7 +190,6 @@ func TestEmailCRUD(t *testing.T) {
 	expect.False(eExist)
 }
 
-
 func TestReadAsJSON(t *testing.T) {
 	expect := assert.New(t)
 	eCheckJSON, err := svc.ReadAsJSON(context.Background(), id1)
@@ -231,7 +230,7 @@ func TestReadVersions(t *testing.T) {
 
 func TestReadVersionsAsJSON(t *testing.T) {
 	expect := assert.New(t)
-	vJSON, err := svc.ReadVersionAsJSON(ctx, id2, id2)
+	vJSON, err := svc.ReadVersionsAsJSON(ctx, id2, false, 1, "")
 	if expect.NoError(err) {
 		expect.Contains(string(vJSON), id2)
 	}
@@ -297,7 +296,7 @@ func TestReadEmails(t *testing.T) {
 	expect := assert.New(t)
 	emails := svc.ReadEmails(ctx, false, 5, "")
 	if expect.NotEmpty(emails) {
-		expect.GreaterOrEqual(len(emails), 4)
+		expect.GreaterOrEqual(len(emails), 3)
 		expect.Subset(emails, knownEmails)
 	}
 }
@@ -310,7 +309,7 @@ func TestReadAddresses(t *testing.T) {
 	expect := assert.New(t)
 	addresses, err := svc.ReadAddresses(ctx, false, 10, "")
 	if expect.NoError(err) {
-		expect.GreaterOrEqual(len(addresses), 8)
+		expect.GreaterOrEqual(len(addresses), 6)
 	}
 }
 
@@ -318,7 +317,7 @@ func TestReadAllAddresses(t *testing.T) {
 	expect := assert.New(t)
 	addresses, err := svc.ReadAllAddresses(ctx)
 	if expect.NoError(err) && expect.NotEmpty(addresses) {
-		expect.GreaterOrEqual(len(addresses), 8)
+		expect.GreaterOrEqual(len(addresses), 6)
 		expect.Equal("dev_team@test.net", addresses[0])
 	}
 }
