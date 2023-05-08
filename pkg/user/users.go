@@ -167,7 +167,7 @@ func (s Service) Create(ctx context.Context, u User) (User, []string, error) {
 	}
 	// Hash password
 	if u.Password != "" {
-		u.PasswordHash = hashPassword(u.ID, u.Password)
+		u.PasswordHash = HashPassword(u.ID, u.Password)
 		u.Password = ""
 	}
 	// Create User
@@ -204,7 +204,7 @@ func (s Service) Update(ctx context.Context, u User) (User, []string, error) {
 	}
 	// Hash password
 	if u.Password != "" {
-		u.PasswordHash = hashPassword(u.ID, u.Password)
+		u.PasswordHash = HashPassword(u.ID, u.Password)
 		u.Password = ""
 	}
 	// Update User

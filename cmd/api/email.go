@@ -12,7 +12,6 @@ import (
 
 	"versionary-api/pkg/email"
 	"versionary-api/pkg/event"
-	"versionary-api/pkg/user"
 )
 
 // registerEmailRoutes initializes the Email routes.
@@ -117,14 +116,6 @@ func readEmails(c *gin.Context) {
 	}
 	// Read and return paginated Emails by Address (any user)
 	address := c.Query("address")
-	u, _ := contextUser(c) // the user has already been authenticated
-	if !u.HasRole("admin") {
-		address = u.Email
-		if address == "" {
-			abortWithError(c, http.StatusForbidden, fmt.Errorf("forbidden: user %s has no email address", u.ID))
-			return
-		}
-	}
 	if address != "" {
 		// Standardize the email address
 		i, err := email.NewIdentity("", address)
@@ -133,6 +124,20 @@ func readEmails(c *gin.Context) {
 			return
 		}
 		address = i.Address
+	}
+	u, _ := contextUser(c) // the user has already been authenticated
+	if !u.HasRole("admin") {
+		if address != "" && address != u.Email {
+			abortWithError(c, http.StatusForbidden, fmt.Errorf("forbidden: admin credentials required to read another user's emails"))
+			return
+		}
+		address = u.Email
+		if address == "" {
+			abortWithError(c, http.StatusForbidden, fmt.Errorf("forbidden: user %s has no email address", u.ID))
+			return
+		}
+	}
+	if address != "" {
 		es, err := api.EmailService.ReadEmailsByAddressAsJSON(c, address, reverse, limit, offset)
 		if err != nil {
 			evt, _, _ := api.EventService.Create(c, event.Event{
@@ -152,7 +157,7 @@ func readEmails(c *gin.Context) {
 	}
 	// Read and return paginated Emails by Status (admin only)
 	status := strings.ToUpper(c.Query("status"))
-	if status != "" && !user.Status(status).IsValid() {
+	if status != "" && !email.Status(status).IsValid() {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid status: %s", status))
 		return
 	}

@@ -17,11 +17,11 @@ import (
 // registerTokenRoutes initializes the Token routes.
 func registerTokenRoutes(r *gin.Engine) {
 	r.POST("/v1/tokens", createToken)
-	r.GET("/v1/tokens", readTokens)
-	r.GET("/v1/tokens/:id", readToken)
-	r.HEAD("/v1/tokens/:id", existsToken)
-	r.DELETE("/v1/tokens/:id", deleteToken)
-	r.GET("/logout", logout)
+	r.GET("/v1/tokens", userAuthenticator(), readTokens)
+	r.GET("/v1/tokens/:id", userAuthenticator(), readToken)
+	r.HEAD("/v1/tokens/:id", userAuthenticator(), existsToken)
+	r.DELETE("/v1/tokens/:id", userAuthenticator(), deleteToken)
+	r.GET("/logout", userAuthenticator(), logout)
 	r.GET("/v1/token_ids", roleAuthorizer("admin"), readTokenIDs)
 	r.GET("/v1/token_users", roleAuthorizer("admin"), readTokenUsers)
 }
