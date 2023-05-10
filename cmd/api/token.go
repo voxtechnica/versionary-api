@@ -12,6 +12,7 @@ import (
 
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/token"
+	"versionary-api/pkg/user"
 )
 
 // registerTokenRoutes initializes the Token routes.
@@ -22,6 +23,7 @@ func registerTokenRoutes(r *gin.Engine) {
 	r.HEAD("/v1/tokens/:id", userAuthenticator(), existsToken)
 	r.DELETE("/v1/tokens/:id", userAuthenticator(), deleteToken)
 	r.GET("/logout", userAuthenticator(), logout)
+	r.POST("/login", login)
 	r.GET("/v1/token_ids", roleAuthorizer("admin"), readTokenIDs)
 	r.GET("/v1/token_users", roleAuthorizer("admin"), readTokenUsers)
 }
@@ -38,7 +40,8 @@ func registerTokenRoutes(r *gin.Engine) {
 // @Param TokenRequest body token.Request true "Token Request"
 // @Success 201 {object} token.Response "Token Response"
 // @Failure 400 {object} APIEvent "Bad Request (invalid JSON body)"
-// @Failure 401 {object} APIEvent "Unauthorized (invalid username or password)"
+// @Failure 401 {object} APIEvent "Unauthenticated (invalid username or password)"
+// @Failure 403 {object} APIEvent "Unauthorized (user is disabled)"
 // @Failure 500 {object} APIEvent "Internal Server Error"
 // @Header 201 {string} Location "URL of the newly created Token"
 // @Router /v1/tokens [post]
@@ -65,6 +68,11 @@ func createToken(c *gin.Context) {
 			Err:        err,
 		})
 		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	// Check if the user is disabled
+	if u.Status == user.DISABLED {
+		abortWithError(c, http.StatusForbidden, errors.New("unauthorized: user is disabled"))
 		return
 	}
 	// Validate the password
@@ -511,4 +519,96 @@ func readTokenUsers(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, users)
+}
+
+// LoginResponse represents the response of the login API call
+type LoginResponse struct {
+	User  user.User   `json:"user"`
+	Token token.Token `json:"token"`
+}
+
+// login grants access to the client for the specified User.
+//
+// @Summary Login
+// @Description Login
+// @Description creates a Token for the specified User returns the User and Token
+// @Tags Token
+// @Accept json
+// @Produce json
+// @Param TokenRequest body token.Request true "Token Request"
+// @Success 201 {object} LoginResponse "Login Response"
+// @Failure 400 {object} APIEvent "Bad Request (invalid JSON body)"
+// @Failure 401 {object} APIEvent "Unauthenticated (invalid username or password)"
+// @Failure 403 {object} APIEvent "Unauthorized (user is disabled)"
+// @Failure 500 {object} APIEvent "Internal Server Error"
+// @Router /login [post]
+func login(c *gin.Context) {
+	// Parse the request body as a user
+	var req token.Request
+	if err := c.ShouldBindJSON(&req); err != nil {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid JSON body: %w", err))
+		return
+	}
+	// Read the associated User
+	u, err := api.UserService.Read(c, req.Username)
+	if err != nil && errors.Is(err, v.ErrNotFound) {
+		abortWithError(c, http.StatusUnauthorized, errors.New("unauthenticated: invalid username or password"))
+		return
+	}
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityType: "Token",
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("create token for %s: %w", u.Email, err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	// Check if the user is disabled
+	if u.Status == user.DISABLED {
+		abortWithError(c, http.StatusForbidden, errors.New("unauthorized: user is disabled"))
+		return
+	}
+	// Validate the password
+	if !u.ValidPassword(u.Password) {
+		abortWithError(c, http.StatusUnauthorized, errors.New("unauthenticated: invalid username or password"))
+		return
+	}
+
+	// Create a new token for the User
+	t, err := api.TokenService.Create(c, token.Token{
+		UserID: u.ID,
+		Email:  u.Email,
+	})
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     u.ID,
+			EntityID:   t.ID,
+			EntityType: "Token",
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("create token for %s: %w", u.ID, err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	// Log the token creation
+	_, _, _ = api.EventService.Create(c, event.Event{
+		UserID:     t.UserID,
+		EntityID:   t.ID,
+		EntityType: t.Type(),
+		LogLevel:   event.INFO,
+		Message:    fmt.Sprintf("created Token %s for User %s", t.ID, u.ID),
+		URI:        c.Request.URL.String(),
+	})
+
+	// Return an LoginResponse
+	c.JSON(http.StatusCreated, LoginResponse{
+		User:  u.Scrub(),
+		Token: t,
+	})
 }

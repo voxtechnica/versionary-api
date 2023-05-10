@@ -142,6 +142,64 @@
                 }
             }
         },
+        "/login": {
+            "post": {
+                "description": "Login\ncreates a Token for the specified User returns the User and Token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Token"
+                ],
+                "summary": "Login",
+                "parameters": [
+                    {
+                        "description": "Token Request",
+                        "name": "TokenRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/token.Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Login Response",
+                        "schema": {
+                            "$ref": "#/definitions/main.LoginResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid JSON body)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (invalid username or password)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (user is disabled)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
         "/logout": {
             "get": {
                 "description": "Logout\nDelete the OAuth Bearer Token provided in the Authorization header (e.g. to log out).",
@@ -5560,7 +5618,13 @@
                         }
                     },
                     "401": {
-                        "description": "Unauthorized (invalid username or password)",
+                        "description": "Unauthenticated (invalid username or password)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (user is disabled)",
                         "schema": {
                             "$ref": "#/definitions/main.APIEvent"
                         }
@@ -6657,6 +6721,12 @@
                             "$ref": "#/definitions/main.APIEvent"
                         }
                     },
+                    "422": {
+                        "description": "Unprocessable Entity (invalid password reset email message)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -6678,7 +6748,7 @@
                 "tags": [
                     "User"
                 ],
-                "summary": "Create Password Hash",
+                "summary": "Reset Password",
                 "parameters": [
                     {
                         "type": "string",
@@ -6730,7 +6800,7 @@
                         }
                     },
                     "422": {
-                        "description": "User validation errors",
+                        "description": "Invalid password (must be at least 12 characters)",
                         "schema": {
                             "$ref": "#/definitions/main.APIEvent"
                         }
@@ -7753,7 +7823,7 @@
                     }
                 },
                 "type": {
-                    "$ref": "#/definitions/content.Type"
+                    "type": "string"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -7847,21 +7917,6 @@
                     "type": "string"
                 }
             }
-        },
-        "content.Type": {
-            "type": "string",
-            "enum": [
-                "BOOK",
-                "CHAPTER",
-                "ARTICLE",
-                "CATEGORY"
-            ],
-            "x-enum-varnames": [
-                "BOOK",
-                "CHAPTER",
-                "ARTICLE",
-                "CATEGORY"
-            ]
         },
         "device.Count": {
             "type": "object",
@@ -7962,7 +8017,7 @@
                     "type": "string"
                 },
                 "status": {
-                    "$ref": "#/definitions/email.Status"
+                    "type": "string"
                 },
                 "subject": {
                     "type": "string"
@@ -7994,21 +8049,6 @@
                 }
             }
         },
-        "email.Status": {
-            "type": "string",
-            "enum": [
-                "PENDING",
-                "SENT",
-                "UNSENT",
-                "ERROR"
-            ],
-            "x-enum-varnames": [
-                "PENDING",
-                "SENT",
-                "UNSENT",
-                "ERROR"
-            ]
-        },
         "event.Event": {
             "type": "object",
             "properties": {
@@ -8028,7 +8068,7 @@
                     "type": "string"
                 },
                 "logLevel": {
-                    "$ref": "#/definitions/event.LogLevel"
+                    "type": "string"
                 },
                 "message": {
                     "type": "string"
@@ -8046,25 +8086,6 @@
                     "type": "string"
                 }
             }
-        },
-        "event.LogLevel": {
-            "type": "string",
-            "enum": [
-                "TRACE",
-                "DEBUG",
-                "INFO",
-                "WARN",
-                "ERROR",
-                "FATAL"
-            ],
-            "x-enum-varnames": [
-                "TRACE",
-                "DEBUG",
-                "INFO",
-                "WARN",
-                "ERROR",
-                "FATAL"
-            ]
         },
         "image.Distance": {
             "type": "object",
@@ -8150,11 +8171,7 @@
                 },
                 "mediaType": {
                     "description": "Media Type (image/jpeg, image/webp, image/png, image/gif)",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/image.MediaType"
-                        }
-                    ]
+                    "type": "string"
                 },
                 "pHash": {
                     "description": "PHash is the DTC perceptual hash of the image",
@@ -8170,11 +8187,7 @@
                 },
                 "status": {
                     "description": "Status is the current status of the image",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/image.Status"
-                        }
-                    ]
+                    "type": "string"
                 },
                 "tags": {
                     "description": "Tags are used to group images by topic or category",
@@ -8199,36 +8212,6 @@
                 }
             }
         },
-        "image.MediaType": {
-            "type": "string",
-            "enum": [
-                "image/gif",
-                "image/jpeg",
-                "image/png",
-                "image/webp"
-            ],
-            "x-enum-varnames": [
-                "GIF",
-                "JPEG",
-                "PNG",
-                "WebP"
-            ]
-        },
-        "image.Status": {
-            "type": "string",
-            "enum": [
-                "PENDING",
-                "UPLOADED",
-                "COMPLETE",
-                "ERROR"
-            ],
-            "x-enum-varnames": [
-                "PENDING",
-                "UPLOADED",
-                "COMPLETE",
-                "ERROR"
-            ]
-        },
         "main.APIEvent": {
             "type": "object",
             "properties": {
@@ -8249,6 +8232,17 @@
                 },
                 "uri": {
                     "type": "string"
+                }
+            }
+        },
+        "main.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "$ref": "#/definitions/token.Token"
+                },
+                "user": {
+                    "$ref": "#/definitions/user.User"
                 }
             }
         },
@@ -8341,7 +8335,7 @@
                     "type": "string"
                 },
                 "status": {
-                    "$ref": "#/definitions/org.Status"
+                    "type": "string"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -8350,19 +8344,6 @@
                     "type": "string"
                 }
             }
-        },
-        "org.Status": {
-            "type": "string",
-            "enum": [
-                "PENDING",
-                "ENABLED",
-                "DISABLED"
-            ],
-            "x-enum-varnames": [
-                "PENDING",
-                "ENABLED",
-                "DISABLED"
-            ]
         },
         "token.Request": {
             "type": "object",
@@ -8432,19 +8413,6 @@
                 }
             }
         },
-        "user.Status": {
-            "type": "string",
-            "enum": [
-                "PENDING",
-                "ENABLED",
-                "DISABLED"
-            ],
-            "x-enum-varnames": [
-                "PENDING",
-                "ENABLED",
-                "DISABLED"
-            ]
-        },
         "user.User": {
             "type": "object",
             "properties": {
@@ -8488,7 +8456,7 @@
                     }
                 },
                 "status": {
-                    "$ref": "#/definitions/user.Status"
+                    "type": "string"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -8577,11 +8545,7 @@
                 },
                 "userAgent": {
                     "description": "Parsed User-Agent header",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/user_agent.UserAgent"
-                        }
-                    ]
+                    "$ref": "#/definitions/user_agent.UserAgent"
                 },
                 "width": {
                     "description": "Javascript window.innerWidth",
