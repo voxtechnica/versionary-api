@@ -531,7 +531,7 @@ type LoginResponse struct {
 //
 // @Summary Login
 // @Description Login
-// @Description creates a Token for the specified User returns the User and Token
+// @Description Create a Token for the specified User, returning both.
 // @Tags Token
 // @Accept json
 // @Produce json
@@ -573,7 +573,7 @@ func login(c *gin.Context) {
 		return
 	}
 	// Validate the password
-	if !u.ValidPassword(u.Password) {
+	if !u.ValidPassword(req.Password) {
 		abortWithError(c, http.StatusUnauthorized, errors.New("unauthenticated: invalid username or password"))
 		return
 	}
