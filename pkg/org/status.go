@@ -1,5 +1,10 @@
 package org
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Status indicates the operational state of a User or Organization
 type Status string
 
@@ -29,3 +34,13 @@ func (s Status) IsValid() bool {
 func (s Status) String() string {
 	return string(s)
 }
+
+// ParseStatus returns a Status from a string representation.
+// It validates the string before returning the Status.
+func ParseStatus(s string) (Status, error) {
+	status := Status(strings.ToUpper(s))
+	if status.IsValid() {
+		return status, nil
+	}
+	return "", fmt.Errorf("invalid status: %s", s)
+}	

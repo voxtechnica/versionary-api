@@ -54,6 +54,7 @@ func main() {
 	initTokenCmd(rootCmd)
 	initTuidCmd(rootCmd)
 	initUserCmd(rootCmd)
+	initOrgCmd(rootCmd)
 
 	// Execute the specified command:
 	if err := rootCmd.Execute(); err != nil {

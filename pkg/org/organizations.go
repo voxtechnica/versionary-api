@@ -283,3 +283,21 @@ func (s Service) ReadAllOrganizationsByStatus(ctx context.Context, status string
 func (s Service) ReadAllOrganizationsByStatusAsJSON(ctx context.Context, status string) ([]byte, error) {
 	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowOrganizationsStatus, status)
 }
+
+func (s Service) ReadOrganizationByName(ctx context.Context, name string) (Organization, error) {
+	names, err := s.FilterNames(ctx, name, true)
+	// check of an error
+	if err != nil {
+		return Organization{}, fmt.Errorf("error reading organization by name %s: %w", name, err)
+	}
+	// check for no results
+	if len(names) == 0 {
+		return Organization{}, v.ErrNotFound
+	}
+	// use id to look up the org
+	o, err := s.Read(ctx, names[0].Key)
+	if err != nil {
+		return Organization{}, fmt.Errorf("error reading organization by name %s: %w", name, err)
+	}
+	return o, nil
+}
