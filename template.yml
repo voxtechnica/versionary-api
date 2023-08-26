@@ -44,8 +44,10 @@ Resources:
   VersionaryAPILambda:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: api
-      Runtime: go1.x
+      Architectures:
+        - x86_64
+      Handler: bootstrap
+      Runtime: provided.al2
       CodeUri: ./lambda.zip
       Description: !Join ["-", ["versionary-api", !Ref ENV]]
       MemorySize: 512

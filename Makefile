@@ -47,7 +47,7 @@ docs:
 # Build the command-line applications
 build: docs
 	@echo "Building API Lambda function for local use:"
-	go build -ldflags "-X main.gitHash=`git rev-parse HEAD` -X main.gitOrigin=`git config --get remote.origin.url`" -o ./api ./cmd/api/*.go
+	go build -tags lambda.norpc -ldflags "-X main.gitHash=`git rev-parse HEAD` -X main.gitOrigin=`git config --get remote.origin.url`" -o ./api ./cmd/api/*.go
 	@echo "Building Operations Command for local use:"
 	go build -ldflags "-X main.gitHash=`git rev-parse HEAD`" -o ./ops ./cmd/ops/*.go
 .PHONY:build
@@ -55,8 +55,8 @@ build: docs
 # Build and package the API Lambda function for release
 release: docs
 	@echo "Building API Lambda function for release:"
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-X main.gitHash=`git rev-parse HEAD` -X main.gitOrigin=`git config --get remote.origin.url`" -o ./api ./cmd/api/*.go
-	zip ./lambda.zip ./api
+	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags lambda.norpc -ldflags "-X main.gitHash=`git rev-parse HEAD` -X main.gitOrigin=`git config --get remote.origin.url`" -o ./bootstrap ./cmd/api/*.go
+	zip ./lambda.zip ./bootstrap
 .PHONY:release
 
 # Validate the CloudFormation template
