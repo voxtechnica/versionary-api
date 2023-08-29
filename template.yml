@@ -45,7 +45,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       Architectures:
-        - x86_64
+        - arm64
       Handler: bootstrap
       Runtime: provided.al2
       CodeUri: ./lambda.zip

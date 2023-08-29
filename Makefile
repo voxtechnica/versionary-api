@@ -55,7 +55,7 @@ build: docs
 # Build and package the API Lambda function for release
 release: docs
 	@echo "Building API Lambda function for release:"
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -tags lambda.norpc -ldflags "-X main.gitHash=`git rev-parse HEAD` -X main.gitOrigin=`git config --get remote.origin.url`" -o ./bootstrap ./cmd/api/*.go
+	GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -tags lambda.norpc -ldflags "-X main.gitHash=`git rev-parse HEAD` -X main.gitOrigin=`git config --get remote.origin.url`" -o ./bootstrap ./cmd/api/*.go
 	zip ./lambda.zip ./bootstrap
 .PHONY:release
 
