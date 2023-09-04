@@ -5,6 +5,7 @@
 
 # Build Products
 /api
+/bootstrap
 /lambda.zip
 /ops
 packaged-template.yml

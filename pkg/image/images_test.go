@@ -2,6 +2,7 @@ package image
 
 import (
 	"context"
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,6 +18,40 @@ var (
 	}
 )
 
+// TestBase62Encoding tests the Base62 encoding and decoding functions.
+func TestBase62Encoding(t *testing.T) {
+	expect := assert.New(t)
+
+	// Test the encoding of a single digit
+	expect.Equal("0", encode(0), "encoding 0")
+
+	// Test the encoding of a single digit
+	expect.Equal("1", encode(1), "encoding 1")
+
+	// Test the encoding of a single digit
+	expect.Equal("z", encode(61), "encoding 61")
+
+	// Test the encoding of a two-digit number
+	expect.Equal("10", encode(62), "encoding 62")
+
+	// Test the encoding of a two-digit number
+	expect.Equal("1z", encode(123), "encoding 123")
+
+	// Test the encoding of a two-digit number
+	expect.Equal("zz", encode(3843), "encoding 3843")
+
+	// Generate a random uint64 integer and encode it
+	i := rand.Uint64()
+	e := encode(i)
+	expect.NotEmpty(e, "encoding a random uint64 integer")
+
+	// Test decoding of the random uint64 integer
+	d, err := decode(e)
+	expect.NoError(err, "decoding a random uint64 integer")
+	expect.Equal(i, d, "decoding a random uint64 integer")
+}
+
+// TestImageAnalysis tests the image analysis functions with a variety of images.
 func TestImageAnalysis(t *testing.T) {
 	expect := assert.New(t)
 
@@ -63,7 +98,7 @@ func TestImageAnalysis(t *testing.T) {
 	expect.Equal(int64(1015), stack64.FileSize, "file size is correct")
 	expect.Equal(PNG, stack64.MediaType, "media type is correct")
 	expect.Equal("93ce174c4a9c1bd44e73e15f0799e746", stack64.MD5Hash, "MD5 hash is correct")
-	expect.Equal("0", stack64.PHash, "pHash is correct")
+	expect.Equal(PHash("0:0:0:0"), stack64.PHash, "pHash is correct")
 	expect.Equal(64, stack64.Width, "width is correct")
 	expect.Equal(64, stack64.Height, "height is correct")
 	expect.Equal(1.0, stack64.AspectRatio, "aspect ratio is correct")
@@ -88,7 +123,7 @@ func TestImageAnalysis(t *testing.T) {
 	expect.Equal(int64(7097285), jpeg.FileSize, "file size is correct")
 	expect.Equal(JPEG, jpeg.MediaType, "media type is correct")
 	expect.Equal("90d37d4e2831eef449f3cc0cc8ef4a6d", jpeg.MD5Hash, "MD5 hash is correct")
-	expect.Equal("xm3fo2broqae", jpeg.PHash, "pHash is correct")
+	expect.Equal(PHash("DDw8mJX4sL7:1S6NzKzmgBw:4UQDA381I4b:6QJ3WYrxSI6"), jpeg.PHash, "pHash is correct")
 	expect.Equal(4080, jpeg.Width, "width is correct")
 	expect.Equal(3072, jpeg.Height, "height is correct")
 
@@ -112,17 +147,27 @@ func TestImageAnalysis(t *testing.T) {
 	expect.Equal(int64(3218748), webp.FileSize, "file size is correct")
 	expect.Equal(WebP, webp.MediaType, "media type is correct")
 	expect.Equal("ccb6ad951b9af7625a1c9791be0676df", webp.MD5Hash, "MD5 hash is correct")
-	expect.Equal("xm3fo2broqae", webp.PHash, "pHash is correct")
+	expect.Equal(PHash("DDw8mJX4sL7:1S6NzL0LsS4:4UQDA381I4b:6QGTfVnD77q"), webp.PHash, "pHash is correct")
 	expect.Equal(4080, webp.Width, "width is correct")
 	expect.Equal(3072, webp.Height, "height is correct")
 
 	// Compare the perceptual distance between the WebP and JPEG images
-	dist, err := PHashDistance(webp.PHash, jpeg.PHash)
+	dist, err := webp.PHash.Distance(jpeg.PHash)
+	expect.NoError(err, "no error calculating perceptual distance")
+	expect.Equal(2, dist, "pHash distance is 2")
+
+	// Compare the perceptual distance between the WebP and PNG images
+	dist, err = webp.PHash.Distance(stack64.PHash)
+	expect.NoError(err, "no error calculating perceptual distance")
+	expect.Equal(128, dist, "pHash distance is 128")
+
+	// Compare the perceptual distance between the JPEG images
+	dist, err = jpeg.PHash.Distance(jpeg.PHash)
 	expect.NoError(err, "no error calculating perceptual distance")
 	expect.Equal(0, dist, "pHash distance is 0")
 
-	// Compare the perceptual distance between the WebP and PNG images
-	dist, err = PHashDistance(webp.PHash, stack64.PHash)
+	// Compare the perceptual distance between the JPEG image and the bear
+	dist, err = jpeg.PHash.Distance(bear.PHash)
 	expect.NoError(err, "no error calculating perceptual distance")
-	expect.GreaterOrEqual(dist, 16, "pHash distance is large") // expect 31
+	expect.GreaterOrEqual(dist, 64, "pHash distance is large")
 }

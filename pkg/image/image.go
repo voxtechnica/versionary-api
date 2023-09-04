@@ -27,7 +27,7 @@ type Image struct {
 	FileName       string    `json:"fileName"`                 // S3 File name (ID + file extension)
 	FileSize       int64     `json:"fileSize"`                 // File size in bytes
 	MD5Hash        string    `json:"md5Hash"`                  // MD5 hash of the image
-	PHash          string    `json:"pHash,omitempty"`          // PHash is the DTC perceptual hash of the image
+	PHash          PHash     `json:"pHash,omitempty"`          // PHash is the DTC perceptual hash of the image
 	Width          int       `json:"width,omitempty"`          // Width of the image in pixels
 	Height         int       `json:"height,omitempty"`         // Height of the image in pixels
 	AspectRatio    float64   `json:"aspectRatio,omitempty"`    // AspectRatio is width / height
@@ -149,7 +149,7 @@ type Distance struct {
 	MD5Hash  string `json:"md5Hash"`          // MD5 hash of the image
 	Width    int    `json:"width,omitempty"`  // Width of the image in pixels
 	Height   int    `json:"height,omitempty"` // Height of the image in pixels
-	PHash    string `json:"pHash,omitempty"`  // PHash is the DTC perceptual hash of the image
+	PHash    PHash  `json:"pHash,omitempty"`  // PHash is the DTC perceptual hash of the image
 	Distance int    `json:"distance"`         // The number of differing perceptual hash bits
 }
 

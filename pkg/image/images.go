@@ -11,8 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -22,7 +20,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/azr/phash"
 	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
 )
@@ -73,7 +70,7 @@ var rowImageHashes = v.TableRow[Image]{
 	PartKeyValue: func(i Image) string { return i.Type() },
 	SortKeyName:  "id",
 	SortKeyValue: func(i Image) string { return i.ID },
-	TextValue:    func(i Image) string { return i.PHash },
+	TextValue:    func(i Image) string { return i.PHash.String() },
 }
 
 // NewTable instantiates a new DynamoDB Image table.
@@ -229,20 +226,24 @@ func (s Service) FetchImageFile(ctx context.Context, fileName string) ([]byte, e
 
 // Analyze analyzes the given image blob and returns an updated Image struct.
 func (s Service) Analyze(i Image, blob []byte) (Image, error) {
+	// Blob attributes
+	i.FileSize = int64(len(blob))
+	i.MD5Hash = fmt.Sprintf("%x", md5.Sum(blob))
 	// Decode the image
 	img, format, err := image.Decode(bytes.NewReader(blob))
 	if err != nil {
 		return i, fmt.Errorf("analyze Image %s: %w", i.ID, err)
 	}
 	// Gather available image metadata
-	i.MediaType = MediaType("image/" + format)
-	i.FileName = i.ID + i.FileExt()
-	i.FileSize = int64(len(blob))
-	i.MD5Hash = fmt.Sprintf("%x", md5.Sum(blob))
-	i.PHash = strconv.FormatUint(phash.DTC(img), 36)
 	i.Width = img.Bounds().Dx()
 	i.Height = img.Bounds().Dy()
 	i.AspectRatio = float64(i.Width) / float64(i.Height)
+	i.MediaType = MediaType("image/" + format)
+	i.FileName = i.ID + i.FileExt()
+	i.PHash, err = NewPHash(img)
+	if err != nil {
+		return i, fmt.Errorf("analyze Image %s: %w", i.ID, err)
+	}
 	return i, nil
 }
 
@@ -698,81 +699,43 @@ func (s Service) ReadAllImageHashes(ctx context.Context) ([]v.TextValue, error) 
 // images having perceptual hash values within the specified distance of the query image.
 // maxDistance must be between 0 and 64 (inclusive). 16 might be a reasonable value.
 // For performance reasons (Image data are fetched in parallel), the maximum limit is 100.
-func (s Service) FindSimilarImages(ctx context.Context, pHash string, maxDistance int, limit int) ([]Distance, error) {
+func (s Service) FindSimilarImages(ctx context.Context, pHash PHash, maxDistance int, limit int) ([]Distance, error) {
 	// Validate the provided parameters.
 	if pHash == "" {
 		return nil, errors.New("find similar images: empty perceptual hash")
 	}
-	if maxDistance < 0 || maxDistance > 64 {
-		return nil, fmt.Errorf("find similar images: maxDistance %d must be between 0 and 64 (inclusive)", maxDistance)
+	if maxDistance < 0 || maxDistance > 256 {
+		return nil, fmt.Errorf("find similar images: maxDistance %d must be between 0 and 256 (inclusive)", maxDistance)
 	}
 	if limit < 1 || limit > 100 {
 		return nil, fmt.Errorf("find similar images: limit %d must be between 1 and 100 (inclusive)", limit)
 	}
+
 	// Read all the perceptual hash values from the Image table.
 	hashes, err := s.ReadAllImageHashes(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("find similar images: %w", err)
 	}
-	// Calculate perceptual distances, keeping only those within the specified range.
-	var distances []struct {
-		id   string
-		dist int
+
+	// Calculate, filter, and sort perceptual distances.
+	distances, err := pHash.Distances(hashes, maxDistance, limit)
+	if err != nil {
+		return nil, fmt.Errorf("find similar images: %w", err)
 	}
-	for _, hash := range hashes {
-		d, err := PHashDistance(pHash, hash.Value)
-		if err == nil && d <= maxDistance {
-			distances = append(distances, struct {
-				id   string
-				dist int
-			}{id: hash.Key, dist: d})
-		}
-	}
-	// Sort the results by distance, then by ID.
-	sort.Slice(distances, func(i, j int) bool {
-		if distances[i].dist == distances[j].dist {
-			return distances[i].id < distances[j].id
-		}
-		return distances[i].dist < distances[j].dist
-	})
-	// Truncate the results to the specified limit.
-	if len(distances) > limit {
-		distances = distances[:limit]
-	}
+
 	// Fetch the similar images in parallel.
 	ids := make([]string, len(distances))
 	for i := 0; i < len(distances); i++ {
-		ids[i] = distances[i].id
+		ids[i] = distances[i].ID
 	}
 	images := s.ReadImageMap(ctx, ids)
-	// Generate Distance results.
-	results := make([]Distance, len(distances))
+
+	// Populate the Distance results with image data.
 	for i := 0; i < len(distances); i++ {
-		results[i].ID = distances[i].id
-		results[i].Distance = distances[i].dist
-		img, ok := images[results[i].ID]
+		img, ok := images[distances[i].ID]
 		if ok {
-			results[i].Populate(img)
+			distances[i].Populate(img)
 		}
 	}
-	return results, nil
-}
-
-// PHashDistance returns the number of bits that are different between two perceptual hash values.
-func PHashDistance(h1, h2 string) (int, error) {
-	if h1 == "" || h2 == "" {
-		return 100, errors.New("image distance: missing pHash value")
-	}
-	if h1 == h2 {
-		return 0, nil
-	}
-	pHash1, err := strconv.ParseUint(h1, 36, 64)
-	if err != nil {
-		return 100, fmt.Errorf("image distance: error parsing pHash %s: %w", h1, err)
-	}
-	pHash2, err := strconv.ParseUint(h2, 36, 64)
-	if err != nil {
-		return 100, fmt.Errorf("image distance: error parsing pHash %s: %w", h2, err)
-	}
-	return phash.Distance(pHash1, pHash2), nil
+	return distances, nil
 }
