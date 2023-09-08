@@ -1,0 +1,93 @@
+[
+	{
+		"type": "BOOK",
+		"id": "article123",
+		"createdAt": "2023-09-07T10:00:00Z",
+		"versionId": "v1",
+		"updatedAt": "2023-09-07T12:30:00Z",
+		"editorId": "editor456",
+		"editorName": "Alice Johnson",
+		"comment": "This is the first example article.",
+		"wordCount": 800,
+		"imageCount": 5,
+		"linkCount": 7,
+		"sectionCount": 4,
+		"tags": ["tag1", "tag2"],
+		"authors": [
+			{
+				"name": "Author 1",
+				"email": "author1@example.com"
+			},
+			{
+				"name": "Author 2",
+				"email": "author2@example.com"
+			}
+		],
+		"content": {
+			"sectionProperty1": "Section Content 1",
+			"sectionProperty2": "Section Content 2"
+		}
+	},
+	{
+		"type": "ARTICLE",
+		"id": "video789",
+		"createdAt": "2023-09-08T15:45:00Z",
+		"versionId": "v2",
+		"updatedAt": "2023-09-08T17:15:00Z",
+		"wordCount": 0,
+		"imageCount": 3,
+		"linkCount": 2,
+		"sectionCount": 0,
+		"tags": ["tag3"],
+		"authors": [],
+		"content": null
+	},
+	{
+		"type": "CHAPTER",
+		"id": "blog456",
+		"createdAt": "2023-09-09T08:30:00Z",
+		"versionId": "v3",
+		"updatedAt": "2023-09-09T11:00:00Z",
+		"editorId": "editor789",
+		"editorName": "Bob Smith",
+		"wordCount": 1200,
+		"imageCount": 8,
+		"linkCount": 10,
+		"sectionCount": 6,
+		"tags": ["tag4", "tag5", "tag6"],
+		"authors": [
+			{
+				"name": "Author 3",
+				"email": "author3@example.com"
+			}
+		],
+		"content": {
+			"sectionProperty1": "Section Content 3",
+			"sectionProperty2": "Section Content 4"
+		}
+	},
+	{
+		"type": "CATEGORY",
+		"id": "blog456",
+		"createdAt": "2023-09-09T08:30:00Z",
+		"versionId": "v3",
+		"updatedAt": "2023-09-09T11:00:00Z",
+		"editorId": "editor789",
+		"editorName": "Bob Smith",
+		"wordCount": 1200,
+		"imageCount": 8,
+		"linkCount": 10,
+		"sectionCount": 6,
+		"tags": ["tag4", "tag5", "tag6"],
+		"authors": [
+			{
+				"name": "Author 3",
+				"email": "author3@example.com"
+			}
+		],
+		"content": {
+			"sectionProperty1": "Section Content 3",
+			"sectionProperty2": "Section Content 4"
+		}
+	}
+]
