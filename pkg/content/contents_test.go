@@ -3,6 +3,7 @@ package content
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -13,11 +14,52 @@ import (
 
 // Set up test context and service
 var (
-	ctx     = context.Background()
-	service = NewMockService("test")
+	ctx      = context.Background()
+	service  = NewMockService("test")
+	book     Content
+	chapter1 Content
+	chapter2 Content
 )
 
+// readJSONContent reads a JSON file into a Content struct.
+func readJSONContent(path string) (Content, error) {
+	var c Content
+	// A file path is required.
+	if path == "" {
+		return c, fmt.Errorf("error fetching JSON: no file path provided")
+	}
+	// The file must exist.
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return c, fmt.Errorf("error fetching JSON: file %s does not exist", path)
+	}
+	// Read the file into a byte slice.
+	blob, err := os.ReadFile(path)
+	if err != nil {
+		return c, fmt.Errorf("error fetching JSON file %s: %w", path, err)
+	}
+	// Unmarshal the byte slice into a Content struct.
+	if err := json.Unmarshal(blob, &c); err != nil {
+		return c, fmt.Errorf("error unmarshaling JSON file %s: %w", path, err)
+	}
+	return c, nil
+}
+
 func TestMain(m *testing.M) {
+	// Load test data from JSON files
+	var err error
+	book, err = readJSONContent("testdata/book.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	chapter1, err = readJSONContent("testdata/chapter1.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	chapter2, err = readJSONContent("testdata/chapter2.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// Open the test data file
 	file, err := os.Open("content_test.json")
 	if err != nil {

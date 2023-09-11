@@ -1,0 +1,58 @@
+{
+    "type": "CHAPTER",
+    "id": "9SozajRUzq5OMc7P",
+    "createdAt": "2023-09-11T18:28:33.834944351Z",
+    "versionId": "9SozajRUzq5OMc7P",
+    "updatedAt": "2023-09-11T18:28:33.834944351Z",
+    "editorId": "",
+    "editorName": "",
+    "comment": "Initial version (WIP)",
+    "wordCount": 0,
+    "imageCount": 0,
+    "linkCount": 0,
+    "sectionCount": 0,
+    "tags": ["test"],
+    "authors": [
+        {
+            "name": "Editorial Team",
+            "email": "editor@versionary.net"
+        }
+    ],
+    "content": {
+        "id": "9Sp3tNKbt2v1PwFc",
+        "title": "2. Generating Test Cases",
+        "subtitle": "Getting off the Happy Path",
+        "text": "When generating test cases, we want to be sure to cover the intended business work flows, but we also want to test the edge cases. ",
+        "images": [],
+        "links": [],
+        "sections": [
+            {
+                "id": "9Sp3tNKcZSDfF6BO",
+                "title": "2.1. Understanding the API",
+                "subtitle": "",
+                "text": "One way to understand the API is to read the source code. The Versionary API is written in <a href='https://go.dev/'>Go</a>, so you'll need to be familiar with the language.",
+                "images": [],
+                "links": [],
+                "sections": []
+            },
+            {
+                "id": "9Sp3tNKdYzJaFjQX",
+                "title": "2.2. Generate Sample Data",
+                "subtitle": "",
+                "text": "To test the API, you'll need sample data that exercises a range of possibilities. This requires an understanding of the data model.",
+                "images": [],
+                "links": [],
+                "sections": []
+            },
+            {
+                "id": "9Sp3tNKdwr3Hmmjo",
+                "title": "2.3. Generate Test Cases",
+                "subtitle": "",
+                "text": "Once you have sample data, you can generate test cases. This requires an understanding of the business work flows.",
+                "images": [],
+                "links": [],
+                "sections": []
+            }
+        ]
+    }
+}
