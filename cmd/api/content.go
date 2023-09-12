@@ -636,7 +636,7 @@ func readContentTags(c *gin.Context) {
 //
 // @Summary List Content Titles
 // @Description List Content Titles
-// @Description List Content Titles by type, author, or tag, paging with reverse, limit, and offset.
+// @Description List Content Titles by type, author, editor, or tag, paging with reverse, limit, and offset.
 // @Description Optionally, filter results with search terms.
 // @Tags Content
 // @Produce json

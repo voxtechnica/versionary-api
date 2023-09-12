@@ -13,6 +13,7 @@ import (
 	"github.com/voxtechnica/versionary"
 
 	"versionary-api/pkg/content"
+	"versionary-api/pkg/util"
 )
 
 func TestContentCRUD(t *testing.T) {
@@ -249,7 +250,7 @@ func TestReadContent(t *testing.T) {
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
 			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
 			expect.Equal(http.StatusNotFound, e.Code, "Event Code")
-			expect.Contains(e.Message, "not found: contents_dev-"+contentID, "Event Message")
+			expect.Contains(e.Message, "not found: Content-"+contentID, "Event Message")
 		}
 	}
 }
@@ -361,7 +362,7 @@ func TestReadContentVersions(t *testing.T) {
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
 			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
 			expect.Equal(http.StatusNotFound, e.Code, "Event Code")
-			expect.Contains(e.Message, "not found: contents_dev-"+contentID, "Event Message")
+			expect.Contains(e.Message, "not found: Content-"+contentID, "Event Message")
 		}
 	}
 }
@@ -439,7 +440,7 @@ func TestReadContentVersion(t *testing.T) {
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
 			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
 			expect.Equal(http.StatusNotFound, e.Code, "Event Code")
-			expect.Contains(e.Message, "not found: contents_dev-"+contentID, "Event Message")
+			expect.Contains(e.Message, "not found: Content-"+contentID, "Event Message")
 		}
 	}
 }
@@ -566,7 +567,7 @@ func TestDeleteContent(t *testing.T) {
 		}
 	}
 
-	// Delete a Content object: missing type
+	// Delete a Content object: not found
 	w = httptest.NewRecorder()
 	contentID := tuid.NewID().String()
 	req, err = http.NewRequest("DELETE", "/v1/contents/"+contentID, nil)
@@ -579,7 +580,7 @@ func TestDeleteContent(t *testing.T) {
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&e), "Decode JSON Event") {
 			expect.Equal("ERROR", e.LogLevel, "Event LogLevel")
 			expect.Equal(http.StatusNotFound, e.Code, "Event Code")
-			expect.Contains(e.Message, "not found: contents_dev-"+contentID, "Event Message")
+			expect.Contains(e.Message, "not found: Content-"+contentID, "Event Message")
 		}
 	}
 }
@@ -596,8 +597,8 @@ func TestReadContentTypes(t *testing.T) {
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var types []string
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&types), "Decode JSON Content Types") {
-			expect.GreaterOrEqual(len(types), 3, "Content Type Count")
-			expect.Contains(types, string(content.ARTICLE), "ARTICLE Content Type")
+			expect.GreaterOrEqual(len(types), 2, "Content Type Count")
+			expect.Contains(types, string(contentOne.Type), "Specified Content Type")
 		}
 	}
 
@@ -646,8 +647,7 @@ func TestReadContentAuthors(t *testing.T) {
 		var authors []string
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&authors), "Decode JSON Content Authors") {
 			expect.GreaterOrEqual(len(authors), 2, "Content Authors Count")
-			knownAuthor := "Jon Bodner"
-			expect.Contains(authors, knownAuthor, "Content Author")
+			expect.Contains(authors, contentOne.Authors[0].Name, "Specified Content Author")
 		}
 	}
 
@@ -694,11 +694,12 @@ func TestReadContentEditors(t *testing.T) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var editors []versionary.TextValue
-		if expect.NoError(json.NewDecoder(w.Body).Decode(&editors), "Decode JSON Content Authors") {
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&editors), "Decode JSON Content Editors") {
 			expect.GreaterOrEqual(len(editors), 1, "Content Editors Count")
-			editorNames := versionary.Map(editors, func(v versionary.TextValue) string { return v.Value })
-			knownEditor := "Admin User"
-			expect.Contains(editorNames, knownEditor, "Content Editor")
+			m := util.TextValuesMap(editors)
+			name, ok := m[adminUser.ID]
+			expect.True(ok, "Specified Content Editor")
+			expect.Equal(adminUser.FullName(), name, "Specified Content Editor")
 		}
 	}
 
@@ -745,10 +746,9 @@ func TestReadContentTags(t *testing.T) {
 		r.ServeHTTP(w, req)
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var tags []string
-		if expect.NoError(json.NewDecoder(w.Body).Decode(&tags), "Decode JSON Content Authors") {
-			expect.GreaterOrEqual(len(tags), 5, "Content Authors Count")
-			knownTag := "unpublished"
-			expect.Contains(tags, knownTag, "Content Tags")
+		if expect.NoError(json.NewDecoder(w.Body).Decode(&tags), "Decode JSON Content Tags") {
+			expect.GreaterOrEqual(len(tags), 5, "Content Tags Count")
+			expect.Contains(tags, contentOne.Tags[0], "Specified Content Tag")
 		}
 	}
 
@@ -788,7 +788,7 @@ func TestReadContentTitles(t *testing.T) {
 	expect := assert.New(t)
 	// Read all Content titles
 	w := httptest.NewRecorder()
-	req, err := http.NewRequest("GET", "/v1/content_titles", nil)
+	req, err := http.NewRequest("GET", "/v1/content_titles?sorted=true", nil)
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	if expect.NoError(err) {
@@ -796,13 +796,13 @@ func TestReadContentTitles(t *testing.T) {
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var titles []versionary.TextValue
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&titles), "Decode JSON Content Titles") {
-			expect.GreaterOrEqual(len(titles), 3, "Content Titles Count")
+			expect.GreaterOrEqual(len(titles), 2, "Content Titles Count")
 		}
 	}
 
 	// Read Content titles by type
 	w = httptest.NewRecorder()
-	req, err = http.NewRequest("GET", "/v1/content_titles?type=ARTICLE", nil)
+	req, err = http.NewRequest("GET", "/v1/content_titles?type="+contentOne.Type.String(), nil)
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	if expect.NoError(err) {
@@ -810,7 +810,11 @@ func TestReadContentTitles(t *testing.T) {
 		expect.Equal(http.StatusOK, w.Code, "HTTP Status Code")
 		var titles []versionary.TextValue
 		if expect.NoError(json.NewDecoder(w.Body).Decode(&titles), "Decode JSON Content Titles") {
-			expect.Equal(1, len(titles), "Content Titles Count")
+			expect.GreaterOrEqual(len(titles), 1, "Content Titles Count")
+			m := util.TextValuesMap(titles)
+			title, ok := m[contentOne.ID]
+			expect.True(ok, "Content Title Exists")
+			expect.Contains(title, contentOne.Title(), "Content Title")
 		}
 	}
 
@@ -830,7 +834,7 @@ func TestReadContentTitles(t *testing.T) {
 
 	// Read Content titles by author
 	w = httptest.NewRecorder()
-	req, err = http.NewRequest("GET", "/v1/content_titles?author=Test%20Author%201", nil)
+	req, err = http.NewRequest("GET", "/v1/content_titles?author=Test Author 1", nil)
 	req.Header.Set("Accept", "application/json;charset=UTF-8")
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 	if expect.NoError(err) {
