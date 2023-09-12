@@ -35,3 +35,21 @@ var dateRegex = regexp.MustCompile(`^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[0
 func IsValidDate(date string) bool {
 	return date != "" && dateRegex.MatchString(date)
 }
+
+// TextValuesMap converts a slice of TextValues into a key/value map.
+func TextValuesMap(textValues []versionary.TextValue) map[string]string {
+	m := make(map[string]string)
+	for _, tv := range textValues {
+		m[tv.Key] = tv.Value
+	}
+	return m
+}
+
+// NumValuesMap converts a slice of NumValues into a key/value map.
+func NumValuesMap(numericValues []versionary.NumValue) map[string]float64 {
+	m := make(map[string]float64)
+	for _, nv := range numericValues {
+		m[nv.Key] = nv.Value
+	}
+	return m
+}
