@@ -146,10 +146,10 @@ func (s Service) Create(ctx context.Context, c Content) (Content, []string, erro
 	c.VersionID = t.String()
 	c.UpdatedAt = at
 	c = c.Sanitize()
-	c.WordCount = c.Content.WordCount()
-	c.ImageCount = c.Content.ImageCount()
-	c.LinkCount = c.Content.LinkCount()
-	c.SectionCount = c.Content.SectionCount()
+	c.WordCount = c.Body.WordCount()
+	c.ImageCount = c.Body.ImageCount()
+	c.LinkCount = c.Body.LinkCount()
+	c.SectionCount = c.Body.SectionCount()
 	problems := c.Validate()
 	if len(problems) > 0 {
 		return c, problems, fmt.Errorf("error creating %s %s: invalid field(s): %s", s.EntityType, c.ID, strings.Join(problems, ", "))
@@ -168,10 +168,10 @@ func (s Service) Update(ctx context.Context, c Content) (Content, []string, erro
 	c.VersionID = t.String()
 	c.UpdatedAt = at
 	c = c.Sanitize()
-	c.WordCount = c.Content.WordCount()
-	c.ImageCount = c.Content.ImageCount()
-	c.LinkCount = c.Content.LinkCount()
-	c.SectionCount = c.Content.SectionCount()
+	c.WordCount = c.Body.WordCount()
+	c.ImageCount = c.Body.ImageCount()
+	c.LinkCount = c.Body.LinkCount()
+	c.SectionCount = c.Body.SectionCount()
 	problems := c.Validate()
 	if len(problems) > 0 {
 		return c, problems, fmt.Errorf("error updating %s %s: invalid field(s): %s", s.EntityType, c.ID, strings.Join(problems, ", "))

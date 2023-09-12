@@ -21,7 +21,7 @@ func TestContentCRUD(t *testing.T) {
 	var con content.Content
 	j, err := json.Marshal(content.Content{
 		Type: content.BOOK,
-		Content: content.Section{
+		Body: content.Section{
 			Title:    "CRUD Test 1",
 			Subtitle: "CRUD Test Subtitle 1",
 		},
@@ -96,7 +96,7 @@ func TestCreateContent(t *testing.T) {
 	var con content.Content
 	j, err := json.Marshal(content.Content{
 		Type: content.ARTICLE,
-		Content: content.Section{
+		Body: content.Section{
 			Title:    "Article 1",
 			Subtitle: "Article 1 Subtitle",
 			Text:     "This is the text of Article 1.",
@@ -216,7 +216,7 @@ func TestReadContent(t *testing.T) {
 			expect.Equal(contentOne.ID, con.ID, "Content ID")
 			expect.Equal(contentOne.VersionID, con.VersionID, "Content VersionID")
 			expect.Equal(contentOne.Type, con.Type, "Content Type")
-			expect.Equal(contentOne.Content, con.Content, "Content Content")
+			expect.Equal(contentOne.Body, con.Body, "Content Content")
 		}
 	}
 

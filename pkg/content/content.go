@@ -25,7 +25,7 @@ type Content struct {
 	SectionCount int       `json:"sectionCount"`
 	Tags         []string  `json:"tags,omitempty"`
 	Authors      []Author  `json:"authors,omitempty"`
-	Content      Section   `json:"content,omitempty"`
+	Body         Section   `json:"body,omitempty"`
 }
 
 // RefID returns the Reference ID of this entity.
@@ -37,11 +37,11 @@ func (c Content) RefID() ref.RefID {
 // Title returns the title of the Content.
 func (c Content) Title() string {
 	t := strings.ToTitle(c.Type.String())
-	if c.Content.Title != "" && c.Content.Subtitle != "" {
-		return c.Content.Title + ": " + c.Content.Subtitle + " (" + t + ")"
+	if c.Body.Title != "" && c.Body.Subtitle != "" {
+		return c.Body.Title + ": " + c.Body.Subtitle + " (" + t + ")"
 	}
-	if c.Content.Title != "" {
-		return c.Content.Title + " (" + t + ")"
+	if c.Body.Title != "" {
+		return c.Body.Title + " (" + t + ")"
 	}
 	return t + " " + c.ID
 }
@@ -68,13 +68,13 @@ func (c Content) CompressedJSON() []byte {
 
 // Sanitize removes potentially dangerous HTML tags from the Content.
 func (c Content) Sanitize() Content {
-	c.Content = c.Content.Sanitize()
+	c.Body = c.Body.Sanitize()
 	return c
 }
 
 // IsEmpty returns true if the Content has no content.
 func (c Content) IsEmpty() bool {
-	return c.Content.IsEmpty()
+	return c.Body.IsEmpty()
 }
 
 // Validate checks whether the Content has all required fields and whether the supplied values are valid.
@@ -99,10 +99,10 @@ func (c Content) Validate() []string {
 	for _, author := range c.Authors {
 		problems = append(problems, author.Validate()...)
 	}
-	if c.Content.IsEmpty() {
+	if c.Body.IsEmpty() {
 		problems = append(problems, "Content is empty")
 	} else {
-		problems = append(problems, c.Content.Validate()...)
+		problems = append(problems, c.Body.Validate()...)
 	}
 	if c.Type == "" {
 		problems = append(problems, "Type is missing")
