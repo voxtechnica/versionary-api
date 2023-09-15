@@ -4,14 +4,14 @@
     "createdAt": "2023-09-11T18:02:00.436596063Z",
     "versionId": "9SoxTDVQoAc45HCi",
     "updatedAt": "2023-09-11T18:02:00.436596063Z",
-    "editorId": "",
-    "editorName": "",
+    "editorId": "9StQoyU5SxGDdGqF",
+    "editorName": "Editor-in-chief",
     "comment": "Initial version (WIP)",
     "wordCount": 0,
     "imageCount": 0,
     "linkCount": 0,
     "sectionCount": 0,
-    "tags": ["test"],
+    "tags": ["book", "test"],
     "authors": [
         {
             "name": "Editorial Team",

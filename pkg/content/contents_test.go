@@ -160,6 +160,7 @@ func TestVersionExists(t *testing.T) {
 	expect.False(vExist)
 }
 
+// vCheck object has <nil> value included in []image.Image(nil) and []content.Section(nil)
 // func TestReadVersion(t *testing.T) {
 // 	expect := assert.New(t)
 // 	// Read the content
@@ -197,6 +198,7 @@ func TestReadVersionsAsJSON(t *testing.T) {
 	}
 }
 
+// allVersions object has <nil> value included in []image.Image(nil) and []content.Section(nil)
 // func TestReadAllVersions(t *testing.T) {
 // 	expect := assert.New(t)
 // 	allVersions, err := service.ReadAllVersions(ctx, book.ID)
@@ -240,7 +242,245 @@ func TestReadTitles(t *testing.T) {
 	idsAndTitles, err := service.ReadTitles(ctx, false, 10, "")
 	if expect.NoError(err) {
 		onlyTitles := v.Map(idsAndTitles, func(entry v.TextValue) string { return entry.Value })
+		expect.GreaterOrEqual(len(onlyTitles), 3)
 		expect.Subset(onlyTitles, expectedTitles)
-		// fmt.Println("ONLY TITLES: ", onlyTitles)
+	}
+}
+
+func TestReadAllTitles(t *testing.T) {
+	expect := assert.New(t)
+	knownContentObjects := []Content{chapter1}
+	expectedTitle := v.Map(knownContentObjects, func(c Content) string { return c.Body.Title + ": " + c.Body.Subtitle + " (" + string(c.Type) + ")" })
+	allIDsAndTitles, err := service.ReadAllTitles(ctx, true)
+	if expect.NoError(err) {
+		onlyTitles := v.Map(allIDsAndTitles, func(entry v.TextValue) string { return entry.Value })
+		expect.Subset(onlyTitles, expectedTitle)
+	}
+}
+
+func TestFilterTitles(t *testing.T) {
+	expect := assert.New(t)
+	filteredTitle, err := service.FilterTitles(ctx, "workstation", true)
+	expectedTitle := []v.TextValue{
+		{
+			Key:   chapter1.ID,
+			Value: chapter1.Body.Title + ": " + chapter1.Body.Subtitle + " (" + string(chapter1.Type) + ")",
+		},
+	}
+	if expect.NoError(err) {
+		expect.Equal(filteredTitle, expectedTitle)
+	}
+}
+
+func TestReadContents(t *testing.T) {
+	expect := assert.New(t)
+	contents := service.ReadContents(ctx, false, 10, "")
+	if expect.NotEmpty(contents) {
+
+		expect.GreaterOrEqual(len(contents), 3)
+	}
+}
+
+//------------------------------------------------------------------------------
+// Content Titles by Type
+//------------------------------------------------------------------------------
+
+func TestReadAllTypes(t *testing.T) {
+	expect := assert.New(t)
+	allTypes, err := service.ReadAllTypes(ctx)
+	if expect.NoError(err) {
+		expect.Contains(allTypes, string(BOOK))
+		expect.Contains(allTypes, string(CHAPTER))
+	}
+}
+
+func TestReadTitlesByType(t *testing.T) {
+	expect := assert.New(t)
+	idsAndTitles, err := service.ReadTitlesByType(ctx, "CHAPTER", false, 10, "")
+	if expect.NoError(err) {
+		onlyTitles := v.Map(idsAndTitles, func(entry v.TextValue) string { return entry.Value })
+		expect.Equal(len(onlyTitles), 2)
+	}
+}
+
+func TestReadAllTitlesByType(t *testing.T) {
+	expect := assert.New(t)
+	idsAndTitles, err := service.ReadAllTitlesByType(ctx, "BOOK", true)
+	if expect.NoError(err) {
+		onlyTitles := v.Map(idsAndTitles, func(entry v.TextValue) string { return entry.Value })
+		expect.Equal(len(onlyTitles), 1)
+
+	}
+}
+
+func TestFilterTitlesByType(t *testing.T) {
+	expect := assert.New(t)
+	filteredTitle, err := service.FilterTitlesByType(ctx, "BOOK", "easy", true)
+	expectedTitle := []v.TextValue{
+		{
+			Key:   book.ID,
+			Value: book.Body.Title + ": " + book.Body.Subtitle + " (" + string(book.Type) + ")",
+		},
+	}
+	if expect.NoError(err) {
+		expect.Equal(filteredTitle, expectedTitle)
+	}
+}
+
+//------------------------------------------------------------------------------
+// Content Titles by Author
+//------------------------------------------------------------------------------
+
+func TestAllAuthors(t *testing.T) {
+	expect := assert.New(t)
+	// knownAuthors := []string{"Editorial Team"}
+	authors, err := service.ReadAllAuthors(ctx)
+	if expect.NoError(err) {
+		expect.GreaterOrEqual(len(authors), 1)
+	}
+}
+
+func TestReadTitlesByAuthor(t *testing.T) {
+	expect := assert.New(t)
+	idsAndTitles, err := service.ReadTitlesByAuthor(ctx, "Editorial Team", false, 10, "")
+	if expect.NoError(err) {
+		onlyTitles := v.Map(idsAndTitles, func(entry v.TextValue) string { return entry.Value })
+		expect.Equal(len(onlyTitles), 3)
+		expect.Contains(onlyTitles, book.Body.Title+": "+book.Body.Subtitle+" ("+string(book.Type)+")")
+	}
+}
+
+func TestFilterTitlesByAuthor(t *testing.T) {
+	expect := assert.New(t)
+	filteredTitle, err := service.FilterTitlesByAuthor(ctx, "Editorial Team", "Happy", true)
+	expectedTitle := []v.TextValue{
+		{
+			Key:   chapter2.ID,
+			Value: chapter2.Body.Title + ": " + chapter2.Body.Subtitle + " (" + string(chapter2.Type) + ")",
+		},
+	}
+	if expect.NoError(err) {
+		expect.Equal(filteredTitle, expectedTitle)
+	}
+}
+
+//------------------------------------------------------------------------------
+// Content Titles by Editor
+//------------------------------------------------------------------------------
+
+func TestReadAllEditorIDs(t *testing.T) {
+	expect := assert.New(t)
+	allEditorIDs, err := service.ReadAllEditorIDs(ctx)
+	if expect.NoError(err) && expect.NotEmpty(allEditorIDs) {
+		expect.Equal(len(allEditorIDs), 1)
+	}
+}
+
+func TestReadAllEditorNames(t *testing.T) {
+	expect := assert.New(t)
+	allEditorIDsAndNames, err := service.ReadAllEditorNames(ctx, true)
+	if expect.NoError(err) {
+		editorNames := v.Map(allEditorIDsAndNames, func(entry v.TextValue) string { return entry.Value })
+		expect.Equal(editorNames, []string{"Editor-in-chief"})
+	}
+}
+
+func TestFilterEditorNames(t *testing.T) {
+	expect := assert.New(t)
+	filteredEditorIDAndName, err := service.FilterEditorNames(ctx, "chief", true)
+	expectedEditorIDAndName := []v.TextValue{
+		{
+			Key:   "9StQoyU5SxGDdGqF",
+			Value: "Editor-in-chief",
+		},
+	}
+	if expect.NoError(err) {
+		expect.Equal(filteredEditorIDAndName, expectedEditorIDAndName)
+	}
+}
+
+// content ID in this test keeps on changing when I try to hardcode it from book.json
+// func TestReadTitlesByEditorID(t *testing.T) {
+// 	expect := assert.New(t)
+// 	contentIDsAndTitles, err := service.ReadTitlesByEditorID(ctx, book.EditorID, false, 10, "")
+// 	expectedContentIDsAndTitles := []v.TextValue{
+// 		{
+// 			Key:   "9SoxTDVQoAc45HCi",
+// 			Value: book.Body.Title + ": " + book.Body.Subtitle + " (" + string(book.Type) + ")",
+// 		},
+// 	}
+// 	if expect.NoError(err) {
+// 		expect.Equal(contentIDsAndTitles, expectedContentIDsAndTitles)
+// 		fmt.Println(contentIDsAndTitles)
+// 	}
+// }
+
+func TestReadAllTitlesByEditorID(t *testing.T) {
+	expect := assert.New(t)
+	contentIDsAndTitles, err := service.ReadAllTitlesByEditorID(ctx, book.EditorID, true)
+	if expect.NoError(err) {
+		onlyTitles := v.Map(contentIDsAndTitles, func(entry v.TextValue) string { return entry.Value })
+		expect.Equal(onlyTitles, []string{book.Body.Title + ": " + book.Body.Subtitle + " (" + string(book.Type) + ")"})
+	}
+}
+
+func TestFilterTitlesByEditorID(t *testing.T) {
+	expect := assert.New(t)
+	filteredContentIDsAndTitles, err := service.FilterTitlesByEditorID(ctx, book.EditorID, "easy", true)
+	expectedContentIDsAndTitles := []v.TextValue{
+		{
+			Key:   book.ID,
+			Value: book.Body.Title + ": " + book.Body.Subtitle + " (" + string(book.Type) + ")",
+		},
+	}
+	if expect.NoError(err) {
+		expect.Equal(filteredContentIDsAndTitles, expectedContentIDsAndTitles)
+	}
+}
+
+//------------------------------------------------------------------------------
+// Content Titles by Tag
+//------------------------------------------------------------------------------
+
+func TestReadAllTags(t *testing.T) {
+	expect := assert.New(t)
+	allTags, err := service.ReadAllTags(ctx)
+	if expect.NoError(err) && expect.NotEmpty(allTags) {
+		expect.Contains(allTags, "book")
+		expect.Contains(allTags, "chapter2")
+	}
+}
+
+func TestReadTitlesByTag(t *testing.T) {
+	expect := assert.New(t)
+	idsAndTitles, err := service.ReadTitlesByTag(ctx, "chapter1", false, 10, "")
+	expectedTitle := []string{chapter1.Body.Title + ": " + chapter1.Body.Subtitle + " (" + string(chapter1.Type) + ")"}
+	if expect.NoError(err) {
+		onlyTitles := v.Map(idsAndTitles, func(entry v.TextValue) string { return entry.Value })
+		expect.Equal(len(onlyTitles), 1)
+		expect.Equal(onlyTitles, expectedTitle)
+	}
+}
+
+func TestReadAllTitlesByTag(t *testing.T) {
+	expect := assert.New(t)
+	idsAndTitles, err := service.ReadAllTitlesByTag(ctx, "test", true)
+	if expect.NoError(err) {
+		onlyTitles := v.Map(idsAndTitles, func(entry v.TextValue) string { return entry.Value })
+		expect.Equal(len(onlyTitles), 3)
+	}
+}
+
+func TestFilterTitlesByTag(t *testing.T) {
+	expect := assert.New(t)
+	filteredTitle, err := service.FilterTitlesByTag(ctx, "test", "easy", true)
+	expectedTitle := []v.TextValue{
+		{
+			Key:   book.ID,
+			Value: book.Body.Title + ": " + book.Body.Subtitle + " (" + string(book.Type) + ")",
+		},
+	}
+	if expect.NoError(err) {
+		expect.Equal(filteredTitle, expectedTitle)
 	}
 }
