@@ -239,7 +239,7 @@ func TestReadAllContentIDs(t *testing.T) {
 func TestReadTitles(t *testing.T) {
 	expect := assert.New(t)
 	knownContentObjects := []Content{book, chapter1, chapter2}
-	expectedTitles := v.Map(knownContentObjects, func(c Content) string { return c.Body.Title + ": " + c.Body.Subtitle + " (" + string(c.Type) + ")" })
+	expectedTitles := v.Map(knownContentObjects, func(c Content) string { return c.Title() })
 	idsAndTitles, err := service.ReadTitles(ctx, false, 10, "")
 	if expect.NoError(err) {
 		onlyTitles := v.Map(idsAndTitles, func(entry v.TextValue) string { return entry.Value })
@@ -251,7 +251,7 @@ func TestReadTitles(t *testing.T) {
 func TestReadAllTitles(t *testing.T) {
 	expect := assert.New(t)
 	knownContentObjects := []Content{chapter1}
-	expectedTitle := v.Map(knownContentObjects, func(c Content) string { return c.Body.Title + ": " + c.Body.Subtitle + " (" + string(c.Type) + ")" })
+	expectedTitle := v.Map(knownContentObjects, func(c Content) string { return c.Title() })
 	allIDsAndTitles, err := service.ReadAllTitles(ctx, true)
 	if expect.NoError(err) {
 		onlyTitles := v.Map(allIDsAndTitles, func(entry v.TextValue) string { return entry.Value })
@@ -265,7 +265,7 @@ func TestFilterTitles(t *testing.T) {
 	expectedTitle := []v.TextValue{
 		{
 			Key:   chapter1.ID,
-			Value: chapter1.Body.Title + ": " + chapter1.Body.Subtitle + " (" + string(chapter1.Type) + ")",
+			Value: chapter1.Title(),
 		},
 	}
 	if expect.NoError(err) {
@@ -320,7 +320,7 @@ func TestFilterTitlesByType(t *testing.T) {
 	expectedTitle := []v.TextValue{
 		{
 			Key:   book.ID,
-			Value: book.Body.Title + ": " + book.Body.Subtitle + " (" + string(book.Type) + ")",
+			Value: book.Title(),
 		},
 	}
 	if expect.NoError(err) {
@@ -334,7 +334,6 @@ func TestFilterTitlesByType(t *testing.T) {
 
 func TestAllAuthors(t *testing.T) {
 	expect := assert.New(t)
-	// knownAuthors := []string{"Editorial Team"}
 	authors, err := service.ReadAllAuthors(ctx)
 	if expect.NoError(err) {
 		expect.GreaterOrEqual(len(authors), 1)
@@ -347,7 +346,7 @@ func TestReadTitlesByAuthor(t *testing.T) {
 	if expect.NoError(err) {
 		onlyTitles := v.Map(idsAndTitles, func(entry v.TextValue) string { return entry.Value })
 		expect.Equal(len(onlyTitles), 3)
-		expect.Contains(onlyTitles, book.Body.Title+": "+book.Body.Subtitle+" ("+string(book.Type)+")")
+		expect.Contains(onlyTitles, book.Title())
 	}
 }
 
@@ -357,7 +356,7 @@ func TestFilterTitlesByAuthor(t *testing.T) {
 	expectedTitle := []v.TextValue{
 		{
 			Key:   chapter2.ID,
-			Value: chapter2.Body.Title + ": " + chapter2.Body.Subtitle + " (" + string(chapter2.Type) + ")",
+			Value: chapter2.Title(),
 		},
 	}
 	if expect.NoError(err) {
@@ -382,7 +381,7 @@ func TestReadAllEditorNames(t *testing.T) {
 	allEditorIDsAndNames, err := service.ReadAllEditorNames(ctx, true)
 	if expect.NoError(err) {
 		editorNames := v.Map(allEditorIDsAndNames, func(entry v.TextValue) string { return entry.Value })
-		expect.Equal(editorNames, []string{"Editor-in-chief"})
+		expect.Equal(editorNames, []string{book.EditorName})
 	}
 }
 
@@ -391,8 +390,8 @@ func TestFilterEditorNames(t *testing.T) {
 	filteredEditorIDAndName, err := service.FilterEditorNames(ctx, "chief", true)
 	expectedEditorIDAndName := []v.TextValue{
 		{
-			Key:   "9StQoyU5SxGDdGqF",
-			Value: "Editor-in-chief",
+			Key:   book.EditorID,
+			Value: book.EditorName,
 		},
 	}
 	if expect.NoError(err) {
@@ -419,7 +418,7 @@ func TestReadAllTitlesByEditorID(t *testing.T) {
 	contentIDsAndTitles, err := service.ReadAllTitlesByEditorID(ctx, book.EditorID, true)
 	if expect.NoError(err) {
 		onlyTitles := v.Map(contentIDsAndTitles, func(entry v.TextValue) string { return entry.Value })
-		expect.Equal(onlyTitles, []string{book.Body.Title + ": " + book.Body.Subtitle + " (" + string(book.Type) + ")"})
+		expect.Equal(onlyTitles, []string{book.Title()})
 	}
 }
 
@@ -453,7 +452,7 @@ func TestReadAllTags(t *testing.T) {
 func TestReadTitlesByTag(t *testing.T) {
 	expect := assert.New(t)
 	idsAndTitles, err := service.ReadTitlesByTag(ctx, "chapter1", false, 10, "")
-	expectedTitle := []string{chapter1.Body.Title + ": " + chapter1.Body.Subtitle + " (" + string(chapter1.Type) + ")"}
+	expectedTitle := []string{chapter1.Title()}
 	if expect.NoError(err) {
 		onlyTitles := v.Map(idsAndTitles, func(entry v.TextValue) string { return entry.Value })
 		expect.Equal(len(onlyTitles), 1)
@@ -476,7 +475,7 @@ func TestFilterTitlesByTag(t *testing.T) {
 	expectedTitle := []v.TextValue{
 		{
 			Key:   book.ID,
-			Value: book.Body.Title + ": " + book.Body.Subtitle + " (" + string(book.Type) + ")",
+			Value: book.Title(),
 		},
 	}
 	if expect.NoError(err) {
