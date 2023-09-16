@@ -1,16 +1,6 @@
 {
     "type": "BOOK",
-    "id": "9SoxTDVQoAc45HCi",
-    "createdAt": "2023-09-11T18:02:00.436596063Z",
-    "versionId": "9SoxTDVQoAc45HCi",
-    "updatedAt": "2023-09-11T18:02:00.436596063Z",
-    "editorId": "9StQoyU5SxGDdGqF",
-    "editorName": "Editor-in-chief",
     "comment": "Initial version (WIP)",
-    "wordCount": 0,
-    "imageCount": 0,
-    "linkCount": 0,
-    "sectionCount": 0,
     "tags": ["book", "test"],
     "authors": [
         {
@@ -19,7 +9,6 @@
         }
     ],
     "body": {
-        "id": "9SoxTDVQoAc45HCi",
         "title": "The Test Book",
         "subtitle": "Testing made easy with Versionary",
         "text": "This is a test book. It is used to test the Versionary API. It is a very short book, but it is a book nonetheless.",
@@ -46,26 +35,17 @@
         ],
         "links": [
             {
-                "id": "9SozajRTpG2xPppa",
                 "title": "Chapter 1. Getting Started",
                 "shortTitle": "Getting Started",
                 "url": "https://www.versionary.net/docs/getting-started",
-                "entityType": "CHAPTER",
-                "entityId": "9SozajRTpG2xPppa",
-                "images": [],
                 "description": "Set up your workstation and get started with Versionary."
             },
             {
-                "id": "9SozajRUzq5OMc7P",
                 "title": "Chapter 2. Generating Test Cases",
                 "shortTitle": "Generating Test Cases",
                 "url": "https://www.versionary.net/docs/generating-test-cases",
-                "entityType": "CHAPTER",
-                "entityId": "9SozajRUzq5OMc7P",
-                "images": [],
                 "description": "Learn how to generate test cases for Versionary."
             }
-        ],
-        "sections": []
+        ]
     }
 }

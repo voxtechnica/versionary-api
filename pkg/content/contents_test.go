@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
 )
 
@@ -65,10 +66,17 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
+	// Create a book from Chapter 1 and Chapter 2
 	book, err = readJSONContent("testdata/book.json")
 	if err != nil {
 		log.Fatal(err)
 	}
+	book.EditorID = tuid.NewID().String()
+	book.EditorName = "Editor-in-chief"
+	book.Body.Links[0].EntityID = chapter1.ID
+	book.Body.Links[0].EntityType = chapter1.Type.String()
+	book.Body.Links[1].EntityID = chapter2.ID
+	book.Body.Links[1].EntityType = chapter2.Type.String()
 	book, _, err = service.Create(ctx, book)
 	if err != nil {
 		log.Fatal(err)
@@ -156,23 +164,19 @@ func TestVersionExists(t *testing.T) {
 	vExist := service.VersionExists(ctx, book.ID, book.VersionID)
 	expect.True(vExist)
 	// Version does not exist
-	vExist = service.VersionExists(ctx, book.ID, "00000000000000000000000000000000")
+	vExist = service.VersionExists(ctx, book.ID, tuid.NewID().String())
 	expect.False(vExist)
 }
 
-// vCheck object has <nil> value included in []image.Image(nil) and []content.Section(nil)
-// func TestReadVersion(t *testing.T) {
-// 	expect := assert.New(t)
-// 	// Read the content
-// 	vCheck, err := service.ReadVersion(ctx, book.ID, book.VersionID)
-// 	if expect.NoError(err) {
-// 		// Check the content version
-// 		expect.Equal(book, vCheck)
-// 		fmt.Println(vCheck.VersionID)
-// 		fmt.Println(book.ID)
-// 		fmt.Println(book.VersionID)
-// 	}
-// }
+func TestReadVersion(t *testing.T) {
+	expect := assert.New(t)
+	// Read the content
+	vCheck, err := service.ReadVersion(ctx, book.ID, book.VersionID)
+	if expect.NoError(err) {
+		// Check the content version
+		expect.Equal(book, vCheck)
+	}
+}
 
 func TestReadVersionAsJSON(t *testing.T) {
 	expect := assert.New(t)
@@ -198,16 +202,13 @@ func TestReadVersionsAsJSON(t *testing.T) {
 	}
 }
 
-// allVersions object has <nil> value included in []image.Image(nil) and []content.Section(nil)
-// func TestReadAllVersions(t *testing.T) {
-// 	expect := assert.New(t)
-// 	allVersions, err := service.ReadAllVersions(ctx, book.ID)
-// 	if expect.NoError(err) && expect.NotEmpty(allVersions) {
-// 		fmt.Println(allVersions[0])
-// 		fmt.Println(book)
-// 		expect.Equal(book, allVersions[0])
-// 	}
-// }
+func TestReadAllVersions(t *testing.T) {
+	expect := assert.New(t)
+	allVersions, err := service.ReadAllVersions(ctx, book.ID)
+	if expect.NoError(err) && expect.NotEmpty(allVersions) {
+		expect.Equal(book, allVersions[0])
+	}
+}
 
 func TestReadAllVersionsAsJSON(t *testing.T) {
 	expect := assert.New(t)
@@ -399,21 +400,19 @@ func TestFilterEditorNames(t *testing.T) {
 	}
 }
 
-// content ID in this test keeps on changing when I try to hardcode it from book.json
-// func TestReadTitlesByEditorID(t *testing.T) {
-// 	expect := assert.New(t)
-// 	contentIDsAndTitles, err := service.ReadTitlesByEditorID(ctx, book.EditorID, false, 10, "")
-// 	expectedContentIDsAndTitles := []v.TextValue{
-// 		{
-// 			Key:   "9SoxTDVQoAc45HCi",
-// 			Value: book.Body.Title + ": " + book.Body.Subtitle + " (" + string(book.Type) + ")",
-// 		},
-// 	}
-// 	if expect.NoError(err) {
-// 		expect.Equal(contentIDsAndTitles, expectedContentIDsAndTitles)
-// 		fmt.Println(contentIDsAndTitles)
-// 	}
-// }
+func TestReadTitlesByEditorID(t *testing.T) {
+	expect := assert.New(t)
+	contentIDsAndTitles, err := service.ReadTitlesByEditorID(ctx, book.EditorID, false, 10, "")
+	expectedContentIDsAndTitles := []v.TextValue{
+		{
+			Key:   book.ID,
+			Value: book.Title(),
+		},
+	}
+	if expect.NoError(err) {
+		expect.Equal(contentIDsAndTitles, expectedContentIDsAndTitles)
+	}
+}
 
 func TestReadAllTitlesByEditorID(t *testing.T) {
 	expect := assert.New(t)
@@ -430,7 +429,7 @@ func TestFilterTitlesByEditorID(t *testing.T) {
 	expectedContentIDsAndTitles := []v.TextValue{
 		{
 			Key:   book.ID,
-			Value: book.Body.Title + ": " + book.Body.Subtitle + " (" + string(book.Type) + ")",
+			Value: book.Title(),
 		},
 	}
 	if expect.NoError(err) {
