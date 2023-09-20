@@ -1,0 +1,41 @@
+{
+    "type": "CHAPTER",
+    "comment": "Initial version (WIP)",
+    "tags": ["chapter1", "test"],
+    "authors": [
+        {
+            "name": "Editorial Team",
+            "email": "editor@versionary.net"
+        }
+    ],
+    "body": {
+        "title": "1. Getting Started",
+        "subtitle": "Setting up your workstation for testing",
+        "text": "Before you can test the Versionary API, you need to install current versions of the tools we use. These include ...",
+        "sections": [
+            {
+                "title": "1.1. Installing Go",
+                "text": "Go is a programming language developed by Google. It is used to build the Versionary API. You can <a href='https://go.dev/dl/'>download</a> the latest version of Go from the official website.",
+                "links": [
+                    {
+                        "title": "Download the Go Programming Language",
+                        "shortTitle": "Download Go",
+                        "url": "https://go.dev/dl/",
+                        "description": "Download the Go programming language for your operating system from the official website."
+                    }
+                ]
+            },
+            {
+                "title": "1.2. Clone the Versionary API Repository",
+                "text": "To test the API, you'll need a local copy of the Versionary API <a href='https://github.com/voxtechnica/versionary-api'>repository</a>. You can clone the repository from GitHub using the following command ...",
+                "links": [
+                    {
+                        "title": "Versionary API Repository",
+                        "url": "https://github.com/voxtechnica/versionary-api",
+                        "description": "Get a local copy of the Versionary API source code."
+                    }
+                ]
+            }
+        ]
+    }
+}

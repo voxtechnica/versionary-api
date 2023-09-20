@@ -1,0 +1,30 @@
+{
+    "type": "CHAPTER",
+    "comment": "Initial version (WIP)",
+    "tags": ["chapter2", "test"],
+    "authors": [
+        {
+            "name": "Editorial Team",
+            "email": "editor@versionary.net"
+        }
+    ],
+    "body": {
+        "title": "2. Generating Test Cases",
+        "subtitle": "Getting off the Happy Path",
+        "text": "When generating test cases, we want to be sure to cover the intended business work flows, but we also want to test the edge cases. ",
+        "sections": [
+            {
+                "title": "2.1. Understanding the API",
+                "text": "One way to understand the API is to read the source code. The Versionary API is written in <a href='https://go.dev/'>Go</a>, so you'll need to be familiar with the language."
+            },
+            {
+                "title": "2.2. Generate Sample Data",
+                "text": "To test the API, you'll need sample data that exercises a range of possibilities. This requires an understanding of the data model."
+            },
+            {
+                "title": "2.3. Generate Test Cases",
+                "text": "Once you have sample data, you can generate test cases. This requires an understanding of the business work flows."
+            }
+        ]
+    }
+}

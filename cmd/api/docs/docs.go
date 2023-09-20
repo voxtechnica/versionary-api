@@ -439,7 +439,7 @@ const docTemplate = `{
         },
         "/v1/content_titles": {
             "get": {
-                "description": "List Content Titles\nList Content Titles by type, author, or tag, paging with reverse, limit, and offset.\nOptionally, filter results with search terms.",
+                "description": "List Content Titles\nList Content Titles by type, author, editor, or tag, paging with reverse, limit, and offset.\nOptionally, filter results with search terms.",
                 "produces": [
                     "application/json"
                 ],
@@ -7801,11 +7801,11 @@ const docTemplate = `{
                         "$ref": "#/definitions/content.Author"
                     }
                 },
+                "body": {
+                    "$ref": "#/definitions/content.Section"
+                },
                 "comment": {
                     "type": "string"
-                },
-                "content": {
-                    "$ref": "#/definitions/content.Section"
                 },
                 "createdAt": {
                     "type": "string"

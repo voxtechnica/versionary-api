@@ -125,7 +125,7 @@ type Service struct {
 func NewService(dbClient *dynamodb.Client, env string) Service {
 	table := NewTable(dbClient, env)
 	return Service{
-		EntityType: table.TableName,
+		EntityType: table.EntityType,
 		Table:      table,
 	}
 }
@@ -134,7 +134,7 @@ func NewService(dbClient *dynamodb.Client, env string) Service {
 func NewMockService(env string) Service {
 	table := NewMemTable(NewTable(nil, env))
 	return Service{
-		EntityType: table.TableName,
+		EntityType: table.EntityType,
 		Table:      table,
 	}
 }

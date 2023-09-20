@@ -43,4 +43,4 @@ func ParseStatus(s string) (Status, error) {
 		return status, nil
 	}
 	return "", fmt.Errorf("invalid status: %s", s)
-}	
+}
