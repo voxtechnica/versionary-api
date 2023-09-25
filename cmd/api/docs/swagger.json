@@ -4580,6 +4580,187 @@
                 }
             }
         },
+        "/v1/metric/{id}": {
+            "get": {
+                "description": "Get Metric\nGet Metric by ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metric"
+                ],
+                "summary": "Read Metric",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Metric ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Metric",
+                        "schema": {
+                            "$ref": "#/definitions/metric.Metric"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/metrics": {
+            "post": {
+                "description": "Create a new Metric\nCreate a new Metric.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metric"
+                ],
+                "summary": "Create Metric",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Newly-created Metric",
+                        "schema": {
+                            "$ref": "#/definitions/metric.Metric"
+                        },
+                        "headers": {
+                            "Location": {
+                                "type": "string",
+                                "description": "URL of the newly created Event"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid JSON body)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "422": {
+                        "description": "Metric validation errors",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/metrics/{id}": {
+            "delete": {
+                "description": "Delete Metric\nDelete and return the specified Metric.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Metric"
+                ],
+                "summary": "Delete Metric",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "OAuth Bearer Token (Administrator)",
+                        "name": "authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Metric ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted Metric",
+                        "schema": {
+                            "$ref": "#/definitions/metric.Metric"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated (missing or invalid Authorization header)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized (not an Administrator)",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/main.APIEvent"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/organization_names": {
             "get": {
                 "description": "List Organization IDs and Names\nList Organization IDs and Names, paging with reverse, limit, and offset.\nOptionally, filter results with search terms.",
@@ -8406,6 +8587,41 @@
                 },
                 "user": {
                     "$ref": "#/definitions/user.User"
+                }
+            }
+        },
+        "metric.Metric": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "entityId": {
+                    "type": "string"
+                },
+                "entityType": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "label": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "units": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
                 }
             }
         },

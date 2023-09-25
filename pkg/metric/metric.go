@@ -9,6 +9,7 @@ import (
 )
 
 // Metric is a model entity useful for understanding system activity in terms of performance.
+// Metric is never updated; it has no version. We just record the stats.
 type Metric struct {
 	ID         string    `json:"id"`
 	CreatedAt  time.Time `json:"createdAt"`

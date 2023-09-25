@@ -1,10 +1,12 @@
 package metric
 
 import (
+	"context"
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/onsi/ginkgo/extensions/table"
+	"github.com/voxtechnica/tuid-go"
 	v "github.com/voxtechnica/versionary"
 )
 
@@ -101,8 +103,9 @@ type Service struct {
 
 // NewService creates a new Metric service backed by a Versionary Table for specified environment.
 func NewService(dbClient *dynamodb.Client, env string) Service {
+	table := NewTable(dbClient, env)
 	return Service{
-		EntityType: table.EntityType
+		EntityType: table.EntityType,
 		Table:      table,
 	}
 }
@@ -122,7 +125,7 @@ func NewMockService(env string) Service {
 
 // Create a Metric in the table.
 func (s Service) Create(ctx context.Context, m Metric) (Metric, []string, error) {
-	t := tuid.NewTUID()
+	t := tuid.NewID()
 	at, _ := t.Time()
 	m.ID = t.String()
 	m.CreatedAt = at
@@ -138,4 +141,24 @@ func (s Service) Create(ctx context.Context, m Metric) (Metric, []string, error)
 // It would most likely be used for "refreshing" the index rows in the Metric table.
 func (s Service) Write(ctx context.Context, m Metric) (Metric, error) {
 	return m, s.Table.WriteEntity(ctx, m)
+}
+
+// Read a Metric from the Metric table.
+func (s Service) Read(ctx context.Context, id string) (Metric, error) {
+	return s.Table.ReadEntity(ctx, id)
+}
+
+// Exists checks if a Metric exists in the Metric table.
+func (s Service) Exists(ctx context.Context, id string) bool {
+	return s.Table.EntityExists(ctx, id)
+}
+
+// ReadAsJSON gets a specified Metric from the Metric table, serialized as JSON.
+func (s Service) ReadAsJSON(ctx context.Context, id string) ([]byte, error) {
+	return s.Table.ReadEntityAsJSON(ctx, id)
+}
+
+// Delete a Metric from the Metric table. Deleted Metrics is returned
+func (s Service) Delete(ctx context.Context, id string) (Metric, error) {
+	return s.Table.DeleteEntityWithID(ctx, id)
 }

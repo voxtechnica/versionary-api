@@ -11,6 +11,7 @@ import (
 	"versionary-api/pkg/email"
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/image"
+	"versionary-api/pkg/metric"
 	"versionary-api/pkg/org"
 	"versionary-api/pkg/token"
 	"versionary-api/pkg/user"
@@ -64,6 +65,7 @@ type Application struct {
 	EmailService       email.Service
 	EventService       event.Service
 	ImageService       image.Service
+	MetricService      metric.Service
 	OrgService         org.Service
 	TokenService       token.Service
 	UserService        user.Service
