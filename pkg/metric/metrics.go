@@ -16,31 +16,25 @@ import (
 
 // rowMetrics is a TableRow definition for Metrics, indexed by ID.
 var rowMetrics = v.TableRow[Metric]{
-	RowName:       "metrics",
-	PartKeyName:   "id",
-	PartKeyValue:  func(m Metric) string { return m.ID },
-	PartKeyValues: func(m Metric) []string { return m.Tags },
-	PartKeyLabel:  func(m Metric) string { return m.Title },
-	SortKeyName:   "id",
-	SortKeyValue:  func(m Metric) string { return m.ID },
-	JsonValue:     func(m Metric) []byte { return m.CompressedJSON() },
-	TextValue:     nil,
-	NumericValue:  func(m Metric) float64 { return m.Value },
-	TimeToLive:    nil,
+	RowName:      "metrics",
+	PartKeyName:  "id",
+	PartKeyValue: func(m Metric) string { return m.ID },
+	PartKeyLabel: func(m Metric) string { return m.String() },
+	SortKeyName:  "id",
+	SortKeyValue: func(m Metric) string { return m.ID },
+	JsonValue:    func(m Metric) []byte { return m.CompressedJSON() },
+	TimeToLive:   func(m Metric) int64 { return m.ExpiresAt.Unix() },
 }
 
 // rowMetricsEntity is a TableRow definition for Metrics, indexed by Entity ID.
 var rowMetricsEntity = v.TableRow[Metric]{
-	RowName:       "metrics_entity",
-	PartKeyName:   "entity_id",
-	PartKeyValue:  nil,
-	PartKeyValues: func(m Metric) []string { return m.IDs() },
-	SortKeyName:   "id",
-	SortKeyValue:  func(m Metric) string { return m.ID },
-	JsonValue:     func(m Metric) []byte { return m.CompressedJSON() },
-	TextValue:     nil,
-	NumericValue:  func(m Metric) float64 { return m.Value },
-	TimeToLive:    nil,
+	RowName:      "metrics_entity",
+	PartKeyName:  "entity_id",
+	PartKeyValue: func(m Metric) string { return m.EntityID },
+	SortKeyName:  "id",
+	SortKeyValue: func(m Metric) string { return m.ID },
+	JsonValue:    func(m Metric) []byte { return m.CompressedJSON() },
+	TimeToLive:   func(m Metric) int64 { return m.ExpiresAt.Unix() },
 }
 
 // rowMetricsEntityType is a TableRow definition for Metrics, indexed by EntityType.
@@ -54,7 +48,7 @@ var rowMetricsEntityType = v.TableRow[Metric]{
 	JsonValue:     func(m Metric) []byte { return m.CompressedJSON() },
 	TextValue:     nil,
 	NumericValue:  func(m Metric) float64 { return m.Value },
-	TimeToLive:    nil,
+	TimeToLive:    func(m Metric) int64 { return m.ExpiresAt.Unix() },
 }
 
 // rowMetricsByTag is a TableRow definition for Metrics, indexed by Tag.
@@ -65,6 +59,7 @@ var rowMetricsByTag = v.TableRow[Metric]{
 	SortKeyName:   "id",
 	SortKeyValue:  func(m Metric) string { return m.ID },
 	JsonValue:     func(m Metric) []byte { return m.CompressedJSON() },
+	TimeToLive:    func(m Metric) int64 { return m.ExpiresAt.Unix() },
 }
 
 // NewTable instantiates a new DynamoDB table definition for metrics.
@@ -95,7 +90,7 @@ func NewMemTable(table v.Table[Metric]) v.MemTable[Metric] {
 // Metric Service
 //==============================================================================
 
-// Service is used to manage Mertics in a DynamoDB table.
+// Service is used to manage Metric in a DynamoDB table.
 type Service struct {
 	EntityType string
 	Table      v.TableReadWriter[Metric]
@@ -120,7 +115,7 @@ func NewMockService(env string) Service {
 }
 
 //------------------------------------------------------------------------------
-// Metric Versions
+// Metric Service Methods
 //------------------------------------------------------------------------------
 
 // Create a Metric in the table.
@@ -129,12 +124,16 @@ func (s Service) Create(ctx context.Context, m Metric) (Metric, []string, error)
 	at, _ := t.Time()
 	m.ID = t.String()
 	m.CreatedAt = at
+	m.ExpiresAt = at.AddDate(1, 0, 0)
 	problems := m.Validate()
 	if len(problems) > 0 {
 		return m, problems, fmt.Errorf("error creating %s %s: invalid field(s): %s", s.EntityType, m.ID, strings.Join(problems, ", "))
 	}
-	return m, problems, s.Table.WriteEntity(ctx, m)
-
+	err := s.Table.WriteEntity(ctx, m)
+	if err != nil {
+		return m, problems, fmt.Errorf("error creating %s %s %s: %w", s.EntityType, m.ID, m.Title, err)
+	}
+	return m, problems, nil
 }
 
 // Write a Metric to the Metric table. This method assumes that the Metric has all the required fields.

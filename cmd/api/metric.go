@@ -91,7 +91,7 @@ func deleteMetric(c *gin.Context) {
 	// Delete the specified Metric.
 	m, err := api.MetricService.Delete(c, id)
 	if err != nil && errors.Is(err, v.ErrNotFound) {
-		abortWithError(c, http.StatusNotFound, fmt.Errorf("not found: metric %w", id))
+		abortWithError(c, http.StatusNotFound, fmt.Errorf("not found: metric %s", id))
 		return
 	}
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 
 	"versionary-api/pkg/content"
 	"versionary-api/pkg/email"
+	"versionary-api/pkg/metric"
 	"versionary-api/pkg/org"
 	"versionary-api/pkg/token"
 	"versionary-api/pkg/user"
@@ -25,6 +26,7 @@ var emailTwo email.Email
 var emailThree email.Email
 var contentOne content.Content
 var contentTwo content.Content
+var metricOne metric.Metric
 
 func TestMain(m *testing.M) {
 	// Initialize the application for testing
@@ -37,6 +39,7 @@ func TestMain(m *testing.M) {
 	generateUsers()
 	generateEmails()
 	generateContent()
+	generateMetrics()
 
 	// Initialize the gin router
 	r.Use(gin.Recovery())
@@ -236,4 +239,15 @@ func generateContent() {
 		log.Fatal(err)
 	}
 	contentTwo = content2
+}
+
+func generateMetrics() {
+	metric1, problems, err := api.MetricService.Create(context.Background(), metric.Metric{
+		Title: "API Test Metric One",
+		Value: 100.0,
+	})
+	if err != nil || len(problems) > 0 {
+		log.Fatal(err)
+	}
+	metricOne = metric1
 }

@@ -1,6 +1,8 @@
 package metric
 
 import (
+	"fmt"
+	"strings"
 	"time"
 	"versionary-api/pkg/ref"
 
@@ -13,13 +15,14 @@ import (
 type Metric struct {
 	ID         string    `json:"id"`
 	CreatedAt  time.Time `json:"createdAt"`
+	ExpiresAt  time.Time `json:"expiresAt"`
 	Title      string    `json:"title"`
 	Label      string    `json:"label,omitempty"`
 	EntityID   string    `json:"entityId,omitempty"`
 	EntityType string    `json:"entityType,omitempty"`
 	Tags       []string  `json:"tags,omitempty"`
 	Value      float64   `json:"value"`
-	Units      string    `json:"units,omitempty"`
+	Units      string    `json:"units"`
 }
 
 // Type returns the entity type of the Metric.
@@ -42,15 +45,6 @@ func (m Metric) CompressedJSON() []byte {
 	return j
 }
 
-// IDs returns a list of entity IDs associated with the metric, excluding the Metric ID.
-func (m Metric) IDs() []string {
-	var ids []string
-	if m.EntityID != "" {
-		ids = append(ids, m.EntityID)
-	}
-	return ids
-}
-
 // Validate checks whether the Metric has all required fields and whether
 // the supplied values are valid, returning a list of problems. If the list is
 // empty, then the Metric is valid.
@@ -62,6 +56,9 @@ func (m Metric) Validate() []string {
 	if m.CreatedAt.IsZero() {
 		problems = append(problems, "CreatedAt is missing")
 	}
+	if m.ExpiresAt.IsZero() {
+		problems = append(problems, "ExpiresAt is missing")
+	}
 	if m.Title == "" {
 		problems = append(problems, "Title is missing")
 	}
@@ -71,5 +68,36 @@ func (m Metric) Validate() []string {
 	if m.Value == 0.0 {
 		problems = append(problems, "Value is missing")
 	}
+	if m.Units == "" {
+		problems = append(problems, "Units is missing")
+	}
 	return problems
+}
+
+// String method to include nice string representation of Metric
+func (m Metric) String() string {
+	return fmt.Sprintf(
+		"Metric{"+
+			"Title: %s, "+
+			"Label: %s, "+
+			"CreatedAt: %s, "+
+			"EntityType: %s, "+
+			"Tags: %s, "+
+			"Value: %.4f, "+ // Format Value to 4 decimal places
+			"Units: %s}",
+		m.Title, m.Label, m.CreatedAt.Format("2006-01-02"), m.EntityType, strings.Join(m.Tags, " "), m.Value, m.Units)
+}
+
+// MetricStat is a model entity to dynamically aggregate metrics.
+type MetricStat struct {
+	EntityID   string  `json:"entityId,omitempty"`
+	EntityType string  `json:"entityType,omitempty"`
+	Tag        string  `json:"tag,omitempty"`
+	Count      int64   `json:"count"`
+	Sum        float64 `json:"sum"`
+	Min        float64 `json:"min"`
+	Max        float64 `json:"max"`
+	Mean       float64 `json:"mean"`
+	Median     float64 `json:"median"`
+	StdDev     float64 `json:"stdDev"`
 }
