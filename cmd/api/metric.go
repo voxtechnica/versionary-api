@@ -102,7 +102,7 @@ func deleteMetric(c *gin.Context) {
 	c.JSON(http.StatusOK, m)
 }
 
-// readMetric returns the current version of the specified Metric.
+// readMetric handles the HTTP request to read a Metric.
 //
 // @Summary Read Metric
 // @Description Get Metric
@@ -143,3 +143,5 @@ func readMetric(c *gin.Context) {
 	}
 	c.Data(http.StatusOK, "application/json;charset=UTF-8", m)
 }
+
+// readMetricStats handles the HTTP request to read Metric statistics.

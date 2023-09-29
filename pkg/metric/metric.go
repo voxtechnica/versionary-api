@@ -2,6 +2,7 @@ package metric
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 	"versionary-api/pkg/ref"
@@ -100,4 +101,55 @@ type MetricStat struct {
 	Mean       float64 `json:"mean"`
 	Median     float64 `json:"median"`
 	StdDev     float64 `json:"stdDev"`
+}
+
+// CalculateStats calculates the statistical values for a slice of Metrics.
+func CalculateStats(metrics []Metric) MetricStat {
+	var sum, min, max, mean, median, stdDev float64
+	var values []float64
+	var ms MetricStat // Create a new MetricStat object
+	for _, m := range metrics {
+		sum += m.Value
+		if m.Value < min || min == 0.0 {
+			min = m.Value
+		}
+		if m.Value > max {
+			max = m.Value
+		}
+		values = append(values, m.Value)
+	}
+	ms.Count = int64(len(metrics))
+	ms.Sum = sum
+	ms.Min = min
+	ms.Max = max
+	mean = sum / float64(ms.Count)
+	ms.Mean = mean
+	median = medianOf(values)
+	ms.Median = median
+	stdDev = stdDevOf(values, mean)
+	ms.StdDev = stdDev
+	return ms
+}
+
+// medianOf returns the median value of a slice of float64 values.
+func medianOf(values []float64) float64 {
+	// Sort the values
+	sort.Float64s(values)
+	// Calculate the median
+	var median float64
+	if len(values)%2 == 0 {
+		median = (values[len(values)/2-1] + values[len(values)/2]) / 2
+	} else {
+		median = values[len(values)/2]
+	}
+	return median
+}
+
+// stdDevOf returns the standard deviation of a slice of float64 values.
+func stdDevOf(values []float64, mean float64) float64 {
+	var sum float64
+	for _, v := range values {
+		sum += (v - mean) * (v - mean)
+	}
+	return sum / float64(len(values))
 }

@@ -125,6 +125,12 @@ func (s Service) Create(ctx context.Context, m Metric) (Metric, []string, error)
 	m.ID = t.String()
 	m.CreatedAt = at
 	m.ExpiresAt = at.AddDate(1, 0, 0)
+	if m.Title == "" {
+		m.Title = "Untitled Metric"
+	}
+	if m.EntityType == "" {
+		m.EntityType = "unknown"
+	}
 	problems := m.Validate()
 	if len(problems) > 0 {
 		return m, problems, fmt.Errorf("error creating %s %s: invalid field(s): %s", s.EntityType, m.ID, strings.Join(problems, ", "))
@@ -160,4 +166,96 @@ func (s Service) ReadAsJSON(ctx context.Context, id string) ([]byte, error) {
 // Delete a Metric from the Metric table. Deleted Metrics is returned
 func (s Service) Delete(ctx context.Context, id string) (Metric, error) {
 	return s.Table.DeleteEntityWithID(ctx, id)
+}
+
+// ReadMetricIDs returns a paginated list of Metric IDs from the Metric table.
+func (s Service) ReadMetricIDs(ctx context.Context, reverse bool, limit int, offset string) ([]string, error) {
+	return s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
+}
+
+// ReadMetrics returns a paginated list of Metrics in the Metric table.
+func (s Service) ReadMetrics(ctx context.Context, reverse bool, limit int, offset string) []Metric {
+	ids, err := s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
+	if err != nil {
+		return []Metric{}
+	}
+	return s.Table.ReadEntities(ctx, ids)
+}
+
+//------------------------------------------------------------------------------
+// Metrics by Entity ID
+//------------------------------------------------------------------------------
+
+// ReadAllEntityIDs returns a list of all Entity IDs in the table.
+func (s Service) ReadAllEntityIDs(ctx context.Context) ([]string, error) {
+	return s.Table.ReadAllPartKeyValues(ctx, rowMetricsEntity)
+}
+
+// ReadMetricsByEntityID returns a paginated list of Metrics for a specified Entity ID.
+func (s Service) ReadMetricsByEntityID(ctx context.Context, entityID string, reverse bool, limit int, offset string) ([]Metric, error) {
+	return s.Table.ReadEntitiesFromRow(ctx, rowMetricsEntity, entityID, reverse, limit, offset)
+}
+
+// ReadMetricsByEntityIDAsJSON returns a paginated list of Metrics for a specified Entity ID, serialized as JSON.
+func (s Service) ReadMetricsByEntityIDAsJSON(ctx context.Context, entityID string, reverse bool, limit int, offset string) ([]byte, error) {
+	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowMetricsEntity, entityID, reverse, limit, offset)
+}
+
+// GenerateStatsForEntityID returns a MetricStats object for a specified Entity ID.
+func (s Service) GenerateStatsForEntityID(ctx context.Context, entityID string) (MetricStat, error) {
+	metrics, err := s.ReadMetricsByEntityID(ctx, entityID, false, 10, "")
+	if err != nil {
+		return MetricStat{}, err
+	}
+	// Calculate statistics using the CalculateStats function
+	stats := CalculateStats(metrics)
+	return stats, nil
+}
+
+//------------------------------------------------------------------------------
+// Metrics by Entity Type
+//------------------------------------------------------------------------------
+
+// ReadAllEntityTypes returns a list of all Entity Types in the table.
+func (s Service) ReadAllEntityTypes(ctx context.Context) ([]string, error) {
+	return s.Table.ReadAllPartKeyValues(ctx, rowMetricsEntityType)
+}
+
+// ReadMetricsByEntityType returns a paginated list of Metrics for a specified Entity Type.
+func (s Service) ReadMetricsByEntityType(ctx context.Context, entityType string, reverse bool, limit int, offset string) ([]Metric, error) {
+	return s.Table.ReadEntitiesFromRow(ctx, rowMetricsEntityType, entityType, reverse, limit, offset)
+}
+
+// ReadMetricsByEntityTypeAsJSON returns a paginated list of Metrics for a specified Entity Type, serialized as JSON.
+func (s Service) ReadMetricsByEntityTypeAsJSON(ctx context.Context, entityType string, reverse bool, limit int, offset string) ([]byte, error) {
+	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowMetricsEntityType, entityType, reverse, limit, offset)
+}
+
+//------------------------------------------------------------------------------
+// Metrics by Tag
+//------------------------------------------------------------------------------
+
+// ReadAllTags returns a list of all Tags in the Metrics table.
+func (s Service) ReadAllTags(ctx context.Context) ([]string, error) {
+	return s.Table.ReadAllPartKeyValues(ctx, rowMetricsByTag)
+}
+
+// ReadMetricsByTag returns a paginated list of Metrics for a specified Tag.
+func (s Service) ReadMetricsByTag(ctx context.Context, tag string, reverse bool, limit int, offset string) ([]Metric, error) {
+	return s.Table.ReadEntitiesFromRow(ctx, rowMetricsByTag, tag, reverse, limit, offset)
+}
+
+// ReadMetricsByTagAsJSON returns a paginated list of Metrics for a specified Tag, serialized as JSON.
+func (s Service) ReadMetricsByTagAsJSON(ctx context.Context, tag string, reverse bool, limit int, offset string) ([]byte, error) {
+	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowMetricsByTag, tag, reverse, limit, offset)
+}
+
+// ReadAllMetricsByTags returns the complete list of Metrics sorted chronologically by CreatedAt timestamp.
+func (s Service) ReadAllMetricsByTags(ctx context.Context, tag string) ([]Metric, error) {
+	return s.Table.ReadAllEntitiesFromRow(ctx, rowMetricsByTag, tag)
+}
+
+// ReadAllMetricsByTagsAsJSON returns the complete list of Metrics, serialized as JSON.
+func (s Service) ReadAllMetricsByTagsAsJSON(ctx context.Context, tag string) ([]byte, error) {
+	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowMetricsByTag, tag)
 }

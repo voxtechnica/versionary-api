@@ -8602,6 +8602,9 @@
                 "entityType": {
                     "type": "string"
                 },
+                "expiresAt": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
