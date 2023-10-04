@@ -2,7 +2,7 @@ package metric
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 	"time"
 	"versionary-api/pkg/ref"
@@ -134,7 +134,7 @@ func CalculateStats(metrics []Metric) MetricStat {
 // medianOf returns the median value of a slice of float64 values.
 func medianOf(values []float64) float64 {
 	// Sort the values
-	sort.Float64s(values)
+	slices.Sort(values)
 	// Calculate the median
 	var median float64
 	if len(values)%2 == 0 {

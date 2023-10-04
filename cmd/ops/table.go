@@ -11,6 +11,7 @@ import (
 	"versionary-api/pkg/email"
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/image"
+	"versionary-api/pkg/metric"
 	"versionary-api/pkg/org"
 	"versionary-api/pkg/token"
 	"versionary-api/pkg/user"
@@ -85,6 +86,8 @@ func checkTables(cmd *cobra.Command, args []string) error {
 			checkTable(ctx, event.NewTable(ops.DBClient, ops.Environment))
 		case "Image":
 			checkTable(ctx, image.NewTable(ops.DBClient, ops.Environment))
+		case "Metric":
+			checkTable(ctx, metric.NewTable(ops.DBClient, ops.Environment))
 		case "Organization":
 			checkTable(ctx, org.NewTable(ops.DBClient, ops.Environment))
 		case "Token":
