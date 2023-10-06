@@ -212,8 +212,16 @@ func TestReadMetricsByEntityIDAsJSON(t *testing.T) {
 
 func TestGenerateStatsForEntityID(t *testing.T) {
 	expect := assert.New(t)
-	testStat, err := service.GenerateStatsForEntityID(ctx, entity1)
-	fmt.Println("HERE: ", testStat)
+	testStat, err := service.GenerateStatsForEntityID(ctx, entity1, false, 10, "-")
+	if expect.NoError(err) && expect.NotEmpty(testStat) {
+		fmt.Println(testStat)
+	}
+}
+
+func TestGenerateStatsForEntityIDByDate(t *testing.T) {
+	expect := assert.New(t)
+	testStat, err := service.GenerateStatsForEntityIDByDate(ctx, entity1, "2021-09-25", "2023-10-09")
+	fmt.Println("TEST STAT: ", testStat)
 	if expect.NoError(err) && expect.NotEmpty(testStat) {
 		fmt.Println(testStat)
 	}
@@ -247,6 +255,15 @@ func TestReadMetricsByEntityTypeAsJSON(t *testing.T) {
 	metricsJSON, err := service.ReadMetricsByEntityTypeAsJSON(ctx, "API", false, 10, "-")
 	if expect.NoError(err) && expect.NotEmpty(metricsJSON) {
 		expect.Contains(string(metricsJSON), "API")
+	}
+}
+
+func TestGenerateStatsForEntityType(t *testing.T) {
+	expect := assert.New(t)
+	testStat, err := service.GenerateStatsForEntityType(ctx, "API", false, 10, "-")
+	fmt.Println("HERE3: ", testStat)
+	if expect.NoError(err) && expect.NotEmpty(testStat) {
+		fmt.Println(testStat)
 	}
 }
 

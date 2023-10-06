@@ -202,13 +202,31 @@ func (s Service) ReadMetricsByEntityIDAsJSON(ctx context.Context, entityID strin
 }
 
 // GenerateStatsForEntityID returns a MetricStats object for a specified Entity ID.
-func (s Service) GenerateStatsForEntityID(ctx context.Context, entityID string) (MetricStat, error) {
-	metrics, err := s.ReadMetricsByEntityID(ctx, entityID, false, 10, "")
+func (s Service) GenerateStatsForEntityID(ctx context.Context, entityID string, reverse bool, limit int, offset string) (MetricStat, error) {
+	metrics, err := s.ReadMetricsByEntityID(ctx, entityID, reverse, limit, offset)
 	if err != nil {
 		return MetricStat{}, err
 	}
 	// Calculate statistics using the CalculateStats function
 	stats := CalculateStats(metrics)
+	return stats, nil
+}
+
+// FilterStatsForEntityIDByDate returns a MetricStats object for a specified Entity ID, filtered by Data.
+// Time format for start and end string: "2006-01-02"
+func (s Service) GenerateStatsForEntityIDByDate(ctx context.Context, entityID string, start, end string) (MetricStat, error) {
+	metrics, err := s.Table.ReadAllEntitiesFromRow(ctx, rowMetricsEntity, entityID)
+	fmt.Println("metrics length:", len(metrics))
+	fmt.Println("metrics one:", metrics[0])
+	fmt.Println("metrics two:", metrics[1])
+	if err != nil {
+		return MetricStat{}, err
+	}
+
+	filteredDates := FilterMetricsByDate(metrics, start, end)
+	fmt.Println("filteredDated length:", len(filteredDates))
+	// Calculate statistics using the CalculateStats function
+	stats := CalculateStats(filteredDates)
 	return stats, nil
 }
 
@@ -229,6 +247,17 @@ func (s Service) ReadMetricsByEntityType(ctx context.Context, entityType string,
 // ReadMetricsByEntityTypeAsJSON returns a paginated list of Metrics for a specified Entity Type, serialized as JSON.
 func (s Service) ReadMetricsByEntityTypeAsJSON(ctx context.Context, entityType string, reverse bool, limit int, offset string) ([]byte, error) {
 	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowMetricsEntityType, entityType, reverse, limit, offset)
+}
+
+// GenerateStatsForEntityType returns a MetricStats object for a specified Entity Type.
+func (s Service) GenerateStatsForEntityType(ctx context.Context, entityType string, reverse bool, limit int, offset string) (MetricStat, error) {
+	metrics, err := s.ReadMetricsByEntityType(ctx, entityType, reverse, limit, offset)
+	if err != nil {
+		return MetricStat{}, err
+	}
+	// Calculate statistics using the CalculateStats function
+	stats := CalculateStats(metrics)
+	return stats, nil
 }
 
 //------------------------------------------------------------------------------

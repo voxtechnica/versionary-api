@@ -91,16 +91,18 @@ func (m Metric) String() string {
 
 // MetricStat is a model entity to dynamically aggregate metrics.
 type MetricStat struct {
-	EntityID   string  `json:"entityId,omitempty"`
-	EntityType string  `json:"entityType,omitempty"`
-	Tag        string  `json:"tag,omitempty"`
-	Count      int64   `json:"count"`
-	Sum        float64 `json:"sum"`
-	Min        float64 `json:"min"`
-	Max        float64 `json:"max"`
-	Mean       float64 `json:"mean"`
-	Median     float64 `json:"median"`
-	StdDev     float64 `json:"stdDev"`
+	EntityID   string    `json:"entityId,omitempty"`
+	EntityType string    `json:"entityType,omitempty"`
+	Tag        string    `json:"tag,omitempty"`
+	FromTime   time.Time `json:"fromTime"`
+	ToTime     time.Time `json:"toTime"`
+	Count      int64     `json:"count"`
+	Sum        float64   `json:"sum"`
+	Min        float64   `json:"min"`
+	Max        float64   `json:"max"`
+	Mean       float64   `json:"mean"`
+	Median     float64   `json:"median"`
+	StdDev     float64   `json:"stdDev"`
 }
 
 // CalculateStats calculates the statistical values for a slice of Metrics.
@@ -117,6 +119,14 @@ func CalculateStats(metrics []Metric) MetricStat {
 			max = m.Value
 		}
 		values = append(values, m.Value)
+
+		// Set the FromTime and ToTime for the MetricStat
+		if m.CreatedAt.Before(ms.FromTime) || ms.FromTime.IsZero() {
+			ms.FromTime = m.CreatedAt
+		}
+		if m.CreatedAt.After(ms.ToTime) || ms.ToTime.IsZero() {
+			ms.ToTime = m.CreatedAt
+		}
 	}
 	ms.Count = int64(len(metrics))
 	ms.Sum = sum
@@ -137,7 +147,9 @@ func medianOf(values []float64) float64 {
 	slices.Sort(values)
 	// Calculate the median
 	var median float64
-	if len(values)%2 == 0 {
+	if len(values) == 0 {
+		median = 0.0
+	} else if len(values)%2 == 0 {
 		median = (values[len(values)/2-1] + values[len(values)/2]) / 2
 	} else {
 		median = values[len(values)/2]
@@ -152,4 +164,27 @@ func stdDevOf(values []float64, mean float64) float64 {
 		sum += (v - mean) * (v - mean)
 	}
 	return sum / float64(len(values))
+}
+
+// FilterMetricsByDate filters a slice of metrics by date range.
+func FilterMetricsByDate(metrics []Metric, start, end string) []Metric {
+	filteredMetrics := make([]Metric, 0)
+
+	// Convert the start and end dates to time.Time objects
+	startTime, err := time.Parse("2006-01-02", start)
+	if err != nil {
+		return filteredMetrics
+	}
+	endTime, err := time.Parse("2006-01-02", end)
+	if err != nil {
+		return filteredMetrics
+	}
+
+	for _, m := range metrics {
+		fmt.Println("startTime:", startTime, "endTime:", endTime, "m.CreatedAt:", m.CreatedAt)
+		if m.CreatedAt.After(startTime) && m.CreatedAt.Before(endTime) {
+			filteredMetrics = append(filteredMetrics, m)
+		}
+	}
+	return filteredMetrics
 }
