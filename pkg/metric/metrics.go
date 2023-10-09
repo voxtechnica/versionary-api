@@ -51,9 +51,9 @@ var rowMetricsEntityType = v.TableRow[Metric]{
 	TimeToLive:    func(m Metric) int64 { return m.ExpiresAt.Unix() },
 }
 
-// rowMetricsByTag is a TableRow definition for Metrics, indexed by Tag.
-var rowMetricsByTag = v.TableRow[Metric]{
-	RowName:       "metricsByTag",
+// rowMetricsTag is a TableRow definition for Metrics, indexed by Tag.
+var rowMetricsTag = v.TableRow[Metric]{
+	RowName:       "metrics_tag",
 	PartKeyName:   "tag",
 	PartKeyValues: func(m Metric) []string { return m.Tags },
 	SortKeyName:   "id",
@@ -76,7 +76,7 @@ func NewTable(dbClient *dynamodb.Client, env string) v.Table[Metric] {
 		IndexRows: map[string]v.TableRow[Metric]{
 			rowMetricsEntity.RowName:     rowMetricsEntity,
 			rowMetricsEntityType.RowName: rowMetricsEntityType,
-			rowMetricsByTag.RowName:      rowMetricsByTag,
+			rowMetricsTag.RowName:        rowMetricsTag,
 		},
 	}
 }
@@ -212,7 +212,7 @@ func (s Service) GenerateStatsForEntityID(ctx context.Context, entityID string, 
 	return stats, nil
 }
 
-// FilterStatsForEntityIDByDate returns a MetricStats object for a specified Entity ID, filtered by Data.
+// GenerateStatsForEntityIDByDate returns a MetricStat object for a specified Entity ID, filtered by Date.
 // Time format for start and end string: "2006-01-02"
 func (s Service) GenerateStatsForEntityIDByDate(ctx context.Context, entityID string, start, end string) (MetricStat, error) {
 	metrics, err := s.Table.ReadAllEntitiesFromRow(ctx, rowMetricsEntity, entityID)
@@ -223,7 +223,10 @@ func (s Service) GenerateStatsForEntityIDByDate(ctx context.Context, entityID st
 		return MetricStat{}, err
 	}
 
-	filteredDates := FilterMetricsByDate(metrics, start, end)
+	filteredDates, err := FilterMetricsByDate(metrics, start, end)
+	if err != nil {
+		return MetricStat{}, err
+	}
 	fmt.Println("filteredDated length:", len(filteredDates))
 	// Calculate statistics using the CalculateStats function
 	stats := CalculateStats(filteredDates)
@@ -266,25 +269,25 @@ func (s Service) GenerateStatsForEntityType(ctx context.Context, entityType stri
 
 // ReadAllTags returns a list of all Tags in the Metrics table.
 func (s Service) ReadAllTags(ctx context.Context) ([]string, error) {
-	return s.Table.ReadAllPartKeyValues(ctx, rowMetricsByTag)
+	return s.Table.ReadAllPartKeyValues(ctx, rowMetricsTag)
 }
 
 // ReadMetricsByTag returns a paginated list of Metrics for a specified Tag.
 func (s Service) ReadMetricsByTag(ctx context.Context, tag string, reverse bool, limit int, offset string) ([]Metric, error) {
-	return s.Table.ReadEntitiesFromRow(ctx, rowMetricsByTag, tag, reverse, limit, offset)
+	return s.Table.ReadEntitiesFromRow(ctx, rowMetricsTag, tag, reverse, limit, offset)
 }
 
 // ReadMetricsByTagAsJSON returns a paginated list of Metrics for a specified Tag, serialized as JSON.
 func (s Service) ReadMetricsByTagAsJSON(ctx context.Context, tag string, reverse bool, limit int, offset string) ([]byte, error) {
-	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowMetricsByTag, tag, reverse, limit, offset)
+	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowMetricsTag, tag, reverse, limit, offset)
 }
 
 // ReadAllMetricsByTags returns the complete list of Metrics sorted chronologically by CreatedAt timestamp.
 func (s Service) ReadAllMetricsByTags(ctx context.Context, tag string) ([]Metric, error) {
-	return s.Table.ReadAllEntitiesFromRow(ctx, rowMetricsByTag, tag)
+	return s.Table.ReadAllEntitiesFromRow(ctx, rowMetricsTag, tag)
 }
 
 // ReadAllMetricsByTagsAsJSON returns the complete list of Metrics, serialized as JSON.
 func (s Service) ReadAllMetricsByTagsAsJSON(ctx context.Context, tag string) ([]byte, error) {
-	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowMetricsByTag, tag)
+	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowMetricsTag, tag)
 }

@@ -2,7 +2,9 @@ package metric
 
 import (
 	"fmt"
+	"math"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 	"versionary-api/pkg/ref"
@@ -64,29 +66,37 @@ func (m Metric) Validate() []string {
 		problems = append(problems, "Title is missing")
 	}
 	if m.EntityID != "" && !tuid.IsValid(tuid.TUID(m.EntityID)) {
-		problems = append(problems, "EntityID is not a TUID")
+		problems = append(problems, "EntityID is not a valid TUID")
 	}
 	if m.Value == 0.0 {
 		problems = append(problems, "Value is missing")
 	}
 	if m.Units == "" {
-		problems = append(problems, "Units is missing")
+		problems = append(problems, "Units are missing")
 	}
 	return problems
 }
 
-// String method to include nice string representation of Metric
+// String method to include nice string representation of Metric for console output.
 func (m Metric) String() string {
-	return fmt.Sprintf(
-		"Metric{"+
-			"Title: %s, "+
-			"Label: %s, "+
-			"CreatedAt: %s, "+
-			"EntityType: %s, "+
-			"Tags: %s, "+
-			"Value: %.4f, "+ // Format Value to 4 decimal places
-			"Units: %s}",
-		m.Title, m.Label, m.CreatedAt.Format("2006-01-02"), m.EntityType, strings.Join(m.Tags, " "), m.Value, m.Units)
+	s := "Metric " + m.ID + ": " + strconv.FormatFloat(m.Value, 'f', -1, 64) + " " + m.Units
+	s += " at " + m.CreatedAt.Format("2006-01-02 15:04:05")
+	if m.EntityType != "" && m.EntityID != "" {
+		s += " for " + m.EntityType + "-" + m.EntityID
+	} else if m.EntityType != "" {
+		s += " for " + m.EntityType
+	} else {
+		s += " for " + m.EntityID
+	}
+	if len(m.Tags) > 0 {
+		s += " tagged " + strings.Join(m.Tags, ", ")
+	}
+	s += " (" + m.Title
+	if m.Label != "" {
+		s += "; " + m.Label
+	}
+	s += ")"
+	return s
 }
 
 // MetricStat is a model entity to dynamically aggregate metrics.
@@ -107,18 +117,22 @@ type MetricStat struct {
 
 // CalculateStats calculates the statistical values for a slice of Metrics.
 func CalculateStats(metrics []Metric) MetricStat {
-	var sum, min, max, mean, median, stdDev float64
+	var ms MetricStat
+	if len(metrics) == 0 {
+		return ms
+	}
 	var values []float64
-	var ms MetricStat // Create a new MetricStat object
 	for _, m := range metrics {
-		sum += m.Value
-		if m.Value < min || min == 0.0 {
-			min = m.Value
-		}
-		if m.Value > max {
-			max = m.Value
-		}
 		values = append(values, m.Value)
+
+		// Calculate min, max, and sum
+		if m.Value < ms.Min || ms.Min == 0.0 {
+			ms.Min = m.Value
+		}
+		if m.Value > ms.Max {
+			ms.Max = m.Value
+		}
+		ms.Sum += m.Value
 
 		// Set the FromTime and ToTime for the MetricStat
 		if m.CreatedAt.Before(ms.FromTime) || ms.FromTime.IsZero() {
@@ -129,62 +143,47 @@ func CalculateStats(metrics []Metric) MetricStat {
 		}
 	}
 	ms.Count = int64(len(metrics))
-	ms.Sum = sum
-	ms.Min = min
-	ms.Max = max
-	mean = sum / float64(ms.Count)
-	ms.Mean = mean
-	median = medianOf(values)
-	ms.Median = median
-	stdDev = stdDevOf(values, mean)
-	ms.StdDev = stdDev
+	ms.Mean = ms.Sum / float64(ms.Count)
+
+	// Identify the median value
+	slices.Sort(values)
+	if ms.Count%2 == 0 {
+		ms.Median = (values[ms.Count/2-1] + values[ms.Count/2]) / 2
+	} else {
+		ms.Median = values[ms.Count/2]
+	}
+
+	// Calculate the standard deviation, which is the square root of the variance,
+	// which is the average of the squared distances to the mean.
+	var sumSquares float64
+	for _, v := range values {
+		sumSquares += (v - ms.Mean) * (v - ms.Mean)
+	}
+	variance := sumSquares / float64(len(values))
+	ms.StdDev = math.Sqrt(variance)
 	return ms
 }
 
-// medianOf returns the median value of a slice of float64 values.
-func medianOf(values []float64) float64 {
-	// Sort the values
-	slices.Sort(values)
-	// Calculate the median
-	var median float64
-	if len(values) == 0 {
-		median = 0.0
-	} else if len(values)%2 == 0 {
-		median = (values[len(values)/2-1] + values[len(values)/2]) / 2
-	} else {
-		median = values[len(values)/2]
-	}
-	return median
-}
-
-// stdDevOf returns the standard deviation of a slice of float64 values.
-func stdDevOf(values []float64, mean float64) float64 {
-	var sum float64
-	for _, v := range values {
-		sum += (v - mean) * (v - mean)
-	}
-	return sum / float64(len(values))
-}
-
 // FilterMetricsByDate filters a slice of metrics by date range.
-func FilterMetricsByDate(metrics []Metric, start, end string) []Metric {
+// The beginning date is inclusive, and the ending date is exclusive.
+func FilterMetricsByDate(metrics []Metric, fromDate, beforeDate string) ([]Metric, error) {
 	filteredMetrics := make([]Metric, 0)
 
-	// Convert the start and end dates to time.Time objects
-	startTime, err := time.Parse("2006-01-02", start)
+	// Convert the beginning and ending dates to time.Time objects
+	begin, err := time.Parse("2006-01-02", fromDate)
 	if err != nil {
-		return filteredMetrics
+		return filteredMetrics, fmt.Errorf("invalid beginning date: %s", fromDate)
 	}
-	endTime, err := time.Parse("2006-01-02", end)
+	end, err := time.Parse("2006-01-02", beforeDate)
 	if err != nil {
-		return filteredMetrics
+		return filteredMetrics, fmt.Errorf("invalid ending date: %s", beforeDate)
 	}
 
+	// Filter the metrics by date range
 	for _, m := range metrics {
-		fmt.Println("startTime:", startTime, "endTime:", endTime, "m.CreatedAt:", m.CreatedAt)
-		if m.CreatedAt.After(startTime) && m.CreatedAt.Before(endTime) {
+		if (m.CreatedAt.Equal(begin) || m.CreatedAt.After(begin)) && m.CreatedAt.Before(end) {
 			filteredMetrics = append(filteredMetrics, m)
 		}
 	}
-	return filteredMetrics
+	return filteredMetrics, nil
 }
