@@ -103,7 +103,7 @@ func (m Metric) String() string {
 type MetricStat struct {
 	EntityID   string    `json:"entityId,omitempty"`
 	EntityType string    `json:"entityType,omitempty"`
-	Tag        string    `json:"tag,omitempty"`
+	Tags       []string  `json:"tag,omitempty"`
 	FromTime   time.Time `json:"fromTime"`
 	ToTime     time.Time `json:"toTime"`
 	Count      int64     `json:"count"`
@@ -142,6 +142,9 @@ func CalculateStats(metrics []Metric) MetricStat {
 			ms.ToTime = m.CreatedAt
 		}
 	}
+	ms.EntityID = metrics[0].EntityID
+	ms.EntityType = metrics[0].EntityType
+	ms.Tags = metrics[0].Tags
 	ms.Count = int64(len(metrics))
 	ms.Mean = ms.Sum / float64(ms.Count)
 
@@ -168,20 +171,28 @@ func CalculateStats(metrics []Metric) MetricStat {
 // The beginning date is inclusive, and the ending date is exclusive.
 func FilterMetricsByDate(metrics []Metric, fromDate, beforeDate string) ([]Metric, error) {
 	filteredMetrics := make([]Metric, 0)
+	begin := "-" // before numbers
+	end := "|"   // after letters
 
-	// Convert the beginning and ending dates to time.Time objects
-	begin, err := time.Parse("2006-01-02", fromDate)
-	if err != nil {
-		return filteredMetrics, fmt.Errorf("invalid beginning date: %s", fromDate)
+	if fromDate != "" {
+		from, err := time.Parse("2006-01-02", fromDate) // time.Time
+		if err != nil {
+			return filteredMetrics, fmt.Errorf("invalid date format %s: %w", fromDate, err)
+		}
+		begin = tuid.FirstIDWithTime(from).String()
 	}
-	end, err := time.Parse("2006-01-02", beforeDate)
-	if err != nil {
-		return filteredMetrics, fmt.Errorf("invalid ending date: %s", beforeDate)
+
+	if beforeDate != "" {
+		before, err := time.Parse("2006-01-02", beforeDate)
+		if err != nil {
+			return filteredMetrics, fmt.Errorf("invalid date format %s: %w", beforeDate, err)
+		}
+		end = tuid.FirstIDWithTime(before).String()
 	}
 
 	// Filter the metrics by date range
 	for _, m := range metrics {
-		if (m.CreatedAt.Equal(begin) || m.CreatedAt.After(begin)) && m.CreatedAt.Before(end) {
+		if (m.ID >= begin) && (m.ID < end) {
 			filteredMetrics = append(filteredMetrics, m)
 		}
 	}

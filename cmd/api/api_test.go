@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/voxtechnica/tuid-go"
 
 	"versionary-api/pkg/content"
 	"versionary-api/pkg/email"
@@ -27,6 +28,7 @@ var emailThree email.Email
 var contentOne content.Content
 var contentTwo content.Content
 var metricOne metric.Metric
+var metricTwo metric.Metric
 
 func TestMain(m *testing.M) {
 	// Initialize the application for testing
@@ -242,12 +244,31 @@ func generateContent() {
 }
 
 func generateMetrics() {
+	// Test Metric one
 	metric1, problems, err := api.MetricService.Create(context.Background(), metric.Metric{
 		Title: "API Test Metric One",
 		Value: 100.0,
+		Tags:  []string{"v1", "v2", "v3"},
+		Units: "seconds",
 	})
 	if err != nil || len(problems) > 0 {
 		log.Fatal(err)
 	}
 	metricOne = metric1
+
+	// Test Metric two
+	entityId := tuid.NewID().String()
+	entityType := "Test Entity"
+	metric2, problems, err := api.MetricService.Create(context.Background(), metric.Metric{
+		Title:      "API Test Metric Two",
+		Value:      200.0,
+		EntityID:   entityId,
+		EntityType: entityType,
+		Tags:       []string{"v1", "v2", "v3"},
+		Units:      "seconds",
+	})
+	if err != nil || len(problems) > 0 {
+		log.Fatal(err)
+	}
+	metricTwo = metric2
 }

@@ -207,6 +207,9 @@ func (s Service) GenerateStatsForEntityID(ctx context.Context, entityID string, 
 	if err != nil {
 		return MetricStat{}, err
 	}
+	if len(metrics) == 0 {
+		return MetricStat{}, fmt.Errorf("generate stats for entity %s: %w", entityID, v.ErrNotFound)
+	}
 	// Calculate statistics using the CalculateStats function
 	stats := CalculateStats(metrics)
 	return stats, nil
@@ -216,18 +219,17 @@ func (s Service) GenerateStatsForEntityID(ctx context.Context, entityID string, 
 // Time format for start and end string: "2006-01-02"
 func (s Service) GenerateStatsForEntityIDByDate(ctx context.Context, entityID string, start, end string) (MetricStat, error) {
 	metrics, err := s.Table.ReadAllEntitiesFromRow(ctx, rowMetricsEntity, entityID)
-	fmt.Println("metrics length:", len(metrics))
-	fmt.Println("metrics one:", metrics[0])
-	fmt.Println("metrics two:", metrics[1])
 	if err != nil {
 		return MetricStat{}, err
+	}
+	if len(metrics) == 0 {
+		return MetricStat{}, fmt.Errorf("generate stats for entity %s: %w", entityID, v.ErrNotFound)
 	}
 
 	filteredDates, err := FilterMetricsByDate(metrics, start, end)
 	if err != nil {
 		return MetricStat{}, err
 	}
-	fmt.Println("filteredDated length:", len(filteredDates))
 	// Calculate statistics using the CalculateStats function
 	stats := CalculateStats(filteredDates)
 	return stats, nil
@@ -252,14 +254,19 @@ func (s Service) ReadMetricsByEntityTypeAsJSON(ctx context.Context, entityType s
 	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowMetricsEntityType, entityType, reverse, limit, offset)
 }
 
-// GenerateStatsForEntityType returns a MetricStats object for a specified Entity Type.
-func (s Service) GenerateStatsForEntityType(ctx context.Context, entityType string, reverse bool, limit int, offset string) (MetricStat, error) {
-	metrics, err := s.ReadMetricsByEntityType(ctx, entityType, reverse, limit, offset)
+// GenerateStatsForEntityTypeByDate returns a MetricStats object for a specified Entity Type.
+func (s Service) GenerateStatsForEntityTypeByDate(ctx context.Context, entityType, start, end string) (MetricStat, error) {
+	metrics, err := s.Table.ReadAllEntitiesFromRow(ctx, rowMetricsEntityType, entityType)
+	if err != nil {
+		return MetricStat{}, err
+	}
+
+	filteredDates, err := FilterMetricsByDate(metrics, start, end)
 	if err != nil {
 		return MetricStat{}, err
 	}
 	// Calculate statistics using the CalculateStats function
-	stats := CalculateStats(metrics)
+	stats := CalculateStats(filteredDates)
 	return stats, nil
 }
 
@@ -290,4 +297,15 @@ func (s Service) ReadAllMetricsByTags(ctx context.Context, tag string) ([]Metric
 // ReadAllMetricsByTagsAsJSON returns the complete list of Metrics, serialized as JSON.
 func (s Service) ReadAllMetricsByTagsAsJSON(ctx context.Context, tag string) ([]byte, error) {
 	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowMetricsTag, tag)
+}
+
+// GenerateStatsForTag returns a MetricStat object for a specified Tag.
+func (s Service) GenerateStatsForTag(ctx context.Context, tag string) (MetricStat, error) {
+	metrics, err := s.ReadAllMetricsByTags(ctx, tag)
+	if err != nil {
+		return MetricStat{}, err
+	}
+	// Calculate statistics using the CalculateStats function
+	stats := CalculateStats(metrics)
+	return stats, nil
 }

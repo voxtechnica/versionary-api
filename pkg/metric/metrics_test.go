@@ -260,7 +260,7 @@ func TestReadMetricsByEntityTypeAsJSON(t *testing.T) {
 
 func TestGenerateStatsForEntityType(t *testing.T) {
 	expect := assert.New(t)
-	testStat, err := service.GenerateStatsForEntityType(ctx, "API", false, 10, "-")
+	testStat, err := service.GenerateStatsForEntityTypeByDate(ctx, "API", "", "")
 	fmt.Println("HERE3: ", testStat)
 	if expect.NoError(err) && expect.NotEmpty(testStat) {
 		fmt.Println(testStat)
