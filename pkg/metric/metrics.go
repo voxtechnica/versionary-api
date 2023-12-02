@@ -34,21 +34,20 @@ var rowMetricsEntity = v.TableRow[Metric]{
 	SortKeyName:  "id",
 	SortKeyValue: func(m Metric) string { return m.ID },
 	JsonValue:    func(m Metric) []byte { return m.CompressedJSON() },
+	NumericValue: func(m Metric) float64 { return m.Value },
 	TimeToLive:   func(m Metric) int64 { return m.ExpiresAt.Unix() },
 }
 
 // rowMetricsEntityType is a TableRow definition for Metrics, indexed by EntityType.
 var rowMetricsEntityType = v.TableRow[Metric]{
-	RowName:       "metrics_entity_type",
-	PartKeyName:   "entity_type",
-	PartKeyValue:  func(m Metric) string { return m.EntityType },
-	PartKeyValues: nil,
-	SortKeyName:   "id",
-	SortKeyValue:  func(m Metric) string { return m.ID },
-	JsonValue:     func(m Metric) []byte { return m.CompressedJSON() },
-	TextValue:     nil,
-	NumericValue:  func(m Metric) float64 { return m.Value },
-	TimeToLive:    func(m Metric) int64 { return m.ExpiresAt.Unix() },
+	RowName:      "metrics_entity_type",
+	PartKeyName:  "entity_type",
+	PartKeyValue: func(m Metric) string { return m.EntityType },
+	SortKeyName:  "id",
+	SortKeyValue: func(m Metric) string { return m.ID },
+	JsonValue:    func(m Metric) []byte { return m.CompressedJSON() },
+	NumericValue: func(m Metric) float64 { return m.Value },
+	TimeToLive:   func(m Metric) int64 { return m.ExpiresAt.Unix() },
 }
 
 // rowMetricsTag is a TableRow definition for Metrics, indexed by Tag.
@@ -59,6 +58,7 @@ var rowMetricsTag = v.TableRow[Metric]{
 	SortKeyName:   "id",
 	SortKeyValue:  func(m Metric) string { return m.ID },
 	JsonValue:     func(m Metric) []byte { return m.CompressedJSON() },
+	NumericValue:  func(m Metric) float64 { return m.Value },
 	TimeToLive:    func(m Metric) int64 { return m.ExpiresAt.Unix() },
 }
 
@@ -71,7 +71,7 @@ func NewTable(dbClient *dynamodb.Client, env string) v.Table[Metric] {
 		Client:     dbClient,
 		EntityType: "Metric",
 		TableName:  "metrics" + "_" + env,
-		TTL:        false,
+		TTL:        true,
 		EntityRow:  rowMetrics,
 		IndexRows: map[string]v.TableRow[Metric]{
 			rowMetricsEntity.RowName:     rowMetricsEntity,
