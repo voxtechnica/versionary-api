@@ -92,7 +92,6 @@ func TestMain(m *testing.M) {
 func TestCRUD(t *testing.T) {
 	expect := assert.New(t)
 	// Create a content
-	ctx := context.Background() // Declare ctx variable
 	con, problems, err := service.Create(ctx, Content{
 		Type:    ARTICLE,
 		Comment: "This is a comment for a CRUD test",

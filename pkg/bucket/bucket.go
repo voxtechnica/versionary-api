@@ -206,10 +206,10 @@ func (b Bucket) SetPublicAccessPolicy(ctx context.Context) (string, error) {
 	_, err := b.Client.PutPublicAccessBlock(ctx, &s3.PutPublicAccessBlockInput{
 		Bucket: &b.BucketName,
 		PublicAccessBlockConfiguration: &types.PublicAccessBlockConfiguration{
-			BlockPublicAcls:       true,
-			BlockPublicPolicy:     false,
-			IgnorePublicAcls:      true,
-			RestrictPublicBuckets: false,
+			BlockPublicAcls:       aws.Bool(true),
+			BlockPublicPolicy:     aws.Bool(false),
+			IgnorePublicAcls:      aws.Bool(true),
+			RestrictPublicBuckets: aws.Bool(false),
 		},
 	})
 	if err != nil {
@@ -365,7 +365,7 @@ func (b Bucket) ListAllFiles(ctx context.Context) ([]FileInfo, error) {
 			files = append(files, FileInfo{
 				BucketName:    b.BucketName,
 				FileName:      *f.Key,
-				ContentLength: f.Size,
+				ContentLength: *f.Size,
 				ETag:          strings.ReplaceAll(*f.ETag, "\"", ""), // remove unnecessary quotes
 				LastModified:  *f.LastModified,
 			})
@@ -414,7 +414,7 @@ func (b Bucket) FileInfo(ctx context.Context, fileName string) (FileInfo, error)
 	}
 	info.ETag = strings.ReplaceAll(*output.ETag, "\"", "") // remove quotes
 	info.ContentType = *output.ContentType
-	info.ContentLength = output.ContentLength
+	info.ContentLength = *output.ContentLength
 	info.LastModified = *output.LastModified
 	return info, nil
 }
@@ -435,7 +435,7 @@ func (b Bucket) UploadFile(ctx context.Context, info FileInfo, file io.Reader) (
 		req.ContentType = &info.ContentType
 	}
 	if info.ContentLength != 0 {
-		req.ContentLength = info.ContentLength
+		req.ContentLength = &info.ContentLength
 	}
 	// Upload the file
 	res, err := b.Client.PutObject(ctx, &req)
@@ -473,7 +473,7 @@ func (b Bucket) DownloadFile(ctx context.Context, fileName string) (FileInfo, io
 		return info, nil, fmt.Errorf("download %s from %s: %w", fileName, b.BucketName, err)
 	}
 	// Return complete file info, as available
-	info.ContentLength = res.ContentLength
+	info.ContentLength = *res.ContentLength
 	if res.ETag != nil {
 		info.ETag = strings.ReplaceAll(*res.ETag, "\"", "") // remove unnecessary quotes
 	}
@@ -508,6 +508,9 @@ func (b Bucket) GetUploadURL(ctx context.Context, fileName string, contentType s
 	url, err := psClient.PresignPutObject(ctx, params, duration)
 	if err != nil {
 		return psu, fmt.Errorf("upload url for %s in %s: %w", fileName, b.BucketName, err)
+	}
+	if params.Expires != nil {
+		psu.ExpiresAt = *params.Expires
 	}
 	psu.Method = url.Method
 	psu.Host = url.SignedHeader.Get("Host")
@@ -569,7 +572,7 @@ func (b Bucket) CopyFile(ctx context.Context, fromBucketName string, fromFileNam
 	}
 	src.ETag = strings.ReplaceAll(*head.ETag, "\"", "") // remove quotes
 	src.ContentType = *head.ContentType
-	src.ContentLength = head.ContentLength
+	src.ContentLength = *head.ContentLength
 	src.LastModified = *head.LastModified
 
 	// Check if the destination file exists, with a matching ETag (no need to copy)
@@ -646,7 +649,7 @@ func (b Bucket) DeleteFiles(ctx context.Context, fileNames []string) error {
 		Bucket: &b.BucketName,
 		Delete: &types.Delete{
 			Objects: objects,
-			Quiet:   true,
+			Quiet:   aws.Bool(true),
 		},
 	}
 	res, err := b.Client.DeleteObjects(ctx, &req)
