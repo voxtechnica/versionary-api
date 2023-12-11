@@ -2,7 +2,6 @@ package metric
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"testing"
 	"time"
@@ -163,7 +162,6 @@ func TestReadMetricIDs(t *testing.T) {
 	expect := assert.New(t)
 	// Read the Metric IDs from the database
 	ids, err := service.ReadMetricIDs(ctx, false, 10, "-")
-	fmt.Println(ids)
 	if expect.NoError(err) {
 		expect.GreaterOrEqual(len(ids), 3)
 		expect.Subset(ids, knownIDs)
@@ -214,16 +212,18 @@ func TestGenerateStatsForEntityID(t *testing.T) {
 	expect := assert.New(t)
 	testStat, err := service.GenerateStatsForEntityID(ctx, entity1, false, 10, "-")
 	if expect.NoError(err) && expect.NotEmpty(testStat) {
-		fmt.Println(testStat)
+		expect.Equal(entity1, testStat.EntityID)
 	}
 }
 
 func TestGenerateStatsForEntityIDByDate(t *testing.T) {
 	expect := assert.New(t)
 	testStat, err := service.GenerateStatsForEntityIDByDate(ctx, entity1, "2021-09-25", "2023-10-09")
-	fmt.Println("TEST STAT: ", testStat)
+	startDate, _ := time.Parse("2006-01-02", "2021-09-25")
+	endDate, _ := time.Parse("2006-01-02", "2023-10-09")
 	if expect.NoError(err) && expect.NotEmpty(testStat) {
-		fmt.Println(testStat)
+		expect.True(startDate.Before(testStat.FromTime))
+		expect.True(endDate.After(testStat.ToTime))
 	}
 }
 
@@ -261,9 +261,8 @@ func TestReadMetricsByEntityTypeAsJSON(t *testing.T) {
 func TestGenerateStatsForEntityType(t *testing.T) {
 	expect := assert.New(t)
 	testStat, err := service.GenerateStatsForEntityTypeByDate(ctx, "API", "", "")
-	fmt.Println("HERE3: ", testStat)
 	if expect.NoError(err) && expect.NotEmpty(testStat) {
-		fmt.Println(testStat)
+		expect.Contains(testStat.EntityType, "API")
 	}
 }
 
