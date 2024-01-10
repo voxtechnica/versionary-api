@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"versionary-api/pkg/util"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/voxtechnica/tuid-go"
@@ -90,7 +91,7 @@ func NewMemTable(table v.Table[Metric]) v.MemTable[Metric] {
 // Metric Service
 //==============================================================================
 
-// Service is used to manage Metric in a DynamoDB table.
+// Service is used to manage Metrics in a DynamoDB table.
 type Service struct {
 	EntityType string
 	Table      v.TableReadWriter[Metric]
@@ -126,10 +127,7 @@ func (s Service) Create(ctx context.Context, m Metric) (Metric, []string, error)
 	m.CreatedAt = at
 	m.ExpiresAt = at.AddDate(1, 0, 0)
 	if m.Title == "" {
-		m.Title = "Untitled Metric"
-	}
-	if m.EntityType == "" {
-		m.EntityType = "unknown"
+		m.Title = "Untitled"
 	}
 	problems := m.Validate()
 	if len(problems) > 0 {
@@ -148,7 +146,7 @@ func (s Service) Write(ctx context.Context, m Metric) (Metric, error) {
 	return m, s.Table.WriteEntity(ctx, m)
 }
 
-// Read a Metric from the Metric table.
+// Read a specified Metric from the Metric table.
 func (s Service) Read(ctx context.Context, id string) (Metric, error) {
 	return s.Table.ReadEntity(ctx, id)
 }
@@ -158,12 +156,12 @@ func (s Service) Exists(ctx context.Context, id string) bool {
 	return s.Table.EntityExists(ctx, id)
 }
 
-// ReadAsJSON gets a specified Metric from the Metric table, serialized as JSON.
+// ReadAsJSON reads a specified Metric from the Metric table, serialized as JSON.
 func (s Service) ReadAsJSON(ctx context.Context, id string) ([]byte, error) {
 	return s.Table.ReadEntityAsJSON(ctx, id)
 }
 
-// Delete a Metric from the Metric table. Deleted Metrics is returned
+// Delete a Metric from the Metric table. The deleted Metric is returned.
 func (s Service) Delete(ctx context.Context, id string) (Metric, error) {
 	return s.Table.DeleteEntityWithID(ctx, id)
 }
@@ -173,7 +171,14 @@ func (s Service) ReadMetricIDs(ctx context.Context, reverse bool, limit int, off
 	return s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
 }
 
+// ReadMetricLabels returns a paginated list of Metric IDs and Labels from the Metric table.
+// This is the preferred, more performant method for 'browsing' metrics.
+func (s Service) ReadMetricLabels(ctx context.Context, reverse bool, limit int, offset string) ([]v.TextValue, error) {
+	return s.Table.ReadEntityLabels(ctx, reverse, limit, offset)
+}
+
 // ReadMetrics returns a paginated list of Metrics in the Metric table.
+// This 'expensive' method returns the full Metric objects, retrieved with parallel reads.
 func (s Service) ReadMetrics(ctx context.Context, reverse bool, limit int, offset string) []Metric {
 	ids, err := s.Table.ReadEntityIDs(ctx, reverse, limit, offset)
 	if err != nil {
@@ -201,38 +206,64 @@ func (s Service) ReadMetricsByEntityIDAsJSON(ctx context.Context, entityID strin
 	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowMetricsEntity, entityID, reverse, limit, offset)
 }
 
-// GenerateStatsForEntityID returns a MetricStats object for a specified Entity ID.
-func (s Service) GenerateStatsForEntityID(ctx context.Context, entityID string, reverse bool, limit int, offset string) (MetricStat, error) {
-	metrics, err := s.ReadMetricsByEntityID(ctx, entityID, reverse, limit, offset)
-	if err != nil {
-		return MetricStat{}, err
-	}
-	if len(metrics) == 0 {
-		return MetricStat{}, fmt.Errorf("generate stats for entity %s: %w", entityID, v.ErrNotFound)
-	}
-	// Calculate statistics using the CalculateStats function
-	stats := CalculateStats(metrics)
-	return stats, nil
+// ReadAllMetricsByEntityID returns the complete list of Metrics for a specified Entity ID.
+func (s Service) ReadAllMetricsByEntityID(ctx context.Context, entityID string) ([]Metric, error) {
+	return s.Table.ReadAllEntitiesFromRow(ctx, rowMetricsEntity, entityID)
 }
 
-// GenerateStatsForEntityIDByDate returns a MetricStat object for a specified Entity ID, filtered by Date.
-// Time format for start and end string: "2006-01-02"
-func (s Service) GenerateStatsForEntityIDByDate(ctx context.Context, entityID string, start, end string) (MetricStat, error) {
-	metrics, err := s.Table.ReadAllEntitiesFromRow(ctx, rowMetricsEntity, entityID)
-	if err != nil {
-		return MetricStat{}, err
-	}
-	if len(metrics) == 0 {
-		return MetricStat{}, fmt.Errorf("generate stats for entity %s: %w", entityID, v.ErrNotFound)
-	}
+// ReadAllMetricsByEntityIDAsJSON returns the complete list of Metrics for a specified Entity ID, serialized as JSON.
+func (s Service) ReadAllMetricsByEntityIDAsJSON(ctx context.Context, entityID string) ([]byte, error) {
+	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowMetricsEntity, entityID)
+}
 
-	filteredDates, err := FilterMetricsByDate(metrics, start, end)
-	if err != nil {
-		return MetricStat{}, err
+// ReadMetricRangeByEntityID returns a list of Metrics for a specified Entity ID and date range.
+// The start date is inclusive, and the end date is exclusive.
+// The dates are expected to be in the format "yyyy-mm-dd".
+func (s Service) ReadMetricRangeByEntityID(ctx context.Context, entityID string, startDate, endDate string, reverse bool) ([]Metric, error) {
+	if entityID == "" {
+		return []Metric{}, nil
 	}
-	// Calculate statistics using the CalculateStats function
-	stats := CalculateStats(filteredDates)
-	return stats, nil
+	start, end, err := util.DateRangeIDs(startDate, endDate)
+	if err != nil {
+		return []Metric{}, fmt.Errorf("read metric range for entity %s: %w", entityID, err)
+	}
+	return s.Table.ReadEntityRangeFromRow(ctx, rowMetricsEntity, entityID, start, end, reverse)
+}
+
+// ReadMetricStatByEntityID returns a MetricStats object for a specified Entity ID.
+func (s Service) ReadMetricStatByEntityID(ctx context.Context, entityID string) (MetricStat, error) {
+	if entityID == "" {
+		return MetricStat{}, fmt.Errorf("read MetricStat for unspecified entity: %w", v.ErrNotFound)
+	}
+	values, err := s.Table.ReadAllNumericValues(ctx, rowMetricsEntity, entityID, false)
+	if err != nil {
+		return MetricStat{}, fmt.Errorf("read MetricStat for entity %s: %w", entityID, err)
+	}
+	if len(values) == 0 {
+		return MetricStat{}, fmt.Errorf("read MetricStat for entity %s: %w", entityID, v.ErrNotFound)
+	}
+	return NewMetricStat(entityID, "", "", values), nil
+}
+
+// ReadMetricStatRangeByEntityID generates a MetricStat for a specified Entity ID and date range.
+// The start date is inclusive, and the end date is exclusive.
+// The dates are expected to be in the format "yyyy-mm-dd".
+func (s Service) ReadMetricStatRangeByEntityID(ctx context.Context, entityID, startDate, endDate string) (MetricStat, error) {
+	if entityID == "" {
+		return MetricStat{}, fmt.Errorf("read MetricStat range for unspecified entity: %w", v.ErrNotFound)
+	}
+	start, end, err := util.DateRangeIDs(startDate, endDate)
+	if err != nil {
+		return MetricStat{}, fmt.Errorf("read MetricStat range for entity %s: %w", entityID, err)
+	}
+	values, err := s.Table.ReadNumericValueRange(ctx, rowMetricsEntity, entityID, start, end, false)
+	if err != nil {
+		return MetricStat{}, fmt.Errorf("read MetricStat range for entity %s: %w", entityID, err)
+	}
+	if len(values) == 0 {
+		return MetricStat{}, fmt.Errorf("read MetricStat range for entity %s: %w", entityID, v.ErrNotFound)
+	}
+	return NewMetricStat(entityID, "", "", values), nil
 }
 
 //------------------------------------------------------------------------------
@@ -254,20 +285,64 @@ func (s Service) ReadMetricsByEntityTypeAsJSON(ctx context.Context, entityType s
 	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowMetricsEntityType, entityType, reverse, limit, offset)
 }
 
-// GenerateStatsForEntityTypeByDate returns a MetricStats object for a specified Entity Type.
-func (s Service) GenerateStatsForEntityTypeByDate(ctx context.Context, entityType, start, end string) (MetricStat, error) {
-	metrics, err := s.Table.ReadAllEntitiesFromRow(ctx, rowMetricsEntityType, entityType)
-	if err != nil {
-		return MetricStat{}, err
-	}
+// ReadAllMetricsByEntityType returns the complete list of Metrics for a specified Entity Type.
+func (s Service) ReadAllMetricsByEntityType(ctx context.Context, entityType string) ([]Metric, error) {
+	return s.Table.ReadAllEntitiesFromRow(ctx, rowMetricsEntityType, entityType)
+}
 
-	filteredDates, err := FilterMetricsByDate(metrics, start, end)
-	if err != nil {
-		return MetricStat{}, err
+// ReadAllMetricsByEntityTypeAsJSON returns the complete list of Metrics for a specified Entity Type, serialized as JSON.
+func (s Service) ReadAllMetricsByEntityTypeAsJSON(ctx context.Context, entityType string) ([]byte, error) {
+	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowMetricsEntityType, entityType)
+}
+
+// ReadMetricRangeByEntityType returns a list of Metrics for a specified Entity Type and date range.
+// The start date is inclusive, and the end date is exclusive.
+// The dates are expected to be in the format "yyyy-mm-dd".
+func (s Service) ReadMetricRangeByEntityType(ctx context.Context, entityType, startDate, endDate string, reverse bool) ([]Metric, error) {
+	if entityType == "" {
+		return []Metric{}, nil
 	}
-	// Calculate statistics using the CalculateStats function
-	stats := CalculateStats(filteredDates)
-	return stats, nil
+	start, end, err := util.DateRangeIDs(startDate, endDate)
+	if err != nil {
+		return []Metric{}, fmt.Errorf("read metric range for entity type %s: %w", entityType, err)
+	}
+	return s.Table.ReadEntityRangeFromRow(ctx, rowMetricsEntityType, entityType, start, end, reverse)
+}
+
+// ReadMetricStatByEntityType returns a MetricStats object for a specified Entity Type.
+func (s Service) ReadMetricStatByEntityType(ctx context.Context, entityType string) (MetricStat, error) {
+	if entityType == "" {
+		return MetricStat{}, fmt.Errorf("read MetricStat for unspecified entity type: %w", v.ErrNotFound)
+	}
+	values, err := s.Table.ReadAllNumericValues(ctx, rowMetricsEntityType, entityType, false)
+	if err != nil {
+		return MetricStat{}, fmt.Errorf("read MetricStat for entity type %s: %w", entityType, err)
+	}
+	if len(values) == 0 {
+		return MetricStat{}, fmt.Errorf("read MetricStat for entity type %s: %w", entityType, v.ErrNotFound)
+	}
+	return NewMetricStat("", entityType, "", values), nil
+}
+
+// ReadMetricStatRangeByEntityType generates a MetricStat for a specified Entity Type and date range.
+// The start date is inclusive, and the end date is exclusive.
+// The dates are expected to be in the format "yyyy-mm-dd".
+func (s Service) ReadMetricStatRangeByEntityType(ctx context.Context, entityType, startDate, endDate string) (MetricStat, error) {
+	if entityType == "" {
+		return MetricStat{}, fmt.Errorf("read MetricStat range for unspecified entity type: %w", v.ErrNotFound)
+	}
+	start, end, err := util.DateRangeIDs(startDate, endDate)
+	if err != nil {
+		return MetricStat{}, fmt.Errorf("read MetricStat range for entity type %s: %w", entityType, err)
+	}
+	values, err := s.Table.ReadNumericValueRange(ctx, rowMetricsEntityType, entityType, start, end, false)
+	if err != nil {
+		return MetricStat{}, fmt.Errorf("read MetricStat range for entity type %s: %w", entityType, err)
+	}
+	if len(values) == 0 {
+		return MetricStat{}, fmt.Errorf("read MetricStat range for entity type %s: %w", entityType, v.ErrNotFound)
+	}
+	return NewMetricStat("", entityType, "", values), nil
 }
 
 //------------------------------------------------------------------------------
@@ -289,23 +364,62 @@ func (s Service) ReadMetricsByTagAsJSON(ctx context.Context, tag string, reverse
 	return s.Table.ReadEntitiesFromRowAsJSON(ctx, rowMetricsTag, tag, reverse, limit, offset)
 }
 
-// ReadAllMetricsByTags returns the complete list of Metrics sorted chronologically by CreatedAt timestamp.
-func (s Service) ReadAllMetricsByTags(ctx context.Context, tag string) ([]Metric, error) {
+// ReadAllMetricsByTag returns the complete list of Metrics, sorted chronologically.
+func (s Service) ReadAllMetricsByTag(ctx context.Context, tag string) ([]Metric, error) {
 	return s.Table.ReadAllEntitiesFromRow(ctx, rowMetricsTag, tag)
 }
 
 // ReadAllMetricsByTagsAsJSON returns the complete list of Metrics, serialized as JSON.
-func (s Service) ReadAllMetricsByTagsAsJSON(ctx context.Context, tag string) ([]byte, error) {
+func (s Service) ReadAllMetricsByTagAsJSON(ctx context.Context, tag string) ([]byte, error) {
 	return s.Table.ReadAllEntitiesFromRowAsJSON(ctx, rowMetricsTag, tag)
 }
 
-// GenerateStatsForTag returns a MetricStat object for a specified Tag.
-func (s Service) GenerateStatsForTag(ctx context.Context, tag string) (MetricStat, error) {
-	metrics, err := s.ReadAllMetricsByTags(ctx, tag)
-	if err != nil {
-		return MetricStat{}, err
+// ReadMetricRangeByTag returns a list of Metrics for a specified Tag and date range.
+// The start date is inclusive, and the end date is exclusive.
+// The dates are expected to be in the format "yyyy-mm-dd".
+func (s Service) ReadMetricRangeByTag(ctx context.Context, tag, startDate, endDate string, reverse bool) ([]Metric, error) {
+	if tag == "" {
+		return []Metric{}, nil
 	}
-	// Calculate statistics using the CalculateStats function
-	stats := CalculateStats(metrics)
-	return stats, nil
+	start, end, err := util.DateRangeIDs(startDate, endDate)
+	if err != nil {
+		return []Metric{}, fmt.Errorf("read metric range for tag %s: %w", tag, err)
+	}
+	return s.Table.ReadEntityRangeFromRow(ctx, rowMetricsTag, tag, start, end, reverse)
+}
+
+// ReadMetricStatByTag returns a MetricStats object for a specified Tag.
+func (s Service) ReadMetricStatByTag(ctx context.Context, tag string) (MetricStat, error) {
+	if tag == "" {
+		return MetricStat{}, fmt.Errorf("read MetricStat for unspecified tag: %w", v.ErrNotFound)
+	}
+	values, err := s.Table.ReadAllNumericValues(ctx, rowMetricsTag, tag, false)
+	if err != nil {
+		return MetricStat{}, fmt.Errorf("read MetricStat for tag %s: %w", tag, err)
+	}
+	if len(values) == 0 {
+		return MetricStat{}, fmt.Errorf("read MetricStat for tag %s: %w", tag, v.ErrNotFound)
+	}
+	return NewMetricStat("", "", tag, values), nil
+}
+
+// ReadMetricStatRangeByTag generates a MetricStat for a specified Tag and date range.
+// The start date is inclusive, and the end date is exclusive.
+// The dates are expected to be in the format "yyyy-mm-dd".
+func (s Service) ReadMetricStatRangeByTag(ctx context.Context, tag, startDate, endDate string) (MetricStat, error) {
+	if tag == "" {
+		return MetricStat{}, fmt.Errorf("read MetricStat range for unspecified tag: %w", v.ErrNotFound)
+	}
+	start, end, err := util.DateRangeIDs(startDate, endDate)
+	if err != nil {
+		return MetricStat{}, fmt.Errorf("read MetricStat range for tag %s: %w", tag, err)
+	}
+	values, err := s.Table.ReadNumericValueRange(ctx, rowMetricsTag, tag, start, end, false)
+	if err != nil {
+		return MetricStat{}, fmt.Errorf("read MetricStat range for tag %s: %w", tag, err)
+	}
+	if len(values) == 0 {
+		return MetricStat{}, fmt.Errorf("read MetricStat range for tag %s: %w", tag, v.ErrNotFound)
+	}
+	return NewMetricStat("", "", tag, values), nil
 }

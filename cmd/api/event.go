@@ -73,7 +73,7 @@ func createEvent(c *gin.Context) {
 // @Summary List Events
 // @Description List Events
 // @Description List Events, paging with reverse, limit, and offset.
-// @Description Optionally, filter by date, entity ID, or log level.
+// @Description Optionally, filter by date, entity ID, entity type, or log level.
 // @Description If no filter is specified, the default is to return up to limit recent Events in reverse order.
 // @Tags Event
 // @Produce json

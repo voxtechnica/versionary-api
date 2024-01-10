@@ -2,9 +2,11 @@ package util
 
 import (
 	"errors"
-	"regexp"
+	"fmt"
 	"strings"
+	"time"
 
+	"github.com/voxtechnica/tuid-go"
 	"github.com/voxtechnica/versionary"
 )
 
@@ -28,12 +30,22 @@ func ContainsFilter(contains string, anyMatch bool) (func(tv versionary.TextValu
 	}
 }
 
-// dateRegex is a regular expression that matches a date in the format YYYY-MM-DD.
-var dateRegex = regexp.MustCompile(`^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$`)
-
-// IsValidDate returns true if the supplied string is a valid date in the format YYYY-MM-DD.
-func IsValidDate(date string) bool {
-	return date != "" && dateRegex.MatchString(date)
+// DateRangeIDs returns a pair of first IDs (TUIDs) for the specified date range.
+// The start date is inclusive, and the end date is effectively exclusive.
+// The expected date format is YYYY-MM-DD.
+func DateRangeIDs(startDate, endDate string) (string, string, error) {
+	var start, end string
+	startTime, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return start, end, fmt.Errorf("invalid date %s (expect yyyy-mm-dd): %w", startDate, err)
+	}
+	start = tuid.FirstIDWithTime(startTime).String()
+	endTime, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		return start, end, fmt.Errorf("invalid date %s (expect yyyy-mm-dd): %w", endDate, err)
+	}
+	end = tuid.FirstIDWithTime(endTime).String()
+	return start, end, nil
 }
 
 // TextValuesMap converts a slice of TextValues into a key/value map.

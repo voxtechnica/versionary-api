@@ -14,7 +14,6 @@ import (
 	"versionary-api/pkg/device"
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/ref"
-	"versionary-api/pkg/util"
 )
 
 // registerDeviceRoutes initializes the Device routes.
@@ -289,7 +288,7 @@ func readDevices(c *gin.Context) {
 		return
 	}
 	date := c.Query("date")
-	if !util.IsValidDate(date) {
+	if !v.IsValidDate(date) {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid date: %s", date))
 		return
 	}
@@ -731,7 +730,7 @@ func readDeviceCounts(c *gin.Context) {
 func readDeviceCount(c *gin.Context) {
 	// Validate the path parameter date (YYYY-MM-DD)
 	date := c.Param("date")
-	if !util.IsValidDate(date) {
+	if !v.IsValidDate(date) {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter date: %s", date))
 		return
 	}
@@ -769,7 +768,7 @@ func readDeviceCount(c *gin.Context) {
 // @Router /v1/device_counts/{date} [head]
 func existsDeviceCount(c *gin.Context) {
 	date := c.Param("date")
-	if !util.IsValidDate(date) {
+	if !v.IsValidDate(date) {
 		c.Status(http.StatusBadRequest)
 	} else if !api.DeviceCountService.Exists(c, date) {
 		c.Status(http.StatusNotFound)
@@ -796,7 +795,7 @@ func existsDeviceCount(c *gin.Context) {
 func updateDeviceCount(c *gin.Context) {
 	// Validate the path parameter date (YYYY-MM-DD)
 	date := c.Param("date")
-	if !util.IsValidDate(date) {
+	if !v.IsValidDate(date) {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter date: %s", date))
 		return
 	}

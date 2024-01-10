@@ -1,7 +1,6 @@
 package metric
 
 import (
-	"fmt"
 	"math"
 	"slices"
 	"strconv"
@@ -10,7 +9,7 @@ import (
 	"versionary-api/pkg/ref"
 
 	"github.com/voxtechnica/tuid-go"
-	"github.com/voxtechnica/versionary"
+	v "github.com/voxtechnica/versionary"
 )
 
 // Metric is a model entity useful for understanding system activity in terms of performance.
@@ -20,7 +19,6 @@ type Metric struct {
 	CreatedAt  time.Time `json:"createdAt"`
 	ExpiresAt  time.Time `json:"expiresAt"`
 	Title      string    `json:"title"`
-	Label      string    `json:"label,omitempty"`
 	EntityID   string    `json:"entityId,omitempty"`
 	EntityType string    `json:"entityType,omitempty"`
 	Tags       []string  `json:"tags,omitempty"`
@@ -39,9 +37,17 @@ func (m Metric) RefID() ref.RefID {
 	return r
 }
 
+// CreatedOn returns an ISO-8601 formatted string of the Metric's creation date.
+func (m Metric) CreatedOn() string {
+	if m.CreatedAt.IsZero() {
+		return ""
+	}
+	return m.CreatedAt.Format("2006-01-02")
+}
+
 // CompressedJSON returns a compressed JSON representation of the Metric.
 func (m Metric) CompressedJSON() []byte {
-	j, err := versionary.ToCompressedJSON(m)
+	j, err := v.ToCompressedJSON(m)
 	if err != nil {
 		return nil
 	}
@@ -68,9 +74,6 @@ func (m Metric) Validate() []string {
 	if m.EntityID != "" && !tuid.IsValid(tuid.TUID(m.EntityID)) {
 		problems = append(problems, "EntityID is not a valid TUID")
 	}
-	if m.Value == 0.0 {
-		problems = append(problems, "Value is missing")
-	}
 	if m.Units == "" {
 		problems = append(problems, "Units are missing")
 	}
@@ -85,17 +88,13 @@ func (m Metric) String() string {
 		s += " for " + m.EntityType + "-" + m.EntityID
 	} else if m.EntityType != "" {
 		s += " for " + m.EntityType
-	} else {
+	} else if m.EntityID != "" {
 		s += " for " + m.EntityID
 	}
 	if len(m.Tags) > 0 {
 		s += " tagged " + strings.Join(m.Tags, ", ")
 	}
-	s += " (" + m.Title
-	if m.Label != "" {
-		s += "; " + m.Label
-	}
-	s += ")"
+	s += " (" + m.Title + ")"
 	return s
 }
 
@@ -103,7 +102,7 @@ func (m Metric) String() string {
 type MetricStat struct {
 	EntityID   string    `json:"entityId,omitempty"`
 	EntityType string    `json:"entityType,omitempty"`
-	Tags       []string  `json:"tag,omitempty"`
+	Tag        string    `json:"tag,omitempty"`
 	FromTime   time.Time `json:"fromTime"`
 	ToTime     time.Time `json:"toTime"`
 	Count      int64     `json:"count"`
@@ -115,42 +114,48 @@ type MetricStat struct {
 	StdDev     float64   `json:"stdDev"`
 }
 
-// CalculateStats calculates the statistical values for a slice of Metrics.
-func CalculateStats(metrics []Metric) MetricStat {
+// NewMetricStat creates a new MetricStat from a slice of ID/value pairs.
+func NewMetricStat(entityID, entityType, tag string, metrics []v.NumValue) MetricStat {
 	var ms MetricStat
+	ms.EntityID = entityID
+	ms.EntityType = entityType
+	ms.Tag = tag
+	ms.Count = int64(len(metrics))
 	if len(metrics) == 0 {
 		return ms
 	}
-	var values []float64
-	for _, m := range metrics {
-		values = append(values, m.Value)
 
-		// Calculate min, max, and sum
-		if m.Value < ms.Min || ms.Min == 0.0 {
+	// Use the embedded timestamps for from/to times
+	fromID := tuid.TUID(metrics[0].Key)
+	fromTime, err := fromID.Time()
+	if err == nil {
+		ms.FromTime = fromTime
+	}
+	toID := tuid.TUID(metrics[len(metrics)-1].Key)
+	toTime, err := toID.Time()
+	if err == nil {
+		ms.ToTime = toTime
+	}
+
+	// Generate basic descriptive statistics
+	var values []float64
+	for i, m := range metrics {
+		values = append(values, m.Value)
+		if m.Value < ms.Min || i == 0 {
 			ms.Min = m.Value
 		}
-		if m.Value > ms.Max {
+		if m.Value > ms.Max || i == 0 {
 			ms.Max = m.Value
 		}
 		ms.Sum += m.Value
-
-		// Set the FromTime and ToTime for the MetricStat
-		if m.CreatedAt.Before(ms.FromTime) || ms.FromTime.IsZero() {
-			ms.FromTime = m.CreatedAt
-		}
-		if m.CreatedAt.After(ms.ToTime) || ms.ToTime.IsZero() {
-			ms.ToTime = m.CreatedAt
-		}
 	}
-	ms.EntityID = metrics[0].EntityID
-	ms.EntityType = metrics[0].EntityType
-	ms.Tags = metrics[0].Tags
-	ms.Count = int64(len(metrics))
 	ms.Mean = ms.Sum / float64(ms.Count)
 
 	// Identify the median value
 	slices.Sort(values)
-	if ms.Count%2 == 0 {
+	if ms.Count == 1 {
+		ms.Median = values[0]
+	} else if ms.Count%2 == 0 {
 		ms.Median = (values[ms.Count/2-1] + values[ms.Count/2]) / 2
 	} else {
 		ms.Median = values[ms.Count/2]
@@ -165,36 +170,4 @@ func CalculateStats(metrics []Metric) MetricStat {
 	variance := sumSquares / float64(len(values))
 	ms.StdDev = math.Sqrt(variance)
 	return ms
-}
-
-// FilterMetricsByDate filters a slice of metrics by date range.
-// The beginning date is inclusive, and the ending date is exclusive.
-func FilterMetricsByDate(metrics []Metric, fromDate, beforeDate string) ([]Metric, error) {
-	filteredMetrics := make([]Metric, 0)
-	begin := "-" // before numbers
-	end := "|"   // after letters
-
-	if fromDate != "" {
-		from, err := time.Parse("2006-01-02", fromDate) // time.Time
-		if err != nil {
-			return filteredMetrics, fmt.Errorf("invalid date format %s: %w", fromDate, err)
-		}
-		begin = tuid.FirstIDWithTime(from).String()
-	}
-
-	if beforeDate != "" {
-		before, err := time.Parse("2006-01-02", beforeDate)
-		if err != nil {
-			return filteredMetrics, fmt.Errorf("invalid date format %s: %w", beforeDate, err)
-		}
-		end = tuid.FirstIDWithTime(before).String()
-	}
-
-	// Filter the metrics by date range
-	for _, m := range metrics {
-		if (m.ID >= begin) && (m.ID < end) {
-			filteredMetrics = append(filteredMetrics, m)
-		}
-	}
-	return filteredMetrics, nil
 }

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
+	"time"
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/metric"
 
@@ -15,14 +17,15 @@ import (
 // registerMetricRoutes initializes the Metric routes with the Gin router.
 func registerMetricRoutes(r *gin.Engine) {
 	r.POST("/v1/metrics", roleAuthorizer("admin"), createMetric)
-	r.DELETE("/v1/metrics/:id", roleAuthorizer("admin"), deleteMetric)
+	r.GET("/v1/metrics", roleAuthorizer("admin"), readMetrics)
 	r.GET("/v1/metrics/:id", readMetric)
-	r.GET("/v1/metrics/", roleAuthorizer("admin"), readMetrics)
-	r.GET("/v1/metric_tags", roleAuthorizer("admin"), readMetricTags)
+	r.HEAD("/v1/metrics/:id", existsMetric)
+	r.DELETE("/v1/metrics/:id", roleAuthorizer("admin"), deleteMetric)
+	r.GET("/v1/metric_labels", roleAuthorizer("admin"), readMetricLabels)
+	r.GET("/v1/metric_entity_ids", roleAuthorizer("admin"), readMetricEntityIDs)
 	r.GET("/v1/metric_entity_types", roleAuthorizer("admin"), readMetricEntityTypes)
-	r.GET("/v1/metric_stats", filterMetricStats)
-	r.GET("/v1/metric_stats/:entityId", readMetricStats)
-	// r.GET("/v1/metric_hist", roleAuthorizer("admin"), readMetricHistograms)
+	r.GET("/v1/metric_tags", roleAuthorizer("admin"), readMetricTags)
+	r.GET("/v1/metric_stats", roleAuthorizer("admin"), readMetricStats)
 }
 
 // createMetric handles the HTTP request to create a new Metric.
@@ -42,7 +45,7 @@ func registerMetricRoutes(r *gin.Engine) {
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
 // @Failure 422 {object} APIEvent "Metric validation errors"
 // @Failure 500 {object} APIEvent "Internal Server Error"
-// @Header 201 {string} Location "URL of the newly created Event"
+// @Header 201 {string} Location "URL of the newly created Metric"
 // @Router /v1/metrics [post]
 func createMetric(c *gin.Context) {
 	// Parse the request body as a Metric.
@@ -66,41 +69,110 @@ func createMetric(c *gin.Context) {
 	c.JSON(http.StatusCreated, m)
 }
 
-// deleteMetric handles the HTTP request to delete a Metric.
+// readMetrics handles the HTTP request to read all Metrics.
 //
-// @Summary Delete Metric
-// @Description Delete Metric
-// @Description Delete and return the specified Metric.
+// @Summary Read Metrics
+// @Description Get Metrics
+// @Description Get Metrics, paging with reverse, limit and offset or date range.
+// @Description Optionally, filter by entity ID, entity type, or tag.
 // @Tags Metric
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
-// @Param id path string true "Metric ID"
-// @Success 200 {object} metric.Metric "Deleted Metric"
-// @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
+// @Param entity query string false "Entity ID (a TUID)"
+// @Param type query string false "Entity Type (e.g. User, Organization, etc.)"
+// @Param tag query string false "Tag"
+// @Param from query string false "Inclusive Begining of Date Range (YYYY-MM-DD)"
+// @Param to query string false "Exclusive End of Date Range (YYYY-MM-DD)"
+// @Param reverse query bool false "Reverse Order (default: false)"
+// @Param limit query int false "Limit (default: 100)"
+// @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
+// @Success 200 {array} metric.Metric "Metrics"
+// @Failure 400 {object} APIEvent "Bad Request (invalid parameter)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
-// @Failure 404 {object} APIEvent "Not Found"
 // @Failure 500 {object} APIEvent "Internal Server Error"
-// @Router /v1/metrics/{id} [delete]
-func deleteMetric(c *gin.Context) {
-	// Validate the path parameter ID.
-	id := c.Param("id")
-	if !tuid.IsValid(tuid.TUID(id)) {
-		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %s", id))
-		return
-	}
-	// Delete the specified Metric.
-	m, err := api.MetricService.Delete(c, id)
-	if err != nil && errors.Is(err, v.ErrNotFound) {
-		abortWithError(c, http.StatusNotFound, fmt.Errorf("not found: metric %s", id))
-		return
-	}
+// @Router /v1/metric [get]
+func readMetrics(c *gin.Context) {
+	// Parse pagination query parameters, with defaults
+	reverse, limit, offset, err := paginationParams(c, false, 100)
 	if err != nil {
-		abortWithError(c, http.StatusInternalServerError, err)
+		abortWithError(c, http.StatusBadRequest, err)
 		return
 	}
-	// Return the deleted metric.
-	c.JSON(http.StatusOK, m)
+
+	// Validate other parameters
+	entityID := c.Query("entity")
+	if entityID != "" && !tuid.IsValid(tuid.TUID(entityID)) {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid TUID parameter, entity: %s", entityID))
+		return
+	}
+	entityType := c.Query("type")
+	tag := c.Query("tag")
+	from := strings.TrimSpace(c.Query("from"))
+	if from != "" {
+		_, err = time.Parse("2006-01-02", from)
+		if err != nil {
+			abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid date %s: %w", from, err))
+			return
+		}
+	}
+	to := strings.TrimSpace(c.Query("to"))
+	if to != "" {
+		_, err = time.Parse("2006-01-02", to)
+		if err != nil {
+			abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid date %s: %w", to, err))
+			return
+		}
+	}
+
+	// Gather the specified Metrics
+	var ms []metric.Metric
+	var messageBase string
+	if entityID != "" {
+		if from != "" && to != "" {
+			ms, err = api.MetricService.ReadMetricRangeByEntityID(c, entityID, from, to, reverse)
+		} else {
+			ms, err = api.MetricService.ReadMetricsByEntityID(c, entityID, reverse, limit, offset)
+		}
+		if err != nil {
+			messageBase = fmt.Sprintf("read metrics for entity %s", entityID)
+		}
+	} else if entityType != "" {
+		if from != "" && to != "" {
+			ms, err = api.MetricService.ReadMetricRangeByEntityType(c, entityType, from, to, reverse)
+		} else {
+			ms, err = api.MetricService.ReadMetricsByEntityType(c, entityType, reverse, limit, offset)
+		}
+		if err != nil {
+			messageBase = fmt.Sprintf("read metrics for entity type %s", entityType)
+		}
+	} else if tag != "" {
+		if from != "" && to != "" {
+			ms, err = api.MetricService.ReadMetricRangeByTag(c, tag, from, to, reverse)
+		} else {
+			ms, err = api.MetricService.ReadMetricsByTag(c, tag, reverse, limit, offset)
+		}
+		if err != nil {
+			messageBase = fmt.Sprintf("read metrics for tag %s", tag)
+		}
+	} else {
+		ms = api.MetricService.ReadMetrics(c, reverse, limit, offset)
+	}
+
+	// Check for errors and return the Metrics
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityType: "Metric",
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("%s: %w", messageBase, err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	c.JSON(http.StatusOK, ms)
 }
 
 // readMetric handles the HTTP request to read a Metric.
@@ -145,41 +217,176 @@ func readMetric(c *gin.Context) {
 	c.Data(http.StatusOK, "application/json;charset=UTF-8", m)
 }
 
-// readMetrics handles the HTTP request to read all Metrics.
+// existsMetric checks if the specified Metric exists.
 //
-// @Summary Read Metric
-// @Description Get Metrics
-// @Description Get Metrics, paging with reverse, limit and offset.
+// @Summary Metric Exists
+// @Description Metric Exists
+// @Description Check if the specified Metric exists.
+// @Tags Metric
+// @Param id path string true "Metric ID"
+// @Success 204 "Metric Exists"
+// @Failure 400 "Bad Request (invalid path parameter ID)"
+// @Failure 404 "Not Found"
+// @Router /v1/events/{id} [head]
+func existsMetric(c *gin.Context) {
+	id := c.Param("id")
+	if !tuid.IsValid(tuid.TUID(id)) {
+		c.Status(http.StatusBadRequest)
+	} else if !api.MetricService.Exists(c, id) {
+		c.Status(http.StatusNotFound)
+	} else {
+		c.Status(http.StatusNoContent)
+	}
+}
+
+// deleteMetric handles the HTTP request to delete a Metric.
+//
+// @Summary Delete Metric
+// @Description Delete Metric
+// @Description Delete and return the specified Metric.
+// @Tags Metric
+// @Produce json
+// @Param authorization header string true "OAuth Bearer Token (Administrator)"
+// @Param id path string true "Metric ID"
+// @Success 200 {object} metric.Metric "Deleted Metric"
+// @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
+// @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
+// @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
+// @Failure 404 {object} APIEvent "Not Found"
+// @Failure 500 {object} APIEvent "Internal Server Error"
+// @Router /v1/metrics/{id} [delete]
+func deleteMetric(c *gin.Context) {
+	// Validate the path parameter ID.
+	id := c.Param("id")
+	if !tuid.IsValid(tuid.TUID(id)) {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter ID: %s", id))
+		return
+	}
+	// Delete the specified Metric.
+	m, err := api.MetricService.Delete(c, id)
+	if err != nil && errors.Is(err, v.ErrNotFound) {
+		abortWithError(c, http.StatusNotFound, fmt.Errorf("not found: metric %s", id))
+		return
+	}
+	if err != nil {
+		abortWithError(c, http.StatusInternalServerError, err)
+		return
+	}
+	// Return the deleted metric.
+	c.JSON(http.StatusOK, m)
+}
+
+// readMetricLabels returns a paginated list of Metric IDs and labels.
+// This is the preferred, more performant method for 'browsing' metrics.
+//
+// @Summary Read Metric Labels
+// @Description Read Metric Labels
+// @Description Read a paginated list of Metric IDs and labels.
+// @Description This is the preferred, more performant method for 'browsing' metrics.
 // @Tags Metric
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
 // @Param reverse query bool false "Reverse Order (default: false)"
-// @Param limit query int false "Limit (default: 10)"
+// @Param limit query int false "Limit (default: 100)"
 // @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
-// @Success 200 {object} metric.Metric "Metric"
-// @Failure 400 {object} APIEvent "Bad Request (invalid path parameter ID)"
+// @Success 200 {array} versionary.TextValue "Metric ID/Label pairs"
+// @Failure 400 {object} APIEvent "Bad Request (invalid parameter)"
 // @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
 // @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
 // @Failure 500 {object} APIEvent "Internal Server Error"
-// @Router /v1/metric [get]
-func readMetrics(c *gin.Context) {
+// @Router /v1/metric_labels [get]
+func readMetricLabels(c *gin.Context) {
 	// Parse pagination query parameters, with defaults
 	reverse, limit, offset, err := paginationParams(c, false, 100)
 	if err != nil {
 		abortWithError(c, http.StatusBadRequest, err)
 		return
 	}
-	// Read and return all Metrics
-	m := api.MetricService.ReadMetrics(c, reverse, limit, offset)
-	c.JSON(http.StatusOK, m)
+	// Read and return the specified Metric labels
+	labels, err := api.MetricService.ReadMetricLabels(c, reverse, limit, offset)
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityType: "Metric",
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("read metric labels: %w", err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	c.JSON(http.StatusOK, labels)
 }
 
-// readMetricTags returns a list of Metrics tags.
+// readMetricEntityIDs returns a list of all Metric entity IDs.
+// It's useful for paging through metrics by entity ID.
+
+// @Summary List Metric Entity IDs
+// @Description List Metric Entity IDs
+// @Description List all entity IDs for which metrics exist.
+// @Tags Metric
+// @Produce json
+// @Param authorization header string true "OAuth Bearer Token (Administrator)"
+// @Success 200 {array} string "Entity IDs"
+// @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
+// @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
+// @Failure 500 {object} APIEvent "Internal Server Error"
+// @Router /v1/metric_entity_ids [get]
+func readMetricEntityIDs(c *gin.Context) {
+	ids, err := api.MetricService.ReadAllEntityIDs(c)
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityType: "Metric",
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("read metric entity IDs: %w", err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	c.JSON(http.StatusOK, ids)
+}
+
+// readMetricEntityTypes returns a list of all entity types for which metrics exist.
+// It's useful for paging through metrics by entity type.
+//
+// @Summary List Metric Entity Types
+// @Description List Metric Entity Types
+// @Description List all entity types for which metrics exist.
+// @Tags Metric
+// @Produce json
+// @Param authorization header string true "OAuth Bearer Token (Administrator)"
+// @Success 200 {array} string "Entity Types"
+// @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
+// @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
+// @Failure 500 {object} APIEvent "Internal Server Error"
+// @Router /v1/metric_entity_types [get]
+func readMetricEntityTypes(c *gin.Context) {
+	types, err := api.MetricService.ReadAllEntityTypes(c)
+	if err != nil {
+		e, _, _ := api.EventService.Create(c, event.Event{
+			UserID:     contextUserID(c),
+			EntityType: "Metric",
+			LogLevel:   event.ERROR,
+			Message:    fmt.Errorf("read metric entity types: %w", err).Error(),
+			URI:        c.Request.URL.String(),
+			Err:        err,
+		})
+		abortWithError(c, http.StatusInternalServerError, e)
+		return
+	}
+	c.JSON(http.StatusOK, types)
+}
+
+// readMetricTags returns a list of all Metric tags.
 // It's useful for paging through metrics by tag.
 //
 // @Summary List Metric Tags
 // @Description List Metric Tags
-// @Description List metric tags, for which metric exist.
+// @Description List all metric tags, for which metrics exist.
 // @Tags Metric
 // @Produce json
 // @Param authorization header string true "OAuth Bearer Token (Administrator)"
@@ -205,132 +412,77 @@ func readMetricTags(c *gin.Context) {
 	c.JSON(http.StatusOK, tags)
 }
 
-// readMetricEntityTypes returns a list of all metric entity types
-//
-// @Summary List Metric Entity Types
-// @Description List Metric Entity Types
-// @Description List metric entity types.
-// @Tags Metric
-// @Produce json
-// @Param authorization header string true "OAuth Bearer Token (Administrator)"
-// @Success 200 {array} string "Content Types"
-// @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
-// @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
-// @Failure 500 {object} APIEvent "Internal Server Error"
-// @Router /v1/metric_entity_types [get]
-func readMetricEntityTypes(c *gin.Context) {
-	types, err := api.MetricService.ReadAllEntityTypes(c)
-	if err != nil {
-		e, _, _ := api.EventService.Create(c, event.Event{
-			UserID:     contextUserID(c),
-			EntityType: "Metric",
-			LogLevel:   event.ERROR,
-			Message:    fmt.Errorf("read metric types: %w", err).Error(),
-			URI:        c.Request.URL.String(),
-			Err:        err,
-		})
-		abortWithError(c, http.StatusInternalServerError, e)
-		return
-	}
-	c.JSON(http.StatusOK, types)
-}
-
-// filterMetricStats handles the HTTP request to filter Metric statistics by entity ID, entity type, from date, to date.
-//
-// @Summary Filter Metric Stats
-// @Description Filter Metric Stats
-// @Description Filter metric stats by entity ID, entity type, from date, to date.
-// @Tags Metric
-// @Produce json
-// @Param entity query string true "Entity ID"
-// @Param type query string true "Entity Type"
-// @Param tag query string true "Tag"
-// @Param from query string false "From ISO Date"
-// @Param to query string false "To ISO Date"
-// @Success 200 {object} metric "Metric Stats"
-// @Failure 400 {object} APIEvent "Bad Request (query parameter entity or type or tag must be provided)"
-// @Failure 404 {object} APIEvent "Not Found"
-// @Failure 500 {object} APIEvent "Internal Server Error"
-// @Router /v1/metric_stats [get]
-func filterMetricStats(c *gin.Context) {
-	// Parse query parameters
-	entityId := c.Query("entity")
-	entityType := c.Query("type")
-	fromTimeStr := c.Query("from")
-	toTimeStr := c.Query("to")
-	tag := c.Query("tag")
-
-	// Logic to call API service to retrieve MetricStats based on the provided parameters.
-	var metricStats metric.MetricStat
-	var errMessage string
-	var err error
-
-	if entityId != "" && tuid.IsValid(tuid.TUID(entityId)) {
-		metricStats, err = api.MetricService.GenerateStatsForEntityIDByDate(c, entityId, fromTimeStr, toTimeStr)
-		errMessage = fmt.Sprintf("search MetricStats by entityId (%s) within date range", entityId)
-	} else if entityType != "" {
-		metricStats, err = api.MetricService.GenerateStatsForEntityTypeByDate(c, entityType, fromTimeStr, toTimeStr)
-		errMessage = fmt.Sprintf("search MetricStats by entityType (%s) within date range", entityType)
-	} else if tag != "" {
-		metricStats, err = api.MetricService.GenerateStatsForTag(c, tag)
-		errMessage = fmt.Sprintf("search MetricStats by tag (%s) within date range", tag)
-	} else {
-		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: valid entity, type or tag must be provided"))
-		return
-	}
-	if err != nil && errors.Is(err, v.ErrNotFound) {
-		abortWithError(c, http.StatusNotFound, err)
-		return
-	}
-
-	if err != nil {
-		e, _, _ := api.EventService.Create(c, event.Event{
-			UserID:     contextUserID(c),
-			EntityType: api.MetricService.EntityType,
-			LogLevel:   event.ERROR,
-			Message:    fmt.Errorf("%s: %w", errMessage, err).Error(),
-			URI:        c.Request.URL.String(),
-			Err:        err,
-		})
-		abortWithError(c, http.StatusInternalServerError, e)
-		return
-	}
-
-	c.JSON(http.StatusOK, metricStats)
-}
-
-// readMetricStats handles the HTTP request to read Metric statistics.
+// readMetricStats generates Metric statistics by entity ID, entity type, or tag.
+// Optionally, the metrics can be filtered by date range.
 //
 // @Summary Read Metric Stats
 // @Description Read Metric Stats
-// @Description Read metric stats by entity ID.
+// @Description Read Metric Stats by entity ID, entity type, or tag.
+// @Description Optionally, filter by date range.
 // @Tags Metric
 // @Produce json
-// @Param entityId path string true "Entity ID"
-// @Param reverse query bool false "Reverse Order (default: false)"
-// @Param limit query int false "Limit (default: 10)"
-// @Param offset query string false "Offset (default: forward/reverse alphanumeric)"
-// @Success 200 {object} metric "Metric Stats"
-// @Failure 400 {object} APIEvent "Bad Request (invalid path parameter entityId)"
-// @Failure 404 {object} APIEvent "Not Found"
+// @Param entity query string false "Entity ID"
+// @Param type query string false "Entity Type"
+// @Param tag query string false "Tag"
+// @Param from query string false "Inclusive Begining of Date Range (YYYY-MM-DD)"
+// @Param to query string false "Exclusive End of Date Range (YYYY-MM-DD)"
+// @Success 200 {object} metric.MetricStat "Metric Stats"
+// @Failure 400 {object} APIEvent "Bad Request (query parameter entity or type or tag must be provided)"
+// @Failure 401 {object} APIEvent "Unauthenticated (missing or invalid Authorization header)"
+// @Failure 403 {object} APIEvent "Unauthorized (not an Administrator)"
 // @Failure 500 {object} APIEvent "Internal Server Error"
-// @Router /v1/metric_stats/{entityId} [get]
+// @Router /v1/metric_stats [get]
 func readMetricStats(c *gin.Context) {
-	// Validate the path parameter entity ID
-	entityId := c.Param("entityId")
-	if !tuid.IsValid(tuid.TUID(entityId)) {
-		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter entity ID: %s", entityId))
+	// Validate query parameters
+	entityID := c.Query("entity")
+	if entityID != "" && !tuid.IsValid(tuid.TUID(entityID)) {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid TUID parameter, entity: %s", entityID))
 		return
+	}
+	entityType := c.Query("type")
+	tag := c.Query("tag")
+	from := strings.TrimSpace(c.Query("from"))
+	if from != "" {
+		_, err := time.Parse("2006-01-02", from)
+		if err != nil {
+			abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid date %s: %w", from, err))
+			return
+		}
+	}
+	to := strings.TrimSpace(c.Query("to"))
+	if to != "" {
+		_, err := time.Parse("2006-01-02", to)
+		if err != nil {
+			abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid date %s: %w", to, err))
+			return
+		}
 	}
 
-	// Parse pagination query parameters, with defaults
-	reverse, limit, offset, err := paginationParams(c, false, 100)
-	if err != nil {
-		abortWithError(c, http.StatusBadRequest, err)
+	// Generate MetricStats for the specified parameters
+	var stats metric.MetricStat
+	var err error
+	if entityID != "" {
+		if from != "" && to != "" {
+			stats, err = api.MetricService.ReadMetricStatRangeByEntityID(c, entityID, from, to)
+		} else {
+			stats, err = api.MetricService.ReadMetricStatByEntityID(c, entityID)
+		}
+	} else if entityType != "" {
+		if from != "" && to != "" {
+			stats, err = api.MetricService.ReadMetricStatRangeByEntityType(c, entityType, from, to)
+		} else {
+			stats, err = api.MetricService.ReadMetricStatByEntityType(c, entityType)
+		}
+	} else if tag != "" {
+		if from != "" && to != "" {
+			stats, err = api.MetricService.ReadMetricStatRangeByTag(c, tag, from, to)
+		} else {
+			stats, err = api.MetricService.ReadMetricStatByTag(c, tag)
+		}
+	} else {
+		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: required query parameter: entity, type or tag"))
 		return
 	}
-	// Read and return the specified Metric
-	m, err := api.MetricService.GenerateStatsForEntityID(c, entityId, reverse, limit, offset)
 	if err != nil && errors.Is(err, v.ErrNotFound) {
 		abortWithError(c, http.StatusNotFound, err)
 		return
@@ -338,16 +490,14 @@ func readMetricStats(c *gin.Context) {
 	if err != nil {
 		e, _, _ := api.EventService.Create(c, event.Event{
 			UserID:     contextUserID(c),
-			EntityID:   entityId,
 			EntityType: "Metric",
 			LogLevel:   event.ERROR,
-			Message:    fmt.Errorf("read metric %s: %w", entityId, err).Error(),
+			Message:    err.Error(),
 			URI:        c.Request.URL.String(),
 			Err:        err,
 		})
 		abortWithError(c, http.StatusInternalServerError, e)
 		return
 	}
-	c.JSON(http.StatusOK, m)
+	c.JSON(http.StatusOK, stats)
 }
-

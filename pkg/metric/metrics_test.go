@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/voxtechnica/tuid-go"
+	"github.com/voxtechnica/versionary"
 )
 
 var (
@@ -16,73 +17,69 @@ var (
 	service = NewMockService("test")
 
 	// Known timestamps
-	t1 = time.Date(2022, time.April, 1, 12, 0, 0, 0, time.UTC)
-	t2 = time.Date(2022, time.April, 1, 13, 0, 0, 0, time.UTC)
-	t3 = time.Date(2022, time.April, 1, 14, 0, 0, 0, time.UTC)
-	t4 = time.Date(2022, time.April, 1, 15, 0, 0, 0, time.UTC)
+	t1 = time.Date(2022, time.April, 1, 12, 0, 0, 0, time.Local)
+	t2 = time.Date(2022, time.April, 1, 13, 0, 0, 0, time.Local)
+	t3 = time.Date(2022, time.April, 1, 14, 0, 0, 0, time.Local)
+	t4 = time.Date(2022, time.April, 2, 15, 0, 0, 0, time.Local)
 
 	// Metric IDs
-	id1 = tuid.NewIDWithTime(t1).String()
-	id2 = tuid.NewIDWithTime(t2).String()
-	id3 = tuid.NewIDWithTime(t3).String()
-	id4 = tuid.NewIDWithTime(t4).String()
+	id1      = tuid.NewIDWithTime(t1).String()
+	id2      = tuid.NewIDWithTime(t2).String()
+	id3      = tuid.NewIDWithTime(t3).String()
+	id4      = tuid.NewIDWithTime(t4).String()
+	knownIDs = []string{id1, id2, id3, id4}
 
 	// Known entity IDs
-	entity1 = tuid.NewIDWithTime(t1).String()
-	entity2 = tuid.NewIDWithTime(t2).String()
-	entity3 = tuid.NewIDWithTime(t3).String()
+	email1   = tuid.NewIDWithTime(t1).String()
+	email2   = tuid.NewIDWithTime(t2).String()
+	content1 = tuid.NewIDWithTime(t3).String()
 
 	// Known Metrics
-	m40 = Metric{
-		ID:         id4,
-		CreatedAt:  t4,
-		ExpiresAt:  t4.AddDate(1, 0, 0),
-		Title:      "Test CPU Usage2",
-		Label:      "Server-01 CPU2",
-		EntityID:   entity1,
-		EntityType: "Server",
-		Tags:       []string{"infrastructure", "backend", "critical"},
-		Value:      200.1, // This indicates 75.4% CPU usage
-		Units:      "%",   // Percentage unit
-	}
-	m30 = Metric{
-		ID:         id3,
-		CreatedAt:  t3,
-		ExpiresAt:  t3.AddDate(1, 0, 0),
-		Title:      "Page Load Duration", // State intention
-		Label:      "Homepage Load Time", // Additional context for metric title
-		EntityID:   entity3,              // ID of the entity being measured
-		EntityType: "Webpage",
-		Tags:       []string{"frontend", "performance"}, // Tags for categorization
-		Value:      2.5,                                 // Duration value
-		Units:      "seconds",                           // Units in seconds
-	}
-	m20 = Metric{
-		ID:         id2,
-		CreatedAt:  t2,
-		ExpiresAt:  t2.AddDate(1, 0, 0),
-		Title:      "API Response Time",
-		Label:      "User Registration API Latency",
-		EntityID:   entity2,
-		EntityType: "API",
-		Tags:       []string{"backend", "user", "latency"},
-		Value:      320.7, // This indicates the API took 320.7 milliseconds to respond
-		Units:      "ms",  // Milliseconds unit
-	}
-	m10 = Metric{
+	m1 = Metric{
 		ID:         id1,
 		CreatedAt:  t1,
 		ExpiresAt:  t1.AddDate(1, 0, 0),
-		Title:      "Test CPU Usage",
-		Label:      "Server-01 CPU",
-		EntityID:   entity1,
-		EntityType: "Server",
-		Tags:       []string{"infrastructure", "backend", "critical"},
-		Value:      75.4, // This indicates 75.4% CPU usage
-		Units:      "%",  // Percentage unit
+		Title:      "Send Email Latency",
+		EntityID:   email1,
+		EntityType: "Email",
+		Tags:       []string{"aws", "ses", "latency"},
+		Value:      75.4,
+		Units:      "ms",
 	}
-
-	knownIDs = []string{id1, id2, id3, id4}
+	m2 = Metric{
+		ID:         id2,
+		CreatedAt:  t2,
+		ExpiresAt:  t2.AddDate(1, 0, 0),
+		Title:      "Send Email Latency",
+		EntityID:   email2,
+		EntityType: "Email",
+		Tags:       []string{"aws", "ses", "latency"},
+		Value:      48.6,
+		Units:      "ms",
+	}
+	m3 = Metric{
+		ID:         id3,
+		CreatedAt:  t3,
+		ExpiresAt:  t3.AddDate(1, 0, 0),
+		Title:      "Read Content Latency",
+		EntityID:   content1,
+		EntityType: "Content",
+		Tags:       []string{"api", "latency"},
+		Value:      102.5,
+		Units:      "ms",
+	}
+	m4 = Metric{
+		ID:         id4,
+		CreatedAt:  t4,
+		ExpiresAt:  t4.AddDate(1, 0, 0),
+		Title:      "Read Content Latency",
+		EntityID:   content1,
+		EntityType: "Content",
+		Tags:       []string{"api", "latency"},
+		Value:      39.6,
+		Units:      "ms",
+	}
+	knownMetrics = []Metric{m1, m2, m3, m4}
 )
 
 func TestMain(m *testing.M) {
@@ -91,7 +88,7 @@ func TestMain(m *testing.M) {
 		log.Fatal("invalid table definition")
 	}
 	// Write known Metrics to the database
-	for _, m := range []Metric{m40, m30, m20, m10} {
+	for _, m := range knownMetrics {
 		if _, err := service.Write(ctx, m); err != nil {
 			log.Fatal(err)
 		}
@@ -102,11 +99,14 @@ func TestMain(m *testing.M) {
 
 func TestCreateReadAndDeleteMetric(t *testing.T) {
 	expect := assert.New(t)
-	// Create a new Metric
+	// Create a new Metric with a current timestamp.
+	// This should be the last Metric in chronological order.
 	m, problems, err := service.Create(ctx, Metric{
-		Title: "Loading Time",
-		Value: 222.2,
-		Units: "ms",
+		Title:      "User Login Latency",
+		EntityID:   tuid.NewID().String(),
+		EntityType: "User",
+		Value:      222.2,
+		Units:      "ms",
 	})
 	expect.Empty(problems)
 	if expect.NoError(err) {
@@ -127,6 +127,28 @@ func TestCreateReadAndDeleteMetric(t *testing.T) {
 			expect.Contains(string(mJSON), m.ID)
 		}
 
+		// Read the Metric IDs from the database
+		ids, err := service.ReadMetricIDs(ctx, true, 1, "")
+		if expect.NoError(err) {
+			expect.Equal(1, len(ids))
+			expect.Equal(m.ID, ids[0])
+		}
+
+		// Read Metric ID/label pairs from the database
+		labels, err := service.ReadMetricLabels(ctx, true, 1, "")
+		if expect.NoError(err) {
+			expect.Equal(1, len(labels))
+			expect.Equal(m.ID, labels[0].Key)
+			expect.Equal(m.String(), labels[0].Value)
+		}
+
+		// Read Metrics from the database
+		metrics := service.ReadMetrics(ctx, true, 1, "")
+		if expect.NotEmpty(metrics) {
+			expect.Equal(1, len(metrics))
+			expect.Equal(m, metrics[0])
+		}
+
 		// Delete the Metric from the database
 		mDelete, err := service.Delete(ctx, m.ID)
 		if expect.NoError(err) {
@@ -144,8 +166,23 @@ func TestReadMetric(t *testing.T) {
 	// Read the Metric from the database
 	m, err := service.Read(ctx, id1)
 	if expect.NoError(err) {
-		expect.Equal(m10, m)
+		expect.Equal(m1, m)
 	}
+	// Read a Metric that does not exist
+	_, err = service.Read(ctx, tuid.NewID().String())
+	if expect.Error(err) {
+		expect.Equal(versionary.ErrNotFound, err)
+	}
+}
+
+func TestMetricExists(t *testing.T) {
+	expect := assert.New(t)
+	// Metric exists in the database
+	mExist := service.Exists(ctx, id1)
+	expect.True(mExist)
+	// Metric does not exist in the database
+	mExist = service.Exists(ctx, tuid.NewID().String())
+	expect.False(mExist)
 }
 
 func TestReadMetricAsJSON(t *testing.T) {
@@ -161,9 +198,9 @@ func TestReadMetricAsJSON(t *testing.T) {
 func TestReadMetricIDs(t *testing.T) {
 	expect := assert.New(t)
 	// Read the Metric IDs from the database
-	ids, err := service.ReadMetricIDs(ctx, false, 10, "-")
+	ids, err := service.ReadMetricIDs(ctx, false, 10, "")
 	if expect.NoError(err) {
-		expect.GreaterOrEqual(len(ids), 3)
+		expect.GreaterOrEqual(len(ids), 4)
 		expect.Subset(ids, knownIDs)
 	}
 }
@@ -171,9 +208,10 @@ func TestReadMetricIDs(t *testing.T) {
 func TestReadMetrics(t *testing.T) {
 	expect := assert.New(t)
 	// Read the Metrics from the database
-	metrics := service.ReadMetrics(ctx, false, 10, "-")
+	metrics := service.ReadMetrics(ctx, false, 10, "")
 	if expect.NotEmpty(metrics) {
 		expect.GreaterOrEqual(len(metrics), 4)
+		expect.Subset(metrics, knownMetrics)
 	}
 }
 
@@ -185,45 +223,79 @@ func TestReadAllEntityIDs(t *testing.T) {
 	expect := assert.New(t)
 	ids, err := service.ReadAllEntityIDs(ctx)
 	if expect.NoError(err) {
-		expect.Contains(ids, entity1)
-		expect.Contains(ids, entity2)
-		expect.Contains(ids, entity3)
+		expect.Contains(ids, email1)
+		expect.Contains(ids, email2)
+		expect.Contains(ids, content1)
 	}
 }
 
 func TestReadMetricsByEntityID(t *testing.T) {
 	expect := assert.New(t)
-	metrics, err := service.ReadMetricsByEntityID(ctx, entity1, false, 10, "-")
+	metrics, err := service.ReadMetricsByEntityID(ctx, content1, false, 10, "")
 	if expect.NoError(err) && expect.NotEmpty(metrics) {
 		expect.Equal(2, len(metrics))
-		expect.Equal(m10, metrics[0])
+		expect.Contains(metrics, m3)
+		expect.Contains(metrics, m4)
 	}
 }
 
 func TestReadMetricsByEntityIDAsJSON(t *testing.T) {
 	expect := assert.New(t)
-	metricsJSON, err := service.ReadMetricsByEntityIDAsJSON(ctx, entity3, false, 10, "-")
+	metricsJSON, err := service.ReadMetricsByEntityIDAsJSON(ctx, content1, false, 10, "")
 	if expect.NoError(err) && expect.NotEmpty(metricsJSON) {
-		expect.Contains(string(metricsJSON), entity3)
+		expect.Contains(string(metricsJSON), content1)
+		expect.Contains(string(metricsJSON), m3.ID)
+		expect.Contains(string(metricsJSON), m4.ID)
 	}
 }
 
-func TestGenerateStatsForEntityID(t *testing.T) {
+func TestReadAllMetricsByEntityID(t *testing.T) {
 	expect := assert.New(t)
-	testStat, err := service.GenerateStatsForEntityID(ctx, entity1, false, 10, "-")
-	if expect.NoError(err) && expect.NotEmpty(testStat) {
-		expect.Equal(entity1, testStat.EntityID)
+	metrics, err := service.ReadAllMetricsByEntityID(ctx, content1)
+	if expect.NoError(err) && expect.NotEmpty(metrics) {
+		expect.Equal(2, len(metrics))
+		expect.Contains(metrics, m3)
+		expect.Contains(metrics, m4)
 	}
 }
 
-func TestGenerateStatsForEntityIDByDate(t *testing.T) {
+func TestReadAllMetricsByEntityIDAsJSON(t *testing.T) {
 	expect := assert.New(t)
-	testStat, err := service.GenerateStatsForEntityIDByDate(ctx, entity1, "2021-09-25", "2023-10-09")
-	startDate, _ := time.Parse("2006-01-02", "2021-09-25")
-	endDate, _ := time.Parse("2006-01-02", "2023-10-09")
-	if expect.NoError(err) && expect.NotEmpty(testStat) {
-		expect.True(startDate.Before(testStat.FromTime))
-		expect.True(endDate.After(testStat.ToTime))
+	metricsJSON, err := service.ReadAllMetricsByEntityIDAsJSON(ctx, content1)
+	if expect.NoError(err) && expect.NotEmpty(metricsJSON) {
+		expect.Contains(string(metricsJSON), content1)
+		expect.Contains(string(metricsJSON), m3.ID)
+		expect.Contains(string(metricsJSON), m4.ID)
+	}
+}
+
+func TestReadMetricRangeByEntityID(t *testing.T) {
+	expect := assert.New(t)
+	metrics, err := service.ReadMetricRangeByEntityID(ctx, content1, "2022-04-01", "2022-04-02", false)
+	if expect.NoError(err) && expect.NotEmpty(metrics) {
+		expect.Equal(1, len(metrics))
+		expect.Contains(metrics, m3)
+	}
+}
+
+func TestReadMetricStatByEntityID(t *testing.T) {
+	expect := assert.New(t)
+	stat, err := service.ReadMetricStatByEntityID(ctx, content1)
+	if expect.NoError(err) && expect.NotEmpty(stat) {
+		expect.Equal(content1, stat.EntityID)
+		expect.Equal(int64(2), stat.Count)
+		expect.Equal(m3.Value+m4.Value, stat.Sum)
+	}
+}
+
+func TestReadMetricStatRangeByEntityID(t *testing.T) {
+	expect := assert.New(t)
+	stat, err := service.ReadMetricStatRangeByEntityID(ctx, content1, "2022-04-01", "2022-04-03")
+	if expect.NoError(err) && expect.NotEmpty(stat) {
+		expect.Equal(content1, stat.EntityID)
+		expect.Equal(int64(2), stat.Count)
+		expect.Equal(m3.CreatedAt, stat.FromTime)
+		expect.Equal(m4.CreatedAt, stat.ToTime)
 	}
 }
 
@@ -234,35 +306,89 @@ func TestGenerateStatsForEntityIDByDate(t *testing.T) {
 func TestReadAllEntityTypes(t *testing.T) {
 	expect := assert.New(t)
 	types, err := service.ReadAllEntityTypes(ctx)
-	if expect.NoError(err) {
-		expect.Contains(types, "Server")
-		expect.Contains(types, "API")
-		expect.Contains(types, "Webpage")
+	if expect.NoError(err) && expect.NotEmpty(types) {
+		expect.GreaterOrEqual(len(types), 2)
+		expect.Contains(types, "Email")
+		expect.Contains(types, "Content")
 	}
 }
 
 func TestReadMetricsByEntityType(t *testing.T) {
 	expect := assert.New(t)
-	metric, err := service.ReadMetricsByEntityType(ctx, "Server", false, 10, "-")
+	metric, err := service.ReadMetricsByEntityType(ctx, "Email", false, 10, "")
 	if expect.NoError(err) && expect.NotEmpty(metric) {
 		expect.Equal(2, len(metric))
-		expect.Equal(m10, metric[0])
+		expect.Equal(m1, metric[0])
+		expect.Equal(m2, metric[1])
 	}
 }
 
 func TestReadMetricsByEntityTypeAsJSON(t *testing.T) {
 	expect := assert.New(t)
-	metricsJSON, err := service.ReadMetricsByEntityTypeAsJSON(ctx, "API", false, 10, "-")
+	metricsJSON, err := service.ReadMetricsByEntityTypeAsJSON(ctx, "Email", false, 10, "")
 	if expect.NoError(err) && expect.NotEmpty(metricsJSON) {
-		expect.Contains(string(metricsJSON), "API")
+		expect.Contains(string(metricsJSON), "Email")
+		expect.Contains(string(metricsJSON), m1.ID)
+		expect.Contains(string(metricsJSON), m2.ID)
 	}
 }
 
-func TestGenerateStatsForEntityType(t *testing.T) {
+func TestReadAllMetricsByEntityType(t *testing.T) {
 	expect := assert.New(t)
-	testStat, err := service.GenerateStatsForEntityTypeByDate(ctx, "API", "", "")
-	if expect.NoError(err) && expect.NotEmpty(testStat) {
-		expect.Contains(testStat.EntityType, "API")
+	metrics, err := service.ReadAllMetricsByEntityType(ctx, "Email")
+	if expect.NoError(err) && expect.NotEmpty(metrics) {
+		expect.Equal(2, len(metrics))
+		expect.Equal(m1, metrics[0])
+		expect.Equal(m2, metrics[1])
+	}
+}
+
+func TestReadAllMetricsByEntityTypeAsJSON(t *testing.T) {
+	expect := assert.New(t)
+	metricsJSON, err := service.ReadAllMetricsByEntityTypeAsJSON(ctx, "Email")
+	if expect.NoError(err) && expect.NotEmpty(metricsJSON) {
+		expect.Contains(string(metricsJSON), "Email")
+		expect.Contains(string(metricsJSON), m1.ID)
+		expect.Contains(string(metricsJSON), m2.ID)
+	}
+}
+
+func TestReadMetricRangeByEntityType(t *testing.T) {
+	expect := assert.New(t)
+	metrics, err := service.ReadMetricRangeByEntityType(ctx, "Email", "2022-04-01", "2022-04-02", false)
+	if expect.NoError(err) && expect.NotEmpty(metrics) {
+		expect.Equal(2, len(metrics))
+		expect.Equal(m1, metrics[0])
+		expect.Equal(m2, metrics[1])
+	}
+}
+
+func TestReadMetricStatByEntityType(t *testing.T) {
+	expect := assert.New(t)
+	stat, err := service.ReadMetricStatByEntityType(ctx, "Email")
+	if expect.NoError(err) && expect.NotEmpty(stat) {
+		expect.Equal(stat.EntityType, "Email")
+		expect.Equal(int64(2), stat.Count)
+		expect.Equal(m1.Value+m2.Value, stat.Sum)
+		expect.Equal(m1.CreatedAt, stat.FromTime)
+		expect.Equal(m2.CreatedAt, stat.ToTime)
+	}
+}
+
+func TestReadMetricStatRangeByEntityType(t *testing.T) {
+	expect := assert.New(t)
+	stat, err := service.ReadMetricStatRangeByEntityType(ctx, "Content", "2022-04-01", "2022-04-02")
+	if expect.NoError(err) && expect.NotEmpty(stat) {
+		expect.Equal(stat.EntityType, "Content")
+		expect.Equal(int64(1), stat.Count)
+		expect.Equal(m3.Value, stat.Min)
+		expect.Equal(m3.Value, stat.Max)
+		expect.Equal(m3.Value, stat.Median)
+		expect.Equal(m3.Value, stat.Mean)
+		expect.Equal(m3.Value, stat.Sum)
+		expect.Equal(float64(0), stat.StdDev)
+		expect.Equal(m3.CreatedAt, stat.FromTime)
+		expect.Equal(m3.CreatedAt, stat.ToTime)
 	}
 }
 
@@ -273,28 +399,82 @@ func TestGenerateStatsForEntityType(t *testing.T) {
 func TestReadAllTags(t *testing.T) {
 	expect := assert.New(t)
 	tags, err := service.ReadAllTags(ctx)
-	if expect.NoError(err) {
-		expect.Contains(tags, "backend")
-		expect.Contains(tags, "frontend")
-		expect.Contains(tags, "infrastructure")
-		expect.Contains(tags, "performance")
-		expect.Contains(tags, "user")
+	if expect.NoError(err) && expect.NotEmpty(tags) {
+		expect.Equal(4, len(tags))
+		expect.Contains(tags, "aws")
+		expect.Contains(tags, "ses")
+		expect.Contains(tags, "latency")
+		expect.Contains(tags, "api")
 	}
 }
 
 func TestReadMetricsByTag(t *testing.T) {
 	expect := assert.New(t)
-	metrics, err := service.ReadMetricsByTag(ctx, "backend", false, 10, "-")
+	metrics, err := service.ReadMetricsByTag(ctx, "latency", false, 10, "")
 	if expect.NoError(err) && expect.NotEmpty(metrics) {
-		expect.Equal(3, len(metrics))
-		expect.Equal(m10, metrics[0])
+		expect.Equal(4, len(metrics))
+		expect.Equal(metrics, knownMetrics)
 	}
 }
 
 func TestReadMetricsByTagAsJSON(t *testing.T) {
 	expect := assert.New(t)
-	metricsJSON, err := service.ReadMetricsByTagAsJSON(ctx, "frontend", false, 10, "-")
+	metricsJSON, err := service.ReadMetricsByTagAsJSON(ctx, "latency", false, 10, "")
 	if expect.NoError(err) && expect.NotEmpty(metricsJSON) {
-		expect.Contains(string(metricsJSON), "frontend")
+		expect.Contains(string(metricsJSON), "latency")
+		expect.Contains(string(metricsJSON), m1.ID)
+		expect.Contains(string(metricsJSON), m2.ID)
+		expect.Contains(string(metricsJSON), m3.ID)
+		expect.Contains(string(metricsJSON), m4.ID)
+	}
+}
+
+func TestReadAllMetricsByTag(t *testing.T) {
+	expect := assert.New(t)
+	metrics, err := service.ReadAllMetricsByTag(ctx, "aws")
+	if expect.NoError(err) && expect.NotEmpty(metrics) {
+		expect.Equal(2, len(metrics))
+		expect.Equal(metrics, knownMetrics[:2])
+	}
+}
+
+func TestReadAllMetricsByTagAsJSON(t *testing.T) {
+	expect := assert.New(t)
+	metricsJSON, err := service.ReadAllMetricsByTagAsJSON(ctx, "aws")
+	if expect.NoError(err) && expect.NotEmpty(metricsJSON) {
+		expect.Contains(string(metricsJSON), "aws")
+		expect.Contains(string(metricsJSON), m1.ID)
+		expect.Contains(string(metricsJSON), m2.ID)
+	}
+}
+
+func TestReadMetricRangeByTag(t *testing.T) {
+	expect := assert.New(t)
+	metrics, err := service.ReadMetricRangeByTag(ctx, "latency", "2022-04-01", "2022-04-02", false)
+	if expect.NoError(err) && expect.NotEmpty(metrics) {
+		expect.Equal(3, len(metrics))
+		expect.Equal(metrics, knownMetrics[:3])
+	}
+}
+
+func TestReadMetricStatByTag(t *testing.T) {
+	expect := assert.New(t)
+	stat, err := service.ReadMetricStatByTag(ctx, "latency")
+	if expect.NoError(err) && expect.NotEmpty(stat) {
+		expect.Equal(int64(4), stat.Count)
+		expect.Equal(m1.Value+m2.Value+m3.Value+m4.Value, stat.Sum)
+		expect.Equal(m1.CreatedAt, stat.FromTime)
+		expect.Equal(m4.CreatedAt, stat.ToTime)
+	}
+}
+
+func TestReadMetricStatRangeByTag(t *testing.T) {
+	expect := assert.New(t)
+	stat, err := service.ReadMetricStatRangeByTag(ctx, "latency", "2022-04-01", "2022-04-02")
+	if expect.NoError(err) && expect.NotEmpty(stat) {
+		expect.Equal(int64(3), stat.Count)
+		expect.Equal(m1.Value+m2.Value+m3.Value, stat.Sum)
+		expect.Equal(m1.CreatedAt, stat.FromTime)
+		expect.Equal(m3.CreatedAt, stat.ToTime)
 	}
 }

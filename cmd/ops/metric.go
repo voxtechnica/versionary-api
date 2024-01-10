@@ -10,7 +10,6 @@ import (
 	"versionary-api/pkg/metric"
 
 	"github.com/spf13/cobra"
-	"github.com/voxtechnica/tuid-go"
 )
 
 // initMetricCmd initializes the metric commands.
@@ -29,11 +28,10 @@ func initMetricCmd(root *cobra.Command) {
 	}
 	createCmd.Flags().StringP("env", "e", "", "Operating environment: dev | test | staging | prod")
 	createCmd.Flags().StringP("title", "t", "", "Metric title")
-	createCmd.Flags().StringP("label", "l", "", "Metric label")
 	createCmd.Flags().StringP("entity", "y", "", "Entity ID")
 	createCmd.Flags().StringP("type", "p", "", "Entity type")
 	createCmd.Flags().StringP("tags", "g", "", "Tags")
-	createCmd.Flags().Float64P("value", "v", 0.0, "Metric value")
+	createCmd.Flags().Float64P("value", "V", 0.0, "Metric value")
 	createCmd.Flags().StringP("units", "u", "", "Metric units")
 	_ = createCmd.MarkFlagRequired("env")
 	_ = createCmd.MarkFlagRequired("title")
@@ -44,10 +42,14 @@ func initMetricCmd(root *cobra.Command) {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List metrics",
-		Long:  "List all metrics.",
+		Long:  "List paginated metrics, optionally by entity ID, type, or tag.",
 		RunE:  listMetrics,
 	}
 	listCmd.Flags().StringP("env", "e", "", "Operating environment: dev | test | staging | prod")
+	listCmd.Flags().BoolP("json", "j", false, "Verbose: full JSON output?")
+	listCmd.Flags().StringP("entity", "y", "", "Entity ID")
+	listCmd.Flags().StringP("type", "p", "", "Entity type")
+	listCmd.Flags().StringP("tag", "g", "", "Tag")
 	listCmd.Flags().BoolP("reverse", "r", false, "Reverse chronological order?")
 	listCmd.Flags().IntP("limit", "n", 100, "Limit: max the number of results")
 	listCmd.Flags().StringP("offset", "i", "", "Offset: last ID received")
@@ -64,6 +66,19 @@ func initMetricCmd(root *cobra.Command) {
 	readCmd.Flags().StringP("env", "e", "", "Operating environment: dev | test | staging | prod")
 	_ = readCmd.MarkFlagRequired("env")
 	metricCmd.AddCommand(readCmd)
+
+	statsCmd := &cobra.Command{
+		Use:   "stats",
+		Short: "Read metric stats",
+		Long:  "Read the specified metric stats, by entity ID, type, or tag.",
+		RunE:  readMetricStats,
+	}
+	statsCmd.Flags().StringP("env", "e", "", "Operating environment: dev | test | staging | prod")
+	statsCmd.Flags().StringP("entity", "y", "", "Entity ID")
+	statsCmd.Flags().StringP("type", "p", "", "Entity type")
+	statsCmd.Flags().StringP("tag", "g", "", "Tag")
+	_ = statsCmd.MarkFlagRequired("env")
+	metricCmd.AddCommand(statsCmd)
 }
 
 // createMetric creates a new metric.
@@ -75,25 +90,19 @@ func createMetric(cmd *cobra.Command, args []string) error {
 	}
 	ctx := context.Background()
 
-	// Parse flags for metric title, value and units
+	// Parse flags for metric fields
 	valueStr := cmd.Flag("value").Value.String()
 	value, err := strconv.ParseFloat(valueStr, 64)
 	if err != nil {
 		return fmt.Errorf("error parsing metric value %s: %w", valueStr, err)
 	}
-
 	m := metric.Metric{
-		Title: cmd.Flag("title").Value.String(),
-		Value: value,
-		Units: cmd.Flag("units").Value.String(),
+		Title:      cmd.Flag("title").Value.String(),
+		EntityID:   cmd.Flag("entity").Value.String(),
+		EntityType: cmd.Flag("type").Value.String(),
+		Value:      value,
+		Units:      cmd.Flag("units").Value.String(),
 	}
-
-	// Parse flags for metric label, entity ID and type
-	m.Label = cmd.Flag("label").Value.String()
-	m.EntityID = cmd.Flag("entity").Value.String()
-	m.EntityType = cmd.Flag("type").Value.String()
-
-	// Parse flags for metric tags
 	tags := cmd.Flag("tags").Value.String()
 	if tags != "" {
 		m.Tags = strings.Split(tags, ",")
@@ -132,23 +141,48 @@ func listMetrics(cmd *cobra.Command, args []string) error {
 	}
 	ctx := context.Background()
 
-	// Read a batch of Metric(s)
+	// Parse parameters
+	verbose, _ := cmd.Flags().GetBool("json")
+	entityID, _ := cmd.Flags().GetString("entity")
+	entityType, _ := cmd.Flags().GetString("type")
+	tag, _ := cmd.Flags().GetString("tag")
 	reverse, _ := cmd.Flags().GetBool("reverse")
 	limit, _ := cmd.Flags().GetInt("limit")
 	offset, _ := cmd.Flags().GetString("offset")
-	if offset == "" {
-		if reverse {
-			offset = tuid.MaxID
-		} else {
-			offset = tuid.MinID
+
+	// Read a batch of Metric(s)
+	var metrics []metric.Metric
+	if entityID != "" {
+		metrics, err = ops.MetricService.ReadMetricsByEntityID(ctx, entityID, reverse, limit, offset)
+		if err != nil {
+			return fmt.Errorf("error reading Metrics by EntityID %s: %w", entityID, err)
+		}
+	} else if entityType != "" {
+		metrics, err = ops.MetricService.ReadMetricsByEntityType(ctx, entityType, reverse, limit, offset)
+		if err != nil {
+			return fmt.Errorf("error reading Metrics by EntityType %s: %w", entityType, err)
+		}
+	} else if tag != "" {
+		metrics, err = ops.MetricService.ReadMetricsByTag(ctx, tag, reverse, limit, offset)
+		if err != nil {
+			return fmt.Errorf("error reading Metrics by Tag %s: %w", tag, err)
+		}
+	} else {
+		metrics = ops.MetricService.ReadMetrics(ctx, reverse, limit, offset)
+	}
+
+	// Output the results
+	if verbose {
+		j, err := json.MarshalIndent(metrics, "", "  ")
+		if err != nil {
+			return fmt.Errorf("error marshaling JSON Metrics: %w", err)
+		}
+		fmt.Println(string(j))
+	} else {
+		for _, m := range metrics {
+			fmt.Println(m.String())
 		}
 	}
-	metrics := ops.MetricService.ReadMetrics(ctx, reverse, limit, offset)
-	j, err := json.MarshalIndent(metrics, "", "  ")
-	if err != nil {
-		return fmt.Errorf("error marshaling JSON Metrics: %w", err)
-	}
-	fmt.Println(string(j))
 	return nil
 }
 
@@ -173,5 +207,49 @@ func readMetric(cmd *cobra.Command, args []string) error {
 		}
 		fmt.Println(string(j))
 	}
+	return nil
+}
+
+// readMetricStats reads the specified metric stats.
+func readMetricStats(cmd *cobra.Command, args []string) error {
+	// Initialize the application
+	err := ops.Init(cmd.Flag("env").Value.String())
+	if err != nil {
+		return fmt.Errorf("error initializing application: %s", err)
+	}
+	ctx := context.Background()
+
+	// Parse parameters
+	entityID, _ := cmd.Flags().GetString("entity")
+	entityType, _ := cmd.Flags().GetString("type")
+	tag, _ := cmd.Flags().GetString("tag")
+
+	// Read the specified MetricStats
+	var stats metric.MetricStat
+	if entityID != "" {
+		stats, err = ops.MetricService.ReadMetricStatByEntityID(ctx, entityID)
+		if err != nil {
+			return fmt.Errorf("error reading MetricStats by EntityID %s: %w", entityID, err)
+		}
+	} else if entityType != "" {
+		stats, err = ops.MetricService.ReadMetricStatByEntityType(ctx, entityType)
+		if err != nil {
+			return fmt.Errorf("error reading MetricStats by EntityType %s: %w", entityType, err)
+		}
+	} else if tag != "" {
+		stats, err = ops.MetricService.ReadMetricStatByTag(ctx, tag)
+		if err != nil {
+			return fmt.Errorf("error reading MetricStats by Tag %s: %w", tag, err)
+		}
+	} else {
+		return fmt.Errorf("no entity, type, or tag specified")
+	}
+
+	// Output the results
+	j, err := json.MarshalIndent(stats, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshaling JSON MetricStat: %w", err)
+	}
+	fmt.Println(string(j))
 	return nil
 }

@@ -1,9 +1,7 @@
 package device
 
 import (
-	"versionary-api/pkg/util"
-
-	"github.com/voxtechnica/versionary"
+	v "github.com/voxtechnica/versionary"
 )
 
 type Count struct {
@@ -22,7 +20,7 @@ func (c Count) Type() string {
 
 // CompressedJSON returns a compressed JSON representation of the DeviceCount.
 func (c Count) CompressedJSON() []byte {
-	j, err := versionary.ToCompressedJSON(c)
+	j, err := v.ToCompressedJSON(c)
 	if err != nil {
 		return nil
 	}
@@ -34,7 +32,7 @@ func (c Count) CompressedJSON() []byte {
 // empty, then the DeviceCount is valid.
 func (c Count) Validate() []string {
 	problems := []string{}
-	if c.Date == "" || !util.IsValidDate(c.Date) {
+	if c.Date == "" || !v.IsValidDate(c.Date) {
 		problems = append(problems, "Date is missing or invalid")
 	}
 	return problems
