@@ -11,6 +11,7 @@ import (
 	"versionary-api/pkg/email"
 	"versionary-api/pkg/event"
 	"versionary-api/pkg/image"
+	"versionary-api/pkg/metric"
 	"versionary-api/pkg/org"
 	"versionary-api/pkg/token"
 	"versionary-api/pkg/user"
@@ -64,6 +65,7 @@ type Application struct {
 	EmailService       email.Service
 	EventService       event.Service
 	ImageService       image.Service
+	MetricService      metric.Service
 	OrgService         org.Service
 	TokenService       token.Service
 	UserService        user.Service
@@ -138,6 +140,7 @@ func (a *Application) setDefaults() {
 		"Email",
 		"Event",
 		"Image",
+		"Metric",
 		"Organization",
 		"Token",
 		"User",
@@ -188,6 +191,7 @@ func (a *Application) Init(env string) error {
 	}
 	a.EventService = event.NewService(a.DBClient, a.Environment)
 	a.ImageService = image.NewService(a.DBClient, a.S3Client, a.Environment)
+	a.MetricService = metric.NewService(a.DBClient, a.Environment)
 	a.OrgService = org.NewService(a.DBClient, a.Environment)
 	a.TokenService = token.NewService(a.DBClient, a.Environment)
 	a.UserService = user.NewService(a.DBClient, a.Environment)
@@ -228,6 +232,7 @@ func (a *Application) InitMock(env string) error {
 	}
 	a.EventService = event.NewMockService(a.Environment)
 	a.ImageService = image.NewMockService(a.Environment)
+	a.MetricService = metric.NewMockService(a.Environment)
 	a.OrgService = org.NewMockService(a.Environment)
 	a.TokenService = token.NewMockService(a.Environment)
 	a.UserService = user.NewMockService(a.Environment)

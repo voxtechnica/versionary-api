@@ -509,6 +509,9 @@ func (b Bucket) GetUploadURL(ctx context.Context, fileName string, contentType s
 	if err != nil {
 		return psu, fmt.Errorf("upload url for %s in %s: %w", fileName, b.BucketName, err)
 	}
+	if params.Expires != nil {
+		psu.ExpiresAt = *params.Expires
+	}
 	psu.Method = url.Method
 	psu.Host = url.SignedHeader.Get("Host")
 	psu.URL = url.URL

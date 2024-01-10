@@ -50,11 +50,12 @@ func main() {
 	// Initialize the application commands:
 	initBucketCmd(rootCmd)
 	initImageCmd(rootCmd)
+	initMetricCmd(rootCmd)
+	initOrgCmd(rootCmd)
 	initTableCmd(rootCmd)
 	initTokenCmd(rootCmd)
 	initTuidCmd(rootCmd)
 	initUserCmd(rootCmd)
-	initOrgCmd(rootCmd)
 
 	// Execute the specified command:
 	if err := rootCmd.Execute(); err != nil {

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 	"versionary-api/pkg/device"
-	"versionary-api/pkg/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/voxtechnica/tuid-go"
@@ -210,7 +209,7 @@ func readViews(c *gin.Context) {
 		return
 	}
 	date := c.Query("date")
-	if !util.IsValidDate(date) {
+	if !v.IsValidDate(date) {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid date: %s", date))
 		return
 	}
@@ -456,7 +455,7 @@ func readViewCounts(c *gin.Context) {
 func readViewCount(c *gin.Context) {
 	// Validate the path parameter date (YYYY-MM-DD)
 	date := c.Param("date")
-	if !util.IsValidDate(date) {
+	if !v.IsValidDate(date) {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter date: %s", date))
 		return
 	}
@@ -494,7 +493,7 @@ func readViewCount(c *gin.Context) {
 // @Router /v1/view_counts/{date} [head]
 func existsViewCount(c *gin.Context) {
 	date := c.Param("date")
-	if !util.IsValidDate(date) {
+	if !v.IsValidDate(date) {
 		c.Status(http.StatusBadRequest)
 	} else if !api.ViewCountService.Exists(c, date) {
 		c.Status(http.StatusNotFound)
@@ -521,7 +520,7 @@ func existsViewCount(c *gin.Context) {
 func updateViewCount(c *gin.Context) {
 	// Validate the path parameter date (YYYY-MM-DD)
 	date := c.Param("date")
-	if !util.IsValidDate(date) {
+	if !v.IsValidDate(date) {
 		abortWithError(c, http.StatusBadRequest, fmt.Errorf("bad request: invalid path parameter date: %s", date))
 		return
 	}

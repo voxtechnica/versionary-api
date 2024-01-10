@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"versionary-api/pkg/util"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/voxtechnica/tuid-go"
@@ -207,7 +206,7 @@ func (s Service) ReadAllViewsByDateAsJSON(ctx context.Context, date string) ([]b
 // CountViewsByDate returns a ViewCount for Views in the View table on the specified Date.
 func (s Service) CountViewsByDate(ctx context.Context, date string) (Count, error) {
 	c := Count{}
-	if !util.IsValidDate(date) {
+	if !v.IsValidDate(date) {
 		return c, fmt.Errorf("count views by date: invalid date: %s", date)
 
 	}

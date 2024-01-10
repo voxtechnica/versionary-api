@@ -360,7 +360,7 @@ func (s Service) ReadAllDevicesByDateAsJSON(ctx context.Context, date string) ([
 // CountDevicesByDate returns a DeviceCount for Devices in the Device table on the specified Date.
 func (s Service) CountDevicesByDate(ctx context.Context, date string) (Count, error) {
 	dc := Count{}
-	if !util.IsValidDate(date) {
+	if !v.IsValidDate(date) {
 		return dc, fmt.Errorf("count devices by date: invalid date: %s", date)
 
 	}

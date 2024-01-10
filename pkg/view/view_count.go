@@ -1,8 +1,6 @@
 package view
 
 import (
-	"versionary-api/pkg/util"
-
 	v "github.com/voxtechnica/versionary"
 )
 
@@ -43,7 +41,7 @@ func (c Count) CompressedJSON() []byte {
 // empty, then the ViewCount is valid.
 func (c Count) Validate() []string {
 	problems := []string{}
-	if c.Date == "" || !util.IsValidDate(c.Date) {
+	if c.Date == "" || !v.IsValidDate(c.Date) {
 		problems = append(problems, "Date is missing or invalid")
 	}
 	return problems

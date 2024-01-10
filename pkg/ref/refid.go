@@ -43,7 +43,7 @@ func (r RefID) String() string {
 // empty, the reference is to the latest (or only) version of the entity.
 func NewRefID(entityType, entityID, versionID string) (RefID, error) {
 	var r RefID
-	if entityType == "" || entityID == "" {
+	if entityType == "" {
 		return r, errors.New("entity type is required")
 	}
 	r.EntityType = entityType
