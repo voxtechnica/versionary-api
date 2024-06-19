@@ -227,7 +227,7 @@ func readMetric(c *gin.Context) {
 // @Success 204 "Metric Exists"
 // @Failure 400 "Bad Request (invalid path parameter ID)"
 // @Failure 404 "Not Found"
-// @Router /v1/events/{id} [head]
+// @Router /v1/metrics/{id} [head]
 func existsMetric(c *gin.Context) {
 	id := c.Param("id")
 	if !tuid.IsValid(tuid.TUID(id)) {

@@ -3572,15 +3572,15 @@ const docTemplate = `{
                 }
             },
             "head": {
-                "description": "Metric Exists\nCheck if the specified Metric exists.",
+                "description": "Event Exists\nCheck if the specified Event exists.",
                 "tags": [
-                    "Metric"
+                    "Event"
                 ],
-                "summary": "Metric Exists",
+                "summary": "Event Exists",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Metric ID",
+                        "description": "Event ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -3588,7 +3588,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "204": {
-                        "description": "Metric Exists"
+                        "description": "Event Exists"
                     },
                     "400": {
                         "description": "Bad Request (invalid path parameter ID)"
@@ -5172,6 +5172,33 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/main.APIEvent"
                         }
+                    }
+                }
+            },
+            "head": {
+                "description": "Metric Exists\nCheck if the specified Metric exists.",
+                "tags": [
+                    "Metric"
+                ],
+                "summary": "Metric Exists",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Metric ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Metric Exists"
+                    },
+                    "400": {
+                        "description": "Bad Request (invalid path parameter ID)"
+                    },
+                    "404": {
+                        "description": "Not Found"
                     }
                 }
             }
