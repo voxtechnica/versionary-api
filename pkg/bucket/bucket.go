@@ -657,7 +657,7 @@ func (b Bucket) DeleteFiles(ctx context.Context, fileNames []string) error {
 		// Note that no error occurs if the file does not exist
 		return fmt.Errorf("delete files from %s: %w", b.BucketName, err)
 	}
-	if res.Errors != nil && len(res.Errors) > 0 {
+	if len(res.Errors) > 0 {
 		var errs []string
 		for _, err := range res.Errors {
 			errs = append(errs, errorString(err))

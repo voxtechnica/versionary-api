@@ -100,6 +100,7 @@ func main() {
 		log.Println("AWS Region:", api.AWSConfig.Region)
 		log.Println("Environment Stage:", env)
 		log.Println("Initialized in", time.Since(startTime))
+		log.Println("API running at http://localhost:8080/")
 		log.Fatal(router.Run(":8080"))
 	}
 }
