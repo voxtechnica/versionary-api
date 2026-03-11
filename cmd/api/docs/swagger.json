@@ -223,7 +223,7 @@
                     "200": {
                         "description": "Token that was deleted",
                         "schema": {
-                            "$ref": "#/definitions/token.Token"
+                            "$ref": "#/definitions/versionary-api_pkg_token.Token"
                         }
                     },
                     "401": {
@@ -6157,7 +6157,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/token.Token"
+                                "$ref": "#/definitions/versionary-api_pkg_token.Token"
                             }
                         }
                     },
@@ -6280,7 +6280,7 @@
                     "200": {
                         "description": "Token",
                         "schema": {
-                            "$ref": "#/definitions/token.Token"
+                            "$ref": "#/definitions/versionary-api_pkg_token.Token"
                         }
                     },
                     "400": {
@@ -6344,7 +6344,7 @@
                     "200": {
                         "description": "Token that was deleted",
                         "schema": {
-                            "$ref": "#/definitions/token.Token"
+                            "$ref": "#/definitions/versionary-api_pkg_token.Token"
                         }
                     },
                     "400": {
@@ -8938,7 +8938,7 @@
             "type": "object",
             "properties": {
                 "token": {
-                    "$ref": "#/definitions/token.Token"
+                    "$ref": "#/definitions/versionary-api_pkg_token.Token"
                 },
                 "user": {
                     "$ref": "#/definitions/user.User"
@@ -8996,7 +8996,7 @@
                     "type": "string"
                 },
                 "token": {
-                    "$ref": "#/definitions/token.Token"
+                    "$ref": "#/definitions/versionary-api_pkg_token.Token"
                 },
                 "trailer": {
                     "type": "object",
@@ -9167,26 +9167,6 @@
                 }
             }
         },
-        "token.Token": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "expiresAt": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "userId": {
-                    "type": "string"
-                }
-            }
-        },
         "tuid.TUIDInfo": {
             "type": "object",
             "properties": {
@@ -9310,6 +9290,26 @@
                 },
                 "url": {
                     "description": "URL indicates the URL provided, typically for information about a bot/crawler.",
+                    "type": "string"
+                }
+            }
+        },
+        "versionary-api_pkg_token.Token": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "expiresAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "userId": {
                     "type": "string"
                 }
             }

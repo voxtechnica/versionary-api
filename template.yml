@@ -47,7 +47,7 @@ Resources:
       Architectures:
         - arm64
       Handler: bootstrap
-      Runtime: provided.al2
+      Runtime: provided.al2023
       CodeUri: ./lambda.zip
       Description: !Join ["-", ["versionary-api", !Ref ENV]]
       MemorySize: 512

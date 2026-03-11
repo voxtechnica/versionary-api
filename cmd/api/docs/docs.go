@@ -234,7 +234,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Token that was deleted",
                         "schema": {
-                            "$ref": "#/definitions/token.Token"
+                            "$ref": "#/definitions/versionary-api_pkg_token.Token"
                         }
                     },
                     "401": {
@@ -6168,7 +6168,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/token.Token"
+                                "$ref": "#/definitions/versionary-api_pkg_token.Token"
                             }
                         }
                     },
@@ -6291,7 +6291,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Token",
                         "schema": {
-                            "$ref": "#/definitions/token.Token"
+                            "$ref": "#/definitions/versionary-api_pkg_token.Token"
                         }
                     },
                     "400": {
@@ -6355,7 +6355,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Token that was deleted",
                         "schema": {
-                            "$ref": "#/definitions/token.Token"
+                            "$ref": "#/definitions/versionary-api_pkg_token.Token"
                         }
                     },
                     "400": {
@@ -8949,7 +8949,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "token": {
-                    "$ref": "#/definitions/token.Token"
+                    "$ref": "#/definitions/versionary-api_pkg_token.Token"
                 },
                 "user": {
                     "$ref": "#/definitions/user.User"
@@ -9007,7 +9007,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "token": {
-                    "$ref": "#/definitions/token.Token"
+                    "$ref": "#/definitions/versionary-api_pkg_token.Token"
                 },
                 "trailer": {
                     "type": "object",
@@ -9178,26 +9178,6 @@ const docTemplate = `{
                 }
             }
         },
-        "token.Token": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "expiresAt": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "userId": {
-                    "type": "string"
-                }
-            }
-        },
         "tuid.TUIDInfo": {
             "type": "object",
             "properties": {
@@ -9321,6 +9301,26 @@ const docTemplate = `{
                 },
                 "url": {
                     "description": "URL indicates the URL provided, typically for information about a bot/crawler.",
+                    "type": "string"
+                }
+            }
+        },
+        "versionary-api_pkg_token.Token": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "expiresAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "userId": {
                     "type": "string"
                 }
             }
